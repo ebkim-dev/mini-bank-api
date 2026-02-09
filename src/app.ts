@@ -1,11 +1,9 @@
 // src/app.ts
 
 import express, { Application } from "express";
-import dotenv from "dotenv";
 import healthRouter from "./routes/health.routes";
 
-// Load environment variables from .env file into process.env
-dotenv.config();
+
 
 /**
  * createApp function is responsible for:
