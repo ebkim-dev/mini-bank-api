@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// Represents system users (coaches, admins, or simulated bank employees—not customers). 
+model User {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  username      String   @unique @db.VarChar(100)
+  password_hash String   @db.VarChar(255)
+  role          Role
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  STANDARD
+}
+
+// Represents bank customers who own accounts. 
+model Customer {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  first_name    String   @db.VarChar(100)
+  last_name     String   @db.VarChar(100)
+  email         String   @unique @db.VarChar(150)
+  phone         String?  @db.VarChar(30)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt 
+  
+  accounts      Account[]
+
+  @@map("customers")
+}
+
+// A financial account owned by a customer.
+model Account {
+  id            BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  customer_id   BigInt        @db.UnsignedBigInt
+  customer      Customer      @relation(fields: [customer_id], references: [id])
+
+  type          AccountType     
+  currency      String        @db.VarChar(3)
+  nickname      String?       @db.VarChar(100)
+  status        AccountStatus @default(ACTIVE)
+  balance       Decimal       @db.Decimal(12, 2) @default(0.00)
+  
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt 
+
+  @@index([customer_id])
+  @@map("accounts")
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+}
+
+enum AccountStatus {
+  ACTIVE
+  CLOSED
+}
+
