@@ -1,17 +1,10 @@
 import type { Request, Response } from 'express';
-
-import { serializeAccount } from '../utils/serializeAccount'
-
 import { Prisma } from '../generated/client';
 
 import * as accountService from '../service/accountService';
 import { isNullOrEmpty } from '../utils/nullEmptyCheck';
+import { serializeAccount, serializeAccounts } from '../utils/serializeAccount'
 import { AccountCreateInput } from '../types/account';
-
-// GET /
-export async function dummyTest(req: Request, res: Response): Promise<void> {
-    res.status(200).json({ message: 'Hello World!' });
-}
 
 // POST /accounts
 export async function createAccount(req: Request, res: Response): Promise<void> {
@@ -48,105 +41,98 @@ export async function createAccount(req: Request, res: Response): Promise<void> 
                 res.status(400).json({ message: 'Username already exists' });
             }
         } else if (err instanceof Error) {
-            res.status(500).json({ message: "Failed to create user", error: err.message });
+            res.status(500).json({ message: "Failed to create account", error: err.message });
         } else {
-            res.status(500).json({ message: "Failed to create user", error: String(err) });
+            res.status(500).json({ message: "Failed to create account", error: String(err) });
         }
     }
 }
-/*
+
 // GET /users
-export async function getAllUsers(req: Request, res: Response): Promise<void> {
+export async function getAccountsByCustomerId(req: Request, res: Response): Promise<void> {
+    const { customerId } = req.query;
+
+    if (typeof customerId !== 'string') {
+        res.status(400).json({ message: 'Invalid or missing customerId' });
+        return;
+    }
+
     try {
-        const users = await userService.fetchAllUsers();
-        res.status(200).json(serializeUsers(users));
+        const accounts = await accountService.fetchAccountsByCustomerId(BigInt(customerId));
+        res.status(200).json(serializeAccounts(accounts));
     } catch (err) {
-        if (err instanceof Error) {
-            res.status(500).json({ message: "Failed to find users", error: err.message });
-        } else {
-            res.status(500).json({ message: "Failed to find users", error: String(err) });
-        }
+        const message = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ message: "Failed to find account", error: message });
     }
 }
 
 // GET /users/:id
-export async function getUser(req: Request, res: Response): Promise<void> {
+export async function getAccount(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
 
-    if (!id || Array.isArray(id)) {  // string | string[] | undefined
-        res.status(400).json({ message: 'Invalid user id' });
+    if (typeof id !== 'string') {
+        res.status(400).json({ message: 'Invalid account id' });
         return;
     }
 
     try {
-        const user = await userService.fetchUserById(BigInt(id));
-        if (!user) {
-            res.status(404).json({ message: 'User not found' });
+        const account = await accountService.fetchAccountById(BigInt(id));
+        if (!account) {
+            res.status(404).json({ message: 'Account not found' });
         } else {
-            res.status(200).json(serializeUser(user));
+            res.status(200).json(serializeAccount(account));
         }
     } catch (err) {
-        if (err instanceof Error) {
-            res.status(500).json({ message: "Failed to get user", error: err.message });
-        } else {
-            res.status(500).json({ message: "Failed to get user", error: String(err) });
-        }
+        const message = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ message: "Failed to find account", error: message });
     }
 }
 
 // PATCH /users/:id (has body)
-export async function updateUser(req: Request, res: Response): Promise<void> {
+export async function updateAccount(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
 
-    if (!id || Array.isArray(id)) {  // string | string[] | undefined
-        res.status(400).json({ message: 'Invalid user id' });
+    if (typeof id !== 'string') {
+        res.status(400).json({ message: 'Invalid account id' });
         return;
     }
     
-    const data = req.body; // { username?, password_hash?, role? }
+    const data = req.body;
 
-    // Basic null/empty check
     if (!data || Object.keys(data).length === 0) {
         res.status(400).json({ message: "No fields provided to update" });
         return;
     }
 
     try {
-        const user = await userService.updateUserById(BigInt(id), data);
-        res.status(200).json(serializeUser(user));
+        const account = await accountService.updateAccountById(BigInt(id), data);
+        res.status(200).json(serializeAccount(account));
     } catch (err) {
-        if (err instanceof Error) {
-            res.status(500).json({ message: "Failed to update user", error: err.message });
-        } else {
-            res.status(500).json({ message: "Failed to update user", error: String(err) });
-        }
+        const message = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ message: "Failed to find account", error: message });
     }
 }
 
 // DELETE /users/:id
-export async function deleteUser(req: Request, res: Response): Promise<void> {
+export async function deleteAccount(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
 
     if (!id || Array.isArray(id)) {  // string | string[] | undefined
-        res.status(400).json({ message: 'Invalid user id' });
+        res.status(400).json({ message: 'Invalid account id' });
         return;
     }
     
     try {
-        const user = await userService.deleteUserById(BigInt(id));
+        const account = await accountService.deleteAccountById(BigInt(id));
 
-        if (!user) {
-            res.status(404).json({ message: 'User not found' });
+        if (!account) {
+            res.status(404).json({ message: 'Account not found' });
         } else {
-            res.status(200).json(serializeUser(user));
+            res.status(200).json(serializeAccount(account));
         }    
     } catch (err) {
-        if (err instanceof Error) {
-            res.status(500).json({ message: "Failed to delete user", error: err.message });
-        } else {
-            res.status(500).json({ message: "Failed to delete user", error: String(err) });
-        }
+        const message = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ message: "Failed to find account", error: message });
     }
 }
 
-*/

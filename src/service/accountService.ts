@@ -21,27 +21,31 @@ export async function insertAccount(data: AccountCreateInput): Promise<Account> 
   });
 }
 
-// export async function fetchAllUsers(): Promise<User[]> {
-//     return await prisma.user.findMany();
-// }
+export async function fetchAccountsByCustomerId(customer_id: bigint): Promise<Account[]> {
+    return await prisma.account.findMany({
+        where: {
+            customer_id: customer_id, 
+        },
+    });
+}
 
-// export async function fetchUserById(id: bigint): Promise<User | null> {
-//     return await prisma.user.findUnique({ 
-//         where: { id },
-//     });
-// }
+export async function fetchAccountById(id: bigint): Promise<Account | null> {
+    return await prisma.account.findUnique({ 
+        where: { id },
+    });
+}
 
-// export async function updateUserById(id: bigint, data: UserUpdateInput): Promise<User> {
-//     return await prisma.user.update({
-//         where: { id: id },
-//         data: {
-//             ...data,
-//         }
-//     })
-// }
+export async function updateAccountById(id: bigint, data: AccountUpdateInput): Promise<Account> {
+    return await prisma.account.update({
+        where: { id: id },
+        data: {
+            ...data,
+        }
+    })
+}
 
-// export async function deleteUserById(id: bigint): Promise<User> {
-//     return await prisma.user.delete({
-//         where: { id },
-//     });
-// }
+export async function deleteAccountById(id: bigint): Promise<Account> {
+    return await prisma.account.delete({
+        where: { id },
+    });
+}

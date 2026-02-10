@@ -5,6 +5,7 @@ import healthRouter from "./routes/health.routes";
 import { traceIdMiddleware } from "./middleware/traceId";
 import { requestLoggerMiddleware } from "./middleware/requestLogger";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler";
+import accountRouter from './routes/accountRouter';
 
 /**
  * createApp function is responsible for:
@@ -27,6 +28,7 @@ export const createApp = (): Application => {
   // === Register routes here ===
 
   app.use("/health", healthRouter);
+  app.use('/accounts', accountRouter);
 
   // If no route matched above, this middleware converts it into a 404 error
   app.use(notFoundHandler);

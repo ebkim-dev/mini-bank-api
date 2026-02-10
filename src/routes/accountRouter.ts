@@ -1,27 +1,31 @@
 
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import * as accountMiddleware from '../controller/accountController';
+import {
+    createAccount,
+    getAccountsByCustomerId,
+    getAccount,
+    updateAccount,
+    deleteAccount
+} from '../controller/accountController';
 
 const accountRouter = Router();
 
-accountRouter.get('/hello', accountMiddleware.dummyTest);
-
 // POST /accounts creates an account record in MySQL
 // TODO 
-accountRouter.post('/', accountMiddleware.createAccount);
+accountRouter.post('/', createAccount);
 
 // GET /accounts?customerId=... returns only accounts belonging to that customer
-// accountRouter.get('/', accountMiddleware.fetchAccountByCustomerId);
+accountRouter.get('/', getAccountsByCustomerId);
 
 // GET /accounts/:accountId returns account details; if not found → 404 
-// accountRouter.get('/:id', accountMiddleware.fetchAccountByAccountId);
+accountRouter.get('/:id', getAccount);
 
 // PUT /accounts/:accountId updates allowed fields only (e.g., nickname/status) 
-// accountRouter.put('/:id', accountMiddleware.updateAccountById);
+accountRouter.put('/:id', updateAccount);
 
 // POST /accounts/:accountId/close closes the account 
-// accountRouter.post('/:id/close', accountMiddleware.closeAccount);
+accountRouter.post('/:id/close', deleteAccount);
 
 export default accountRouter;
 
