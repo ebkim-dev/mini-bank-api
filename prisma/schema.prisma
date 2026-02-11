@@ -12,6 +12,8 @@ generator client {
 
 datasource db {
   provider = "mysql"
+  // url      = env("DATABASE_URL")
+
 }
 
 // Represents system users (coaches, admins, or simulated bank employees—not customers). 
@@ -21,7 +23,7 @@ model User {
   password_hash String   @db.VarChar(255)
   role          Role
   created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  updated_at    DateTime @updatedAt @default(now())
 
   @@map("users")
 }
@@ -39,7 +41,7 @@ model Customer {
   email         String   @unique @db.VarChar(150)
   phone         String?  @db.VarChar(30)
   created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt 
+  updated_at    DateTime @updatedAt @default(now())
   
   accounts      Account[]
 
@@ -59,7 +61,7 @@ model Account {
   balance       Decimal       @db.Decimal(12, 2) @default(0.00)
   
   created_at    DateTime      @default(now())
-  updated_at    DateTime      @updatedAt 
+  updated_at    DateTime      @updatedAt @default(now())
 
   @@index([customer_id])
   @@map("accounts")

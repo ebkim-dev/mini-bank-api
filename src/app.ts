@@ -28,7 +28,7 @@ export const createApp = (): Application => {
   // === Register routes here ===
 
   app.use("/health", healthRouter);
-  app.use('/accounts', accountRouter);
+  app.use("/accounts", accountRouter);
 
   // If no route matched above, this middleware converts it into a 404 error
   app.use(notFoundHandler);

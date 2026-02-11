@@ -25,6 +25,6 @@ export type AccountUpdateInput = {
     type?: AccountType;
     // currency?: string; <-- usually no updates
     nickname?: string;
-    status?: AccountStatus;
+    // status?: AccountStatus; <-- deletion will update this
     balance?: string;
 };

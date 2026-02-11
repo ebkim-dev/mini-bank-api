@@ -40,15 +40,14 @@ export async function createAccount(req: Request, res: Response): Promise<void> 
             if (prismaErr.code === 'P2002') {
                 res.status(400).json({ message: 'Username already exists' });
             }
-        } else if (err instanceof Error) {
-            res.status(500).json({ message: "Failed to create account", error: err.message });
         } else {
-            res.status(500).json({ message: "Failed to create account", error: String(err) });
+            const message = err instanceof Error ? err.message : String(err);
+            res.status(500).json({ message: "Failed to find account", error: message });
         }
     }
 }
 
-// GET /users
+// GET /accounts?customerId=...
 export async function getAccountsByCustomerId(req: Request, res: Response): Promise<void> {
     const { customerId } = req.query;
 
@@ -66,7 +65,7 @@ export async function getAccountsByCustomerId(req: Request, res: Response): Prom
     }
 }
 
-// GET /users/:id
+// GET /accounts/:accountId
 export async function getAccount(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
 
@@ -88,7 +87,7 @@ export async function getAccount(req: Request, res: Response): Promise<void> {
     }
 }
 
-// PATCH /users/:id (has body)
+// PUT /accounts/:accountId
 export async function updateAccount(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
 
@@ -113,7 +112,7 @@ export async function updateAccount(req: Request, res: Response): Promise<void> 
     }
 }
 
-// DELETE /users/:id
+// POST /accounts/:accountId/close
 export async function deleteAccount(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
 
