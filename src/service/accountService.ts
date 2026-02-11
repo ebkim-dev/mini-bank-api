@@ -45,7 +45,10 @@ export async function updateAccountById(id: bigint, data: AccountUpdateInput): P
 }
 
 export async function deleteAccountById(id: bigint): Promise<Account> {
-    return await prisma.account.delete({
-        where: { id },
-    });
+    return await prisma.account.update({
+        where: { id: id },
+        data: {
+            status: AccountStatus.CLOSED,
+        }
+    })
 }
