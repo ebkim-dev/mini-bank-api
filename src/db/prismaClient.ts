@@ -13,11 +13,11 @@ import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 // });
 
 const adapter = new PrismaMariaDb({
-  host: process.env.MYSQL_HOST || 'fdmt-mysql-uks-mysqlcourse-001.mysql.database.azure.com',
-  user: process.env.MYSQL_USER || 'byunggyukim',
-  password: process.env.MYSQL_PASSWORD || '$7yHci^8&fHyx=sR',
-  database: process.env.MYSQL_DB || 'minibankapi',
-  port: Number(process.env.MYSQL_PORT) || 3306,
+  host: process.env.MYSQL_HOST !,
+  user: process.env.MYSQL_USER !,
+  password: process.env.MYSQL_PASSWORD !,
+  database: process.env.MYSQL_DB !,
+  port: Number(process.env.MYSQL_PORT) !,
 
   // talk to mayank
   // --> cloudside config. ok to proceed or not?
