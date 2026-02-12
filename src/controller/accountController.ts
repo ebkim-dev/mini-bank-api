@@ -83,12 +83,13 @@ export async function getAccount(req: Request, res: Response, next: NextFunction
 // PUT /accounts/:id
 export async function updateAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { id } = (req as any).validated?.params as { id: string };
-    const data = (req as any).validated?.body as Record<string, any>;
+    const { id } = (req as any).validated.params as { id: string };
+    const data = (req as any).validated.body as {nickname?: string;status?: "ACTIVE" | "CLOSED";};
 
     const updated = await accountService.updateAccountById(BigInt(id), data);
     res.status(200).json(serializeAccount(updated));
   } catch (err) {
+    // ✅ Prisma not found -> 404
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
       return next(NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { accountId: req.params.id }));
     }
@@ -104,7 +105,7 @@ export async function updateAccount(req: Request, res: Response, next: NextFunct
 // POST /accounts/:id/close
 export async function deleteAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { id } = (req as any).validated?.params as { id: string };
+    const { id } = (req as any).validated.params as { id: string };
 
     const closed = await accountService.deleteAccountById(BigInt(id));
     res.status(200).json(serializeAccount(closed));
