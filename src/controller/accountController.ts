@@ -3,7 +3,7 @@ import { Prisma } from "../generated/client";
 
 import * as accountService from "../service/accountService";
 import { serializeAccount, serializeAccounts } from "../utils/serializeAccount";
-import { AccountCreateInput } from "../types/account";
+import { AccountCreateInput, AccountStatus } from "../types/account";
 
 import {
   BadRequestError,
@@ -18,13 +18,14 @@ import { ErrorCode } from "../types/errorCodes";
 export async function createAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = (req as any).validated?.body as AccountCreateInput;
-
     
     if (!data) {
       throw BadRequestError(ErrorCode.EMPTY_BODY, "Request body is empty");
     }
 
     const newAccount = await accountService.insertAccount(data);
+    console.log(typeof newAccount.customer_id);
+
     res.status(201).json(serializeAccount(newAccount));
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -84,7 +85,7 @@ export async function getAccount(req: Request, res: Response, next: NextFunction
 export async function updateAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { id } = (req as any).validated.params as { id: string };
-    const data = (req as any).validated.body as {nickname?: string;status?: "ACTIVE" | "CLOSED";};
+    const data = (req as any).validated.body as {nickname?: string;status?: AccountStatus;};
 
     const updated = await accountService.updateAccountById(BigInt(id), data);
     res.status(200).json(serializeAccount(updated));

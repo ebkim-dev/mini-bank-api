@@ -22,9 +22,9 @@ export type AccountCreateInput = {
 
 export type AccountUpdateInput = {
     // customer_id: string; <-- shouldn't be updated
-    type?: AccountType;
+    // type?: AccountType;
     // currency?: string; <-- usually no updates
     nickname?: string;
-    // status?: AccountStatus; <-- deletion will update this
-    balance?: string;
+    status?: AccountStatus;
+    // balance?: string;
 };
