@@ -10,7 +10,7 @@ MiniBankAPI is a Node.js + TypeScript REST API built incrementally in epics.
 - MySQL integration using Prisma ORM
 - Clean layered architecture (routes → controller → service → db)
 
-> ⚠️ Note: Database migrations and seed scripts are intentionally excluded from Epic 1 Definition of Done due to database privilege constraints.
+
 
 ---
 
@@ -114,7 +114,7 @@ CREATE DATABASE minibank;
 
 2. Ensure required tables exist according to Prisma schema.
 
-> ⚠️ Migrations and seed scripts are intentionally excluded in Epic 1.
+
 
 ---
 
@@ -146,7 +146,7 @@ http://localhost:3000
 
 ---
 
-# Logging (MANDATORY)
+# Logging
 
 ## Request Logging Includes:
 
@@ -274,23 +274,22 @@ Close account.
 Run all tests:
 
 ```bash
-npm test
+npx jest
 ```
 
-Run with coverage:
+<!-- Run with coverage:
 
 ```bash
 npm run test:coverage
-```
+``` -->
 
 Tests include:
-
-- Unit tests (service layer)
-- Integration tests (API endpoints)
+- Unit tests
+- Integration tests 
 
 ---
 
-# Running Sonar Scan
+<!-- # Running Sonar Scan
 
 ## Configure `sonar-project.properties`
 
@@ -316,7 +315,7 @@ Or if configured via npm:
 npm run sonar
 ```
 
----
+--- -->
 
 # Epic 1 Completion Checklist
 
