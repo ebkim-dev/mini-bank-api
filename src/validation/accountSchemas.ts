@@ -30,9 +30,12 @@ export const createAccountBodySchema = z.object({
 });
 
 
-export const updateAccountBodySchema = z.object({
-  nickname: z.string().max(100).optional().nullable(),
-  status: z.enum(["ACTIVE", "CLOSED"]).optional(),
-  type: z.enum(["CHECKING", "SAVINGS"]).optional(),
-  balance: z.preprocess((v) => (typeof v === "string" ? Number(v) : v), z.number().nonnegative()).optional(),
-});
+export const updateAccountBodySchema = z
+  .object({
+    nickname: z.string().max(100).optional(), // ✅ no null
+    status: z.enum(["ACTIVE", "CLOSED"]).optional(),
+  })
+  .strict()
+  .refine((obj) => Object.keys(obj).length > 0, {
+    message: "At least one field (nickname/status) must be provided",
+  });
