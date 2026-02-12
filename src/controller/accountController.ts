@@ -1,137 +1,123 @@
-import type { Request, Response } from 'express';
-import { Prisma } from '../generated/client';
+import type { Request, Response, NextFunction } from "express";
+import { Prisma } from "../generated/client";
 
-import * as accountService from '../service/accountService';
-import { isNullOrEmpty } from '../utils/nullEmptyCheck';
-import { serializeAccount, serializeAccounts } from '../utils/serializeAccount'
-import { AccountCreateInput } from '../types/account';
+import * as accountService from "../service/accountService";
+import { serializeAccount, serializeAccounts } from "../utils/serializeAccount";
+import { AccountCreateInput } from "../types/account";
+
+import {
+  BadRequestError,
+  NotFoundError,
+  ConflictError,
+  InternalServerError,
+} from "../utils/error";
+
+import { ErrorCode } from "../types/errorCodes";
 
 // POST /accounts
-export async function createAccount(req: Request, res: Response): Promise<void> {
-    const data = req.body;
+export async function createAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = (req as any).validated?.body as AccountCreateInput;
 
-    // Basic null/empty check
-    if (isNullOrEmpty(data)) {
-        res.status(400).json({ message: "Request body is empty" });
-        return;
+    
+    if (!data) {
+      throw BadRequestError(ErrorCode.EMPTY_BODY, "Request body is empty");
     }
 
-    // Required fields check
-    const { 
-        customer_id,
-        type,
-        currency,
-        nickname,
-        status,
-        balance,
-    } = data as AccountCreateInput;
-
-    if (!customer_id || !type || !currency) {
-        res.status(400).json({ message: "Missing required fields" });
-        return;
+    const newAccount = await accountService.insertAccount(data);
+    res.status(201).json(serializeAccount(newAccount));
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === "P2002") {
+        return next(
+          ConflictError(ErrorCode.DUPLICATE_RESOURCE, "Unique constraint violated", {
+            target: err.meta?.target,
+          })
+        );
+      }
     }
-
-    try {
-        const newAccount = await accountService.insertAccount(data);
-        res.status(201).json(serializeAccount(newAccount)); // 201 = Created
-    } catch (err) {
-        if (err instanceof Prisma.PrismaClientKnownRequestError) {
-            const prismaErr = err as Prisma.PrismaClientKnownRequestError;
-            if (prismaErr.code === 'P2002') {
-                res.status(400).json({ message: 'Username already exists' });
-            }
-        } else {
-            const message = err instanceof Error ? err.message : String(err);
-            res.status(500).json({ message: "Failed to find account", error: message });
-        }
-    }
+    return next(
+      err instanceof Error
+        ? err
+        : InternalServerError("Internal Server Error", { originalError: String(err) })
+    );
+  }
 }
 
 // GET /accounts?customerId=...
-export async function getAccountsByCustomerId(req: Request, res: Response): Promise<void> {
-    const { customerId } = req.query;
-
-    if (typeof customerId !== 'string') {
-        res.status(400).json({ message: 'Invalid or missing customerId' });
-        return;
-    }
-
-    try {
-        const accounts = await accountService.fetchAccountsByCustomerId(BigInt(customerId));
-        res.status(200).json(serializeAccounts(accounts));
-    } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        res.status(500).json({ message: "Failed to find account", error: message });
-    }
+export async function getAccountsByCustomerId(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { customerId } = (req as any).validated?.query as { customerId: string };
+    const accounts = await accountService.fetchAccountsByCustomerId(BigInt(customerId));
+    res.status(200).json(serializeAccounts(accounts));
+  } catch (err) {
+    return next(
+      err instanceof Error
+        ? err
+        : InternalServerError("Internal Server Error", { originalError: String(err) })
+    );
+  }
 }
 
-// GET /accounts/:accountId
-export async function getAccount(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
+// GET /accounts/:id
+export async function getAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = (req as any).validated?.params as { id: string };
 
-    if (typeof id !== 'string') {
-        res.status(400).json({ message: 'Invalid account id' });
-        return;
+    const account = await accountService.fetchAccountById(BigInt(id));
+
+    if (!account) {
+      throw NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { accountId: id });
     }
 
-    try {
-        const account = await accountService.fetchAccountById(BigInt(id));
-        if (!account) {
-            res.status(404).json({ message: 'Account not found' });
-        } else {
-            res.status(200).json(serializeAccount(account));
-        }
-    } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        res.status(500).json({ message: "Failed to find account", error: message });
-    }
+    res.status(200).json(serializeAccount(account));
+  } catch (err) {
+    return next(
+      err instanceof Error
+        ? err
+        : InternalServerError("Internal Server Error", { originalError: String(err) })
+    );
+  }
 }
 
-// PUT /accounts/:accountId
-export async function updateAccount(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
+// PUT /accounts/:id
+export async function updateAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = (req as any).validated.params as { id: string };
+    const data = (req as any).validated.body as {nickname?: string;status?: "ACTIVE" | "CLOSED";};
 
-    if (typeof id !== 'string') {
-        res.status(400).json({ message: 'Invalid account id' });
-        return;
-    }
-    
-    const data = req.body;
-
-    if (!data || Object.keys(data).length === 0) {
-        res.status(400).json({ message: "No fields provided to update" });
-        return;
+    const updated = await accountService.updateAccountById(BigInt(id), data);
+    res.status(200).json(serializeAccount(updated));
+  } catch (err) {
+    // ✅ Prisma not found -> 404
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+      return next(NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { accountId: req.params.id }));
     }
 
-    try {
-        const account = await accountService.updateAccountById(BigInt(id), data);
-        res.status(200).json(serializeAccount(account));
-    } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        res.status(500).json({ message: "Failed to find account", error: message });
-    }
+    return next(
+      err instanceof Error
+        ? err
+        : InternalServerError("Internal Server Error", { originalError: String(err) })
+    );
+  }
 }
 
-// POST /accounts/:accountId/close
-export async function deleteAccount(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
+// POST /accounts/:id/close
+export async function deleteAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = (req as any).validated.params as { id: string };
 
-    if (!id || Array.isArray(id)) {  // string | string[] | undefined
-        res.status(400).json({ message: 'Invalid account id' });
-        return;
+    const closed = await accountService.deleteAccountById(BigInt(id));
+    res.status(200).json(serializeAccount(closed));
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+      return next(NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { accountId: req.params.id }));
     }
-    
-    try {
-        const account = await accountService.deleteAccountById(BigInt(id));
 
-        if (!account) {
-            res.status(404).json({ message: 'Account not found' });
-        } else {
-            res.status(200).json(serializeAccount(account));
-        }    
-    } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        res.status(500).json({ message: "Failed to find account", error: message });
-    }
+    return next(
+      err instanceof Error
+        ? err
+        : InternalServerError("Internal Server Error", { originalError: String(err) })
+    );
+  }
 }
-
