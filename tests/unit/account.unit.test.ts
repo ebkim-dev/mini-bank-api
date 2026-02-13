@@ -97,6 +97,17 @@ describe("createAccount domain rule", () => {
 });
 
 describe("getAccountsByCustomerId domain rule", () => {
+  beforeEach(() => {
+    jsonMock = jest.fn();
+    statusMock = jest.fn(() => ({ json: jsonMock }));
+    res = { status: statusMock };
+    next = jest.fn();
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.clearAllMocks();
+  })
   it("should call fetchAccountsByCustomerId and return 200 with serialized account", async () => {
     const currentDate = new Date();
     
@@ -132,6 +143,17 @@ describe("getAccountsByCustomerId domain rule", () => {
 });
 
 describe("getAccount domain rule", () => {
+  beforeEach(() => {
+    jsonMock = jest.fn();
+    statusMock = jest.fn(() => ({ json: jsonMock }));
+    res = { status: statusMock };
+    next = jest.fn();
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.clearAllMocks();
+  })
   it("should call fetchAccountById and return 200 with serialized account", async () => {
     const currentDate = new Date();
     
@@ -167,6 +189,17 @@ describe("getAccount domain rule", () => {
 });
 
 describe("updateAccount domain rule", () => {
+  beforeEach(() => {
+    jsonMock = jest.fn();
+    statusMock = jest.fn(() => ({ json: jsonMock }));
+    res = { status: statusMock };
+    next = jest.fn();
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.clearAllMocks();
+  })
   it("should call updateAccountById and return 200 with serialized account", async () => {
     const currentDate = new Date();
     
@@ -207,6 +240,17 @@ describe("updateAccount domain rule", () => {
 });
 
 describe("deleteAccount domain rule", () => {
+  beforeEach(() => {
+    jsonMock = jest.fn();
+    statusMock = jest.fn(() => ({ json: jsonMock }));
+    res = { status: statusMock };
+    next = jest.fn();
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.clearAllMocks();
+  })
   it("should call deleteAccountById and return 200 with serialized account", async () => {
     const currentDate = new Date();
     
