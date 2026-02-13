@@ -7,8 +7,6 @@ export function serializeAccount(account: Account) {
     id: account.id.toString(),
     customer_id: account.customer_id.toString(),
     balance: account.balance.toString()
-    // customer_id: account.customer_id.toString(),
-    // balance: account.balance.toString()
   };
 }
 
@@ -20,7 +18,5 @@ export function serializeAccounts(accounts: Account[]) {
             id: account.id.toString(),
             customer_id: account.customer_id.toString(), 
             balance: account.balance.toString(),
-            // created_at: account.created_at?.toISOString(),
-            // updated_at: account.updated_at?.toISOString(),
         }));
 }
