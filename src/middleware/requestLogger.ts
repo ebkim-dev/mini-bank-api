@@ -9,7 +9,7 @@ export const requestLoggerMiddleware = (
   const startTime = process.hrtime.bigint();
   res.on("finish", () => {
     const endTime = process.hrtime.bigint();
-    const durationMs = Number(endTime - startTime) / 1_000_000; // nanoseconds to ms
+    const durationMs = Number(endTime - startTime) / 1_000_000;
 
     const traceId = res.locals.traceId as string | undefined;
 
