@@ -10,8 +10,6 @@ export enum AccountStatus {
 }
 
 export type AccountCreateInput = {
-    // POST /customers/:customerId/accounts 
-    // Maybe getting customer id from the route (NOT body) is a better way to do this?
     customer_id: string;
     type: AccountType;
     currency: string;
@@ -21,10 +19,6 @@ export type AccountCreateInput = {
 };
 
 export type AccountUpdateInput = {
-    // customer_id: string; <-- shouldn't be updated
-    type?: AccountType;
-    // currency?: string; <-- usually no updates
     nickname?: string;
-    // status?: AccountStatus; <-- deletion will update this
-    balance?: string;
+    status?: AccountStatus;
 };

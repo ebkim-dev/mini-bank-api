@@ -2,7 +2,7 @@ import express from 'express';
 import accountRouter from './routes/accountRouter';
 
 const app = express();
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 3000;
 
 // Middleware to parse JSON bodies
 app.use(express.json());

@@ -1,16 +1,8 @@
 
 import 'dotenv/config';
-// import PrismaPkg from '../generated/client.js';
 import { PrismaClient } from '../generated/client';
-// import { PrismaClient } from '@prisma/client';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-// import { PrismaMysql } from "@prisma/adapter-mysql";
 
-// const { PrismaClient } = PrismaPkg;
-
-// const adapter = new PrismaMariaDb({
-//   url: process.env.DATABASE_URL
-// });
 
 const adapter = new PrismaMariaDb({
   host: process.env.MYSQL_HOST !,

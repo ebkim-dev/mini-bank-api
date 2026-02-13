@@ -3,7 +3,7 @@ import { Prisma } from "../generated/client";
 
 import * as accountService from "../service/accountService";
 import { serializeAccount, serializeAccounts } from "../utils/serializeAccount";
-import { AccountCreateInput } from "../types/account";
+import { AccountCreateInput, AccountStatus } from "../types/account";
 
 import {
   BadRequestError,
@@ -15,17 +15,23 @@ import {
 import { ErrorCode } from "../types/errorCodes";
 
 // POST /accounts
-export async function createAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function createAccount(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
+    // TODO understand exactly what this line does
     const data = (req as any).validated?.body as AccountCreateInput;
-
     
+    // TODO shouldnt i check if data is malformed? see how i used to have it and compare
     if (!data) {
       throw BadRequestError(ErrorCode.EMPTY_BODY, "Request body is empty");
     }
 
     const newAccount = await accountService.insertAccount(data);
     res.status(201).json(serializeAccount(newAccount));
+
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2002") {
@@ -84,7 +90,7 @@ export async function getAccount(req: Request, res: Response, next: NextFunction
 export async function updateAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { id } = (req as any).validated.params as { id: string };
-    const data = (req as any).validated.body as {nickname?: string;status?: "ACTIVE" | "CLOSED";};
+    const data = (req as any).validated.body as {nickname?: string;status?: AccountStatus;};
 
     const updated = await accountService.updateAccountById(BigInt(id), data);
     res.status(200).json(serializeAccount(updated));
