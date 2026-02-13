@@ -32,7 +32,7 @@ export const createAccountBodySchema = z.object({
 
 export const updateAccountBodySchema = z
   .object({
-    nickname: z.string().max(100).optional(), // ✅ no null
+    nickname: z.string().max(100).optional(),
     status: z.enum(["ACTIVE", "CLOSED"]).optional(),
   })
   .strict()
