@@ -1,6 +1,5 @@
-// jest.config.js
 module.exports = {
-  preset: 'ts-jest',         // crucial for TS parsing
+  preset: 'ts-jest',
   testEnvironment: 'node',
-  testMatch: ['**/tests/**/*.test.ts'], // point to your test files
+  testMatch: ['**/tests/**/*.test.ts'],
 };

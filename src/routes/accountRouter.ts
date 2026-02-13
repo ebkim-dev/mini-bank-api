@@ -17,28 +17,24 @@ import {
 
 const router = Router();
 
-// POST /accounts
 router.post(
   "/",
   validate(createAccountBodySchema, "body"),
   createAccount
 );
 
-// GET /accounts?customerId=...
 router.get(
   "/",
   validate(getAccountsQuerySchema, "query"),
   getAccountsByCustomerId
 );
 
-// GET /accounts/:id
 router.get(
   "/:id",
   validate(accountIdParamsSchema, "params"),
   getAccount
 );
 
-// PUT /accounts/:id
 router.put(
   "/:id",
   validate(accountIdParamsSchema, "params"),
@@ -46,7 +42,6 @@ router.put(
   updateAccount
 );
 
-// POST /accounts/:id/close
 router.post(
   "/:id/close",
   validate(accountIdParamsSchema, "params"),
