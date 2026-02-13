@@ -30,33 +30,43 @@ MiniBankAPI is a Node.js + TypeScript REST API built incrementally in epics.
 # Project Structure
 
 ```
-src/
-  app.ts
-  server.ts
-  config/
-    env.ts
-  db/
-    prismaClient.ts
-  routes/
-    health.routes.ts
-    accountRouter.ts
-  controller/
-    accountController.ts
-  service/
-    accountService.ts
-  validation/
-    accountSchemas.ts
-  middleware/
-    traceId.ts
-    requestLogger.ts
-    validate.ts
-    errorHandler.ts
-  utils/
-    error.ts
-    logger.ts
-    serializeAccount.ts
-tests/
-postman/
+MiniBankAPI/
+│
+├── src/
+│   ├── app.ts
+│   ├── server.ts
+│   ├── config/
+│   │   └── env.ts
+│   ├── db/
+│   │   └── prismaClient.ts
+│   ├── routes/
+│   │   ├── health.routes.ts
+│   │   └── accountRouter.ts
+│   ├── controller/
+│   │   └── accountController.ts
+│   ├── service/
+│   │   └── accountService.ts
+│   ├── validation/
+│   │   └── accountSchemas.ts
+│   ├── middleware/
+│   │   ├── traceId.ts
+│   │   ├── requestLogger.ts
+│   │   ├── validate.ts
+│   │   └── errorHandler.ts
+│   └── utils/
+│       ├── error.ts
+│       ├── logger.ts
+│       └── serializeAccount.ts
+│
+├── postman/
+│   ├── epic1.json
+│   └── local_env.json
+│
+├── tests/
+├── package.json
+├── tsconfig.json
+├── README.md
+└── .env.example
 ```
 
 ---
@@ -268,6 +278,70 @@ Update account (allowed fields only).
 Close account.
 
 ---
+
+# Postman Collection (Epic 1)
+
+Postman files are located in:
+
+```
+postman/
+```
+
+## Files
+
+- `epic1.json`
+- `local_env.json`
+
+---
+
+## How to Import
+
+1. Open Postman
+2. Click **Import**
+3. Import both:
+   - Collection file
+   - Environment file
+4. Select environment: **MiniBankAPI - Local**
+
+---
+
+## Environment Variables
+
+| Variable | Purpose |
+|-----------|----------|
+| baseUrl | API base URL (e.g., http://localhost:3000) |
+| customerId | Used for GET /accounts |
+| accountId | Used for GET/PUT/CLOSE |
+
+---
+
+## Running Collection
+
+1. Start server (`npm run dev`)
+2. Select environment
+3. Run requests in order:
+   - Health
+   - Create Account
+   - Get Accounts
+   - Get Account
+   - Update Account
+   - Close Account
+
+---
+
+## Automated ID Capture (Recommended)
+
+In "Create Account" request → Tests tab:
+
+```javascript
+let jsonData = pm.response.json();
+pm.environment.set("accountId", jsonData.id);
+```
+
+This automatically saves the created account ID for subsequent requests.
+
+---
+
 
 # Running Tests
 
