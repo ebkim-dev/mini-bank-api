@@ -10,9 +10,6 @@ const adapter = new PrismaMariaDb({
   password: process.env.MYSQL_PASSWORD !,
   database: process.env.MYSQL_DB !,
   port: Number(process.env.MYSQL_PORT) !,
-
-  // talk to mayank
-  // --> cloudside config. ok to proceed or not?
   ssl: { rejectUnauthorized: false },
   connectionLimit: 5,
 });

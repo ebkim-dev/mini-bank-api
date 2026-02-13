@@ -26,7 +26,6 @@ export const createApp = (): Application => {
   app.use(requestLoggerMiddleware);
 
   // === Register routes here ===
-
   app.use("/health", healthRouter);
   app.use("/accounts", accountRouter);
 
