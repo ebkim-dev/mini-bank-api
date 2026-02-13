@@ -15,18 +15,23 @@ import {
 import { ErrorCode } from "../types/errorCodes";
 
 // POST /accounts
-export async function createAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function createAccount(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
+    // TODO understand exactly what this line does
     const data = (req as any).validated?.body as AccountCreateInput;
     
+    // TODO shouldnt i check if data is malformed? see how i used to have it and compare
     if (!data) {
       throw BadRequestError(ErrorCode.EMPTY_BODY, "Request body is empty");
     }
 
     const newAccount = await accountService.insertAccount(data);
-    console.log(typeof newAccount.customer_id);
-
     res.status(201).json(serializeAccount(newAccount));
+
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2002") {
