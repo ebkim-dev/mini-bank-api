@@ -14,7 +14,6 @@ import {
 
 import { ErrorCode } from "../types/errorCodes";
 
-// POST /accounts
 export async function createAccount(
   req: Request, 
   res: Response, 
@@ -48,7 +47,6 @@ export async function createAccount(
   }
 }
 
-// GET /accounts?customerId=...
 export async function getAccountsByCustomerId(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { customerId } = (req as any).validated?.query as { customerId: string };
@@ -63,7 +61,6 @@ export async function getAccountsByCustomerId(req: Request, res: Response, next:
   }
 }
 
-// GET /accounts/:id
 export async function getAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { id } = (req as any).validated?.params as { id: string };
@@ -84,7 +81,6 @@ export async function getAccount(req: Request, res: Response, next: NextFunction
   }
 }
 
-// PUT /accounts/:id
 export async function updateAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { id } = (req as any).validated.params as { id: string };
@@ -105,7 +101,6 @@ export async function updateAccount(req: Request, res: Response, next: NextFunct
   }
 }
 
-// POST /accounts/:id/close
 export async function deleteAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { id } = (req as any).validated.params as { id: string };
