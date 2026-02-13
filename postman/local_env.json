@@ -1,0 +1,21 @@
+{
+  "name": "MiniBankAPI - Local",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "enabled": true
+    },
+    {
+      "key": "customerId",
+      "value": "1",
+      "enabled": true
+    },
+    {
+      "key": "accountId",
+      "value": "1",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}
