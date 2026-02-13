@@ -4,7 +4,6 @@ import { BadRequestError } from "../utils/error";
 const router = Router();
 
 router.get("/", (req: Request, res: Response) => {
-  // Optional: if you call /health?fail=true we simulate an error
   if (req.query.fail === "true") {
     throw BadRequestError("HEALTH_CHECK_FAILED", "Health check forced to fail");
   }

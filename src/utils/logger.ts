@@ -1,24 +1,10 @@
-// src/utils/logger.ts
-
-/**
- * Very simple logger abstraction over console.
- * The reason we wrap console.log is:
- *  - We can centralize formatting of log messages
- *  - Later we can replace this with a proper logger (winston/pino)
- *    without touching the rest of the code.
- */
-
 interface LogMeta {
   traceId?: string | undefined;
   [key: string]: unknown;
 }
 
-/**
- * Formats metadata as a JSON string for consistent logs.
- */
 const formatMeta = (meta?: LogMeta): string => {
   if (!meta) return "";
-  // Remove undefined values for cleaner logs
   const cleaned: Record<string, unknown> = {};
   Object.entries(meta).forEach(([key, value]) => {
     if (value !== undefined) {
