@@ -1,0 +1,127 @@
+{
+  "info": {
+    "name": "MiniBankAPI - Epic 1",
+    "_postman_id": "minibank-epic1-collection",
+    "description": "Epic 1 APIs - Health + Accounts",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Create Account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customer_id\": 1,\n  \"type\": \"SAVINGS\",\n  \"currency\": \"USD\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/accounts",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts"]
+        }
+      }
+    },
+    {
+      "name": "Get Accounts by Customer",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/accounts?customerId={{customerId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts"],
+          "query": [
+            {
+              "key": "customerId",
+              "value": "{{customerId}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Account by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Account (Valid)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nickname\": \"Primary Account\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Account (Invalid Field - Should Fail)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"balance\": 5000\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId}}"]
+        }
+      }
+    },
+    {
+      "name": "Close Account",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId}}/close",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId}}", "close"]
+        }
+      }
+    }
+  ]
+}

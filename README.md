@@ -1,93 +1,422 @@
 # MiniBankAPI
 
+MiniBankAPI is a Node.js + TypeScript REST API built incrementally in epics.
+
+**Epic 1** establishes the platform foundation and implements the Accounts module with:
+
+- Centralized error handling
+- Structured request + error logging
+- Input validation using Zod
+- MySQL integration using Prisma ORM
+- Clean layered architecture (routes → controller → service → db)
 
 
-## Getting started
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+---
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+# Tech Stack
 
-## Add your files
+- Node.js
+- TypeScript
+- Express (v5)
+- MySQL
+- Prisma ORM (no migrations in Epic 1)
+- Zod (validation)
+- Jest + Supertest (testing)
+- SonarQube (static code analysis)
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+---
+
+# Project Structure
 
 ```
-cd existing_repo
-git remote add origin https://git.fdmgroup.com/Srey.Patel/minibankapi.git
-git branch -M main
-git push -uf origin main
+MiniBankAPI/
+│
+├── src/
+│   ├── app.ts
+│   ├── server.ts
+│   ├── config/
+│   │   └── env.ts
+│   ├── db/
+│   │   └── prismaClient.ts
+│   ├── routes/
+│   │   ├── health.routes.ts
+│   │   └── accountRouter.ts
+│   ├── controller/
+│   │   └── accountController.ts
+│   ├── service/
+│   │   └── accountService.ts
+│   ├── validation/
+│   │   └── accountSchemas.ts
+│   ├── middleware/
+│   │   ├── traceId.ts
+│   │   ├── requestLogger.ts
+│   │   ├── validate.ts
+│   │   └── errorHandler.ts
+│   └── utils/
+│       ├── error.ts
+│       ├── logger.ts
+│       └── serializeAccount.ts
+│
+├── postman/
+│   ├── epic1.json
+│   └── local_env.json
+│
+├── tests/
+├── package.json
+├── tsconfig.json
+├── README.md
+└── .env.example
 ```
 
-## Integrate with your tools
+---
 
-- [ ] [Set up project integrations](https://git.fdmgroup.com/Srey.Patel/minibankapi/-/settings/integrations)
+# Setup Instructions
 
-## Collaborate with your team
+## 1. Install dependencies
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+```bash
+npm install
+```
 
-## Test and Deploy
+---
 
-Use the built-in continuous integration in GitLab.
+## 2. Configure Environment Variables
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+Create a `.env` file in the project root:
 
-***
+```env
+MYSQL_HOST=localhost
+MYSQL_USER=root
+MYSQL_PASSWORD=your_password
+MYSQL_DB=minibank
+MYSQL_PORT=3306
 
-# Editing this README
+PORT=3000
+NODE_ENV=development
+```
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### Environment Variables Explained
 
-## Suggestions for a good README
+| Variable | Description |
+|----------|-------------|
+| MYSQL_HOST | MySQL server hostname |
+| MYSQL_USER | MySQL username |
+| MYSQL_PASSWORD | MySQL password |
+| MYSQL_DB | Database name |
+| MYSQL_PORT | MySQL port |
+| PORT | Application port |
+| NODE_ENV | Environment (development / production) |
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+> Do not commit `.env` to version control.
 
-## Name
-Choose a self-explaining name for your project.
+---
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+# Database Setup (Epic 1)
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+Since migrations are excluded in Epic 1:
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+1. Manually create database:
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+```sql
+CREATE DATABASE minibank;
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+2. Ensure required tables exist according to Prisma schema.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+---
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+# Running the Application
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+## Development Mode
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+```bash
+npm run dev
+```
 
-## License
-For open source projects, say how it is licensed.
+## Build
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+```bash
+npm run build
+```
+
+## Start Production Build
+
+```bash
+npm run start
+```
+
+Application runs at:
+
+```
+http://localhost:3000
+```
+
+---
+
+# Logging
+
+## Request Logging Includes:
+
+- traceId (generated per request)
+- HTTP method
+- path
+- status code
+- duration (ms)
+
+Implemented via:
+
+- `traceIdMiddleware`
+- `requestLoggerMiddleware`
+
+---
+
+## Error Logging Includes:
+
+- traceId
+- error code
+- HTTP status
+- request path
+- request method
+
+Handled inside `errorHandler.ts`.
+
+---
+
+## Security Logging Rules
+
+The following are NEVER logged:
+
+- passwords
+- tokens
+- authorization headers
+- raw request bodies
+
+Only safe metadata is logged.
+
+---
+
+# Centralized Error Handling
+
+All errors follow a consistent response structure:
+
+```json
+{
+  "traceId": "uuid",
+  "code": "ERROR_CODE",
+  "message": "Human readable message",
+  "details": {}
+}
+```
+
+## How It Works
+
+1. Controllers throw or forward `AppError`
+2. `notFoundHandler` converts unknown routes to 404
+3. `errorHandler` normalizes all errors
+4. Response is returned in standard format
+
+Available error helpers:
+
+- BadRequestError
+- NotFoundError
+- ConflictError
+- UnauthorizedError
+- InternalServerError
+
+---
+
+# Validation (Zod)
+
+Zod schemas validate:
+
+- Route params
+- Query parameters
+- Request body
+
+Validation failures return:
+
+- `400 VALIDATION_ERROR`
+- Includes `details.issues[]`
+
+PUT `/accounts/:id` enforces strict allowlist validation.
+
+---
+
+# API Endpoints (Epic 1)
+
+## Health
+
+### GET /health
+
+Returns service health status.
+
+---
+
+## Accounts
+
+### POST /accounts
+
+Create a new account.
+
+### GET /accounts?customerId={id}
+
+List accounts for a customer.
+
+### GET /accounts/:id
+
+Get account by ID.
+
+### PUT /accounts/:id
+
+Update account (allowed fields only).
+
+### POST /accounts/:id/close
+
+Close account.
+
+---
+
+# Postman Collection (Epic 1)
+
+Postman files are located in:
+
+```
+postman/
+```
+
+## Files
+
+- `epic1.json`
+- `local_env.json`
+
+---
+
+## How to Import
+
+1. Open Postman
+2. Click **Import**
+3. Import both:
+   - Collection file
+   - Environment file
+4. Select environment: **MiniBankAPI - Local**
+
+---
+
+## Environment Variables
+
+| Variable | Purpose |
+|-----------|----------|
+| baseUrl | API base URL (e.g., http://localhost:3000) |
+| customerId | Used for GET /accounts |
+| accountId | Used for GET/PUT/CLOSE |
+
+---
+
+## Running Collection
+
+1. Start server (`npm run dev`)
+2. Select environment
+3. Run requests in order:
+   - Health
+   - Create Account
+   - Get Accounts
+   - Get Account
+   - Update Account
+   - Close Account
+
+---
+
+## Automated ID Capture (Recommended)
+
+In "Create Account" request → Tests tab:
+
+```javascript
+let jsonData = pm.response.json();
+pm.environment.set("accountId", jsonData.id);
+```
+
+This automatically saves the created account ID for subsequent requests.
+
+---
+
+
+# Running Tests
+
+Run all tests:
+
+```bash
+npx jest
+```
+
+<!-- Run with coverage:
+
+```bash
+npm run test:coverage
+``` -->
+
+Tests include:
+- Unit tests
+- Integration tests 
+
+---
+
+<!-- # Running Sonar Scan
+
+## Configure `sonar-project.properties`
+
+Example:
+
+```
+sonar.projectKey=minibankapi
+sonar.projectName=MiniBankAPI
+sonar.sources=src
+sonar.tests=tests
+sonar.typescript.lcov.reportPaths=coverage/lcov.info
+```
+
+## Run Sonar Scanner
+
+```bash
+sonar-scanner
+```
+
+Or if configured via npm:
+
+```bash
+npm run sonar
+```
+
+--- -->
+
+# Epic 1 Completion Checklist
+
+| Requirement | Status |
+|-------------|--------|
+| Express foundation | ✅ |
+| Logging implemented | ✅ |
+| Centralized error handling | ✅ |
+| Zod validation | ✅ |
+| Accounts endpoints | ✅ |
+| .env documented | ✅ |
+| Tests | In progress |
+| Sonar integration | Configurable |
+
+---
+
+# Next Epic
+
+Epic 2 will introduce:
+
+- Transactions
+- Balance updates
+- Idempotency handling
+- Increased test coverage
+
+---
+
+# Author
+
+MiniBankAPI – Backend Engineering Project (Epic-based implementation).
