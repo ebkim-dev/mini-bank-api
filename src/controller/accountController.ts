@@ -21,10 +21,8 @@ export async function createAccount(
   next: NextFunction
 ): Promise<void> {
   try {
-    // TODO understand exactly what this line does
     const data = (req as any).validated?.body as AccountCreateInput;
     
-    // TODO shouldnt i check if data is malformed? see how i used to have it and compare
     if (!data) {
       throw BadRequestError(ErrorCode.EMPTY_BODY, "Request body is empty");
     }
@@ -95,7 +93,6 @@ export async function updateAccount(req: Request, res: Response, next: NextFunct
     const updated = await accountService.updateAccountById(BigInt(id), data);
     res.status(200).json(serializeAccount(updated));
   } catch (err) {
-    // ✅ Prisma not found -> 404
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
       return next(NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { accountId: req.params.id }));
     }
