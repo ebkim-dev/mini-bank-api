@@ -1,0 +1,115 @@
+components:
+  schemas:
+    User:
+      required:
+        - username
+        - password_hash
+        - role
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Auto-incremented user ID
+        username:
+          type: string
+          maxLength: 100
+          description: Unique username
+        password_hash:
+          type: string
+          maxLength: 255
+          description: Hashed password
+        role:
+          type: string
+          enum:
+            - ADMIN
+            - STANDARD
+    Customer:
+      required:
+        - first_name
+        - last_name
+        - email
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Auto-incremented customer ID
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        email:
+          type: string
+          maxLength: 150
+          description: Unique email address
+        phone:
+          type: string
+          maxLength: 30
+          nullable: true
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Account'
+    Account:
+      required:
+        - customer_id
+        - type
+        - currency
+      type: object
+      properties:
+        id:
+          type: string
+          description: Auto-incremented account ID
+        customer_id:
+          type: string
+          example: "321"
+        type:
+          type: string
+          example: CHECKING
+          enum:
+            - CHECKING
+            - SAVINGS
+        currency:
+          type: string
+          maxLength: 3
+          description: ISO currency code
+        nickname:
+          type: string
+          maxLength: 100
+          nullable: true
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - CLOSED
+        balance:
+          type: number
+          format: double
+          description: Current account balance
+    AccountUpdateRequest:
+      type: object
+      properties:
+        nickname:
+          type: string
+          maxLength: 100
+          nullable: true
+          example: alice
+        status:
+          type: string
+          example: ACTIVE
+          enum:
+            - ACTIVE
+            - CLOSED
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        type:
+          type: string
+        message:
+          type: string

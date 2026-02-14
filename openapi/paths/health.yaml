@@ -1,0 +1,10 @@
+paths:  
+  /health:
+    get:
+      tags:
+        - health
+      summary: Health check for service
+      description: Returns the status code 200 on success.
+      responses:
+        200:
+          description: Service is healthy
