@@ -1,5 +1,5 @@
 import { z } from "zod";
-
+import { AccountType, AccountStatus } from "../types/account";
 
 const zBigIntFromAny = z.preprocess((val) => {
   if (typeof val === "bigint") return val;
@@ -8,32 +8,30 @@ const zBigIntFromAny = z.preprocess((val) => {
   return val; 
 }, z.bigint());
 
-
 export const accountIdParamsSchema = z.object({
   id: z.string().min(1).regex(/^[0-9]+$/, "id must be a numeric string"),
 });
-
 
 export const getAccountsQuerySchema = z.object({
   customerId: z.string().min(1).regex(/^[0-9]+$/, "customerId must be a numeric string"),
 });
 
-
 export const createAccountBodySchema = z.object({
   customer_id: zBigIntFromAny,
-  type: z.enum(["CHECKING", "SAVINGS"]),
+  type: z.enum(AccountType),
   currency: z
     .string()
     .length(3, "currency must be exactly 3 characters")
     .transform((s) => s.toUpperCase()),
   nickname: z.string().max(100).optional().nullable(),
+  status: z.enum(AccountStatus).optional().default(AccountStatus.ACTIVE),
+  balance: z.string().optional().transform((x) => parseFloat(x ?? "0")),
 });
-
 
 export const updateAccountBodySchema = z
   .object({
-    nickname: z.string().max(100).optional(),
-    status: z.enum(["ACTIVE", "CLOSED"]).optional(),
+    nickname: z.string().max(100).optional().nullable(),
+    status: z.enum(AccountStatus).optional(),
   })
   .strict()
   .refine((obj) => Object.keys(obj).length > 0, {

@@ -10,7 +10,7 @@ import * as accountController from "../../src/controller/accountController";
 import {
   serializeAccount,
   serializeAccounts,
-} from "../../src/utils/serializeAccount";
+} from "../../src/utils/helpers";
 import { Decimal } from "@prisma/client/runtime/client";
 
 let res: any;
@@ -19,14 +19,12 @@ let jsonMock: jest.Mock;
 let statusMock: jest.Mock;
 
 describe("createAccount domain rule", () => {
-
   beforeEach(() => {
     jsonMock = jest.fn();
     statusMock = jest.fn(() => ({ json: jsonMock }));
     res = { status: statusMock };
     next = jest.fn();
   })
-
   afterEach(() => {
     jest.restoreAllMocks();
     jest.clearAllMocks();
@@ -85,7 +83,9 @@ describe("createAccount domain rule", () => {
     jest.spyOn(accountService, "insertAccount").mockResolvedValue(mockAccount);
 
     const req: any = {
-      validated: {},
+      validated: {
+        body: undefined
+      },
     };
 
     await accountController.createAccount(req, res, next);
@@ -103,11 +103,11 @@ describe("getAccountsByCustomerId domain rule", () => {
     res = { status: statusMock };
     next = jest.fn();
   })
-
   afterEach(() => {
     jest.restoreAllMocks();
     jest.clearAllMocks();
   })
+
   it("should call fetchAccountsByCustomerId and return 200 with serialized account", async () => {
     const currentDate = new Date();
     
@@ -128,14 +128,14 @@ describe("getAccountsByCustomerId domain rule", () => {
     const req: any = {
       validated: {
         query: {
-          customerId: 1n
+          customer_id: 1n
         }
       },
     };
 
     await accountController.getAccountsByCustomerId(req, res, next);
 
-    expect(accountService.fetchAccountsByCustomerId).toHaveBeenCalledWith(req.validated.query.customerId);
+    expect(accountService.fetchAccountsByCustomerId).toHaveBeenCalledWith(req.validated.query.customer_id);
     expect(statusMock).toHaveBeenCalledWith(200);
     expect(jsonMock).toHaveBeenCalledWith(serializeAccounts([mockAccount]));
     expect(next).not.toHaveBeenCalled();

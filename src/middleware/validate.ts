@@ -19,7 +19,6 @@ export function validate(
     try {
       const parsed = schema.parse(req[source]);
 
-      
       (req as any).validated = (req as any).validated || {};
       (req as any).validated[source] = parsed;
 
