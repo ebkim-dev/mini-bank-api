@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import * as accountService from "../service/accountService";
 import { serializeAccount, serializeAccounts, getValidated } from "../utils/helpers";
 import { AccountCreateInput, AccountUpdateInput } from "../types/account";
-import { NotFoundError } from "../utils/error"
+import { NotFoundError } from "../error/error"
 import { ErrorCode } from "../types/errorCodes"
 
 export async function createAccount(

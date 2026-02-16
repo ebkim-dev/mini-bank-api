@@ -6,7 +6,7 @@ import type { Account } from '../generated/client';
 import prismaClient from '../db/prismaClient'
 import { Prisma } from "../generated/client";
 import { AccountStatus } from '../types/account';
-import { NotFoundError } from "../utils/error";
+import { NotFoundError } from "../error/error";
 import { ErrorCode } from "../types/errorCodes";
 
 export async function insertAccount(

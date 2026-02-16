@@ -1,7 +1,7 @@
 
 import { NextFunction, Request, Response } from "express";
-import { AppError, InternalServerError, NotFoundError } from "../utils/error";
-import { logError } from "../utils/logger";
+import { AppError, InternalServerError, NotFoundError } from "../error/error";
+import { logger } from "../logging/logger";
 
 export const notFoundHandler = (req: Request, res: Response, next: NextFunction): void => {
   const err = NotFoundError("ROUTE_NOT_FOUND", `Route ${req.method} ${req.originalUrl} not found`);
@@ -26,12 +26,10 @@ export const errorHandler = (
     });
   }
 
-  logError(appError.message, {
+  logger.error(appError as any, {
     traceId,
-    code: appError.code,
-    statusCode: appError.statusCode,
     path: req.originalUrl,
-    method: req.method
+    method: req.method,
   });
 
   const errorResponse = {
