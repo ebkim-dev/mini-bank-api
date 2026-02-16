@@ -1,7 +1,7 @@
 
 import type { Account } from '../generated/client';
 import type { Request } from "express";
-import { InternalServerError } from './error';
+import { InternalServerError } from '../error/error';
 
 export function serializeAccount(account: Account) {
   return {

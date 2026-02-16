@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { BadRequestError } from "../utils/error";
+import { BadRequestError } from "../error/error";
 
 const router = Router();
 
