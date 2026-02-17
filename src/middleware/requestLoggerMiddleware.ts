@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { logInfo } from "../utils/logger";
+import { logger } from "../logging/logger";
 
 export const requestLoggerMiddleware = (
   req: Request,
@@ -13,7 +13,7 @@ export const requestLoggerMiddleware = (
 
     const traceId = res.locals.traceId as string | undefined;
 
-    logInfo("HTTP request completed", {
+    logger.info("HTTP request completed", {
       traceId,
       method: req.method,
       path: req.originalUrl,

@@ -1,0 +1,135 @@
+paths:
+  /accounts:
+    post:
+      tags:
+        - accounts
+      summary: Create a new account
+      description: Creates a new account for a customer. Returns the account data on success.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+      responses:
+        '201':
+          description: Created new account
+          content:
+            application/json:
+              example:
+                id: "123"
+                customer_id: "321"
+                type: SAVINGS
+        '400':
+          description: Empty or malformed body
+    get:
+      tags:
+        - accounts
+      summary: Get accounts by customer ID
+      description: Retrieve all accounts for a customer. Returns the array of retrieved accounts on success.
+      parameters:
+        - in: query
+          name: customerId
+          schema:
+            type: string
+            format: int64
+          description: ID of the customer whose accounts are to be fetched
+          example: "321"
+      responses:
+        '200':
+          description: List of accounts for the customer
+          content: 
+            application/json:
+              example:
+                - id: "123"
+                  customer_id: "321"
+                  type: CHECKING
+                - id: "234"
+                  customer_id: "321"
+                  type: SAVINGS
+        '400':
+          description: Invalid customer ID passed
+        '404':
+          description: Customer not found
+  /accounts/{accountId}:
+    get:
+      tags:
+        - accounts
+      summary: Fetch account by account ID
+      description: Retrieve an account given its account ID. Returns the retrieved account on success.
+      parameters:
+        - name: accountId
+          in: path
+          description: ID of account that needs to be fetched
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': 
+          description: Retrieved account given account ID
+          content: 
+            application/json:
+              example:
+                id: "123"
+                customer_id: "321"
+                type: CHECKING
+        '400': 
+          description: Invalid account ID passed
+        '404': 
+          description: Account not found
+    put:
+      tags:
+        - accounts
+      summary: Update account by account ID
+      description: Update an account given its account ID and new values. Returns the updated account on success.
+      parameters:
+        - name: accountId
+          in: path
+          description: ID of account that needs to be updated
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountUpdateRequest'
+      responses:
+        '200':
+          description: Updated account given account ID and new values
+          content: 
+            application/json:
+              example:
+                id: "123"
+                customer_id: "321"
+                type: CHECKING
+        '400': 
+          description: Invalid account ID or body passed
+        '404': 
+          description: Account not found
+  /accounts/{accountId}/close:    
+    post:
+      tags:
+        - accounts
+      summary: Close the given account.
+      description: Marks the given account as closed. Returns the closed account on success.
+      parameters:
+        - name: accountId
+          in: path
+          description: ID of account that needs to be closed
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated account given account ID and new values
+          content: 
+            application/json:
+              example:
+                id: "123"
+                customer_id: "321"
+                type: CHECKING
+                status: CLOSED
+        '400':
+          description: Invalid account ID passed

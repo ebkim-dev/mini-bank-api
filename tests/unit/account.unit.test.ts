@@ -1,4 +1,3 @@
-import { insertAccount } from "../../src/service/accountService";
 import { 
   AccountType,
   AccountStatus,
@@ -10,42 +9,55 @@ import * as accountController from "../../src/controller/accountController";
 import {
   serializeAccount,
   serializeAccounts,
-} from "../../src/utils/serializeAccount";
+} from "../../src/utils/helpers";
 import { Decimal } from "@prisma/client/runtime/client";
 
-let res: any;
 let next: jest.Mock;
 let jsonMock: jest.Mock;
 let statusMock: jest.Mock;
+let res: any;
 
-describe("createAccount domain rule", () => {
+const mockAccount1 = {
+  id: 1n,
+  customer_id: 1n,
+  type: AccountType.SAVINGS,
+  currency: "USD",
+  nickname: "abcdefg",
+  status: AccountStatus.ACTIVE,
+  balance: new Decimal(0),
+}
 
-  beforeEach(() => {
-    jsonMock = jest.fn();
-    statusMock = jest.fn(() => ({ json: jsonMock }));
-    res = { status: statusMock };
-    next = jest.fn();
-  })
+const mockAccount2 = {
+  id: 2n,
+  customer_id: 1n,
+  type: AccountType.CHECKING,
+  currency: "USD",
+  nickname: "qwerty",
+  status: AccountStatus.ACTIVE,
+  balance: new Decimal(0),
+};
 
-  afterEach(() => {
-    jest.restoreAllMocks();
-    jest.clearAllMocks();
-  })
+beforeEach(() => {
+  next = jest.fn();
+  jsonMock = jest.fn();
+  statusMock = jest.fn(() => ({ json: jsonMock }));
+  res = { status: statusMock };
+})
 
+afterEach(() => {
+  jest.restoreAllMocks();
+  jest.clearAllMocks();
+})
+
+
+describe("createAccount controller", () => {
   it("should call insertAccount and return 201 with serialized account", async () => {
     const currentDate = new Date();
-    
     const mockAccount = {
-      id: 1n,
-      customer_id: 1n,
-      type: AccountType.SAVINGS,
-      currency: "USD",
-      nickname: "abcdefg",
-      status: AccountStatus.ACTIVE,
-      balance: new Decimal(0),
+      ...mockAccount1,
       created_at: currentDate,
       updated_at: currentDate,
-    };
+    }
 
     jest.spyOn(accountService, "insertAccount").mockResolvedValue(mockAccount);
 
@@ -67,63 +79,57 @@ describe("createAccount domain rule", () => {
     expect(next).not.toHaveBeenCalled();
   });
   
-  it("should call insertAccount with empty body and return 400", async () => {
-    const currentDate = new Date();
-    
-    const mockAccount = {
-      id: 1n,
-      customer_id: 1n,
-      type: AccountType.SAVINGS,
-      currency: "USD",
-      nickname: "abcdefg",
-      status: AccountStatus.ACTIVE,
-      balance: new Decimal(0),
-      created_at: currentDate,
-      updated_at: currentDate,
-    };
-
-    jest.spyOn(accountService, "insertAccount").mockResolvedValue(mockAccount);
+  it("should call next when service throws", async () => {
+    const error = new Error("Service encountered an error");
+    jest.spyOn(accountService, "insertAccount").mockRejectedValue(error);
 
     const req: any = {
-      validated: {},
+      validated: { body: { mock: "mockInput" } },
     };
 
     await accountController.createAccount(req, res, next);
 
     expect(statusMock).not.toHaveBeenCalled();
-    expect(accountService.insertAccount).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalledTimes(1);
   });
 });
 
-describe("getAccountsByCustomerId domain rule", () => {
-  beforeEach(() => {
-    jsonMock = jest.fn();
-    statusMock = jest.fn(() => ({ json: jsonMock }));
-    res = { status: statusMock };
-    next = jest.fn();
-  })
+describe("getAccountsByCustomerId controller", () => {
+  it("should call fetchAccountsByCustomerId and return 200 with empty array if no accounts are found", async () => {
+    jest.spyOn(accountService, "fetchAccountsByCustomerId")
+      .mockResolvedValue([]);
 
-  afterEach(() => {
-    jest.restoreAllMocks();
-    jest.clearAllMocks();
-  })
-  it("should call fetchAccountsByCustomerId and return 200 with serialized account", async () => {
-    const currentDate = new Date();
-    
-    const mockAccount = {
-      id: 1n,
-      customer_id: 1n,
-      type: AccountType.SAVINGS,
-      currency: "USD",
-      nickname: "abcdefg",
-      status: AccountStatus.ACTIVE,
-      balance: new Decimal(0),
-      created_at: currentDate,
-      updated_at: currentDate,
+    const req: any = {
+      validated: {
+        query: {
+          customerId: 9999999n
+        }
+      },
     };
 
-    jest.spyOn(accountService, "fetchAccountsByCustomerId").mockResolvedValue([mockAccount]);
+    await accountController.getAccountsByCustomerId(req, res, next);
+
+    expect(accountService.fetchAccountsByCustomerId).toHaveBeenCalledWith(req.validated.query.customerId);
+    expect(statusMock).toHaveBeenCalledWith(200);
+    expect(jsonMock).toHaveBeenCalledWith(serializeAccounts([]));
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("should call fetchAccountsByCustomerId and return 200 with an array of serialized accounts", async () => {
+    const currentDate = new Date();
+    const datedMockAccount1 = {
+      ...mockAccount1,
+      created_at: currentDate,
+      updated_at: currentDate,
+    }
+    const datedMockAccount2 = {
+      ...mockAccount2,
+      created_at: currentDate,
+      updated_at: currentDate,
+    }
+
+    jest.spyOn(accountService, "fetchAccountsByCustomerId")
+      .mockResolvedValue([datedMockAccount1, datedMockAccount2]);
 
     const req: any = {
       validated: {
@@ -137,23 +143,29 @@ describe("getAccountsByCustomerId domain rule", () => {
 
     expect(accountService.fetchAccountsByCustomerId).toHaveBeenCalledWith(req.validated.query.customerId);
     expect(statusMock).toHaveBeenCalledWith(200);
-    expect(jsonMock).toHaveBeenCalledWith(serializeAccounts([mockAccount]));
+    expect(jsonMock).toHaveBeenCalledWith(serializeAccounts([datedMockAccount1, datedMockAccount2]));
     expect(next).not.toHaveBeenCalled();
+  });
+  
+  it("should call next when service throws", async () => {
+    const error = new Error("Service encountered an error");
+    jest.spyOn(accountService, "fetchAccountsByCustomerId")
+      .mockRejectedValue(error);
+
+    const req: any = {
+      validated: { body: { customerId: 9999999n } },
+    };
+
+    await accountController.getAccountsByCustomerId(req, res, next);
+
+    expect(statusMock).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
   });
 });
 
-describe("getAccount domain rule", () => {
-  beforeEach(() => {
-    jsonMock = jest.fn();
-    statusMock = jest.fn(() => ({ json: jsonMock }));
-    res = { status: statusMock };
-    next = jest.fn();
-  })
+// ============== Continue from here ==============
 
-  afterEach(() => {
-    jest.restoreAllMocks();
-    jest.clearAllMocks();
-  })
+describe("getAccount controller", () => {
   it("should call fetchAccountById and return 200 with serialized account", async () => {
     const currentDate = new Date();
     
@@ -188,18 +200,7 @@ describe("getAccount domain rule", () => {
   });
 });
 
-describe("updateAccount domain rule", () => {
-  beforeEach(() => {
-    jsonMock = jest.fn();
-    statusMock = jest.fn(() => ({ json: jsonMock }));
-    res = { status: statusMock };
-    next = jest.fn();
-  })
-
-  afterEach(() => {
-    jest.restoreAllMocks();
-    jest.clearAllMocks();
-  })
+describe("updateAccount controller", () => {
   it("should call updateAccountById and return 200 with serialized account", async () => {
     const currentDate = new Date();
     
@@ -239,18 +240,7 @@ describe("updateAccount domain rule", () => {
   });
 });
 
-describe("deleteAccount domain rule", () => {
-  beforeEach(() => {
-    jsonMock = jest.fn();
-    statusMock = jest.fn(() => ({ json: jsonMock }));
-    res = { status: statusMock };
-    next = jest.fn();
-  })
-
-  afterEach(() => {
-    jest.restoreAllMocks();
-    jest.clearAllMocks();
-  })
+describe("deleteAccount controller", () => {
   it("should call deleteAccountById and return 200 with serialized account", async () => {
     const currentDate = new Date();
     

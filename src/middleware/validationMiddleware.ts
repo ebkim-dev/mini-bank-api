@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction, RequestHandler } from "express";
 import { ZodError, ZodSchema } from "zod";
-import { BadRequestError } from "../utils/error";
+import { BadRequestError } from "../error/error";
 import { ErrorCode } from "../types/errorCodes";
 
 function formatZodIssues(err: ZodError) {
@@ -19,7 +19,6 @@ export function validate(
     try {
       const parsed = schema.parse(req[source]);
 
-      
       (req as any).validated = (req as any).validated || {};
       (req as any).validated[source] = parsed;
 

@@ -1,10 +1,13 @@
 
 import express, { Application } from "express";
-import healthRouter from "./routes/health.routes";
 import { traceIdMiddleware } from "./middleware/traceId";
-import { requestLoggerMiddleware } from "./middleware/requestLogger";
+import { requestLoggerMiddleware } from "./middleware/requestLoggerMiddleware";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler";
+import healthRouter from "./routes/healthRouter";
 import accountRouter from './routes/accountRouter';
+
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 
 export const createApp = (): Application => {
   const app = express();
@@ -15,6 +18,7 @@ export const createApp = (): Application => {
 
   app.use("/health", healthRouter);
   app.use("/accounts", accountRouter);
+  app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
   app.use(notFoundHandler);
   app.use(errorHandler);
