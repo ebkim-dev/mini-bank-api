@@ -29,7 +29,7 @@ paths:
       description: Retrieve all accounts for a customer. Returns the array of retrieved accounts on success.
       parameters:
         - in: query
-          name: customer_id
+          name: customerId
           schema:
             type: string
             format: int64
@@ -45,7 +45,7 @@ paths:
                   customer_id: "321"
                   type: CHECKING
                 - id: "234"
-                  customer_id: "432"
+                  customer_id: "321"
                   type: SAVINGS
         '400':
           description: Invalid customer ID passed
