@@ -7,13 +7,13 @@ import {
   deleteAccount,
 } from "../controller/accountController";
 
-import { validate } from "../middleware/validate";
+import { validate } from "../middleware/validationMiddleware";
 import {
   createAccountBodySchema,
   updateAccountBodySchema,
   getAccountsQuerySchema,
   accountIdParamsSchema,
-} from "../validation/accountSchemas";
+} from "../validationSchemas/accountSchemas";
 
 const router = Router();
 

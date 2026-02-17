@@ -1,18 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
-import { Prisma } from "../generated/client";
-
 import * as accountService from "../service/accountService";
-import { serializeAccount, serializeAccounts } from "../utils/serializeAccount";
-import { AccountCreateInput, AccountStatus } from "../types/account";
-
-import {
-  BadRequestError,
-  NotFoundError,
-  ConflictError,
-  InternalServerError,
-} from "../utils/error";
-
-import { ErrorCode } from "../types/errorCodes";
+import { serializeAccount, serializeAccounts, getValidated } from "../utils/helpers";
+import { AccountCreateInput, AccountUpdateInput } from "../types/account";
 
 export async function createAccount(
   req: Request, 
@@ -20,102 +9,67 @@ export async function createAccount(
   next: NextFunction
 ): Promise<void> {
   try {
-    const data = (req as any).validated?.body as AccountCreateInput;
-    
-    if (!data) {
-      throw BadRequestError(ErrorCode.EMPTY_BODY, "Request body is empty");
-    }
-
-    const newAccount = await accountService.insertAccount(data);
+    const body = getValidated<AccountCreateInput>(req, "body");
+    const newAccount = await accountService.insertAccount(body);
     res.status(201).json(serializeAccount(newAccount));
-
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === "P2002") {
-        return next(
-          ConflictError(ErrorCode.DUPLICATE_RESOURCE, "Unique constraint violated", {
-            target: err.meta?.target,
-          })
-        );
-      }
-    }
-    return next(
-      err instanceof Error
-        ? err
-        : InternalServerError("Internal Server Error", { originalError: String(err) })
-    );
+    next(err);
   }
 }
 
-export async function getAccountsByCustomerId(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getAccountsByCustomerId(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
-    const { customerId } = (req as any).validated?.query as { customerId: string };
-    const accounts = await accountService.fetchAccountsByCustomerId(BigInt(customerId));
+    const { customerId } = getValidated<{ customerId: bigint }>(req, "query");
+    const accounts = await accountService.fetchAccountsByCustomerId(customerId);
     res.status(200).json(serializeAccounts(accounts));
   } catch (err) {
-    return next(
-      err instanceof Error
-        ? err
-        : InternalServerError("Internal Server Error", { originalError: String(err) })
-    );
+    next(err);
   }
 }
 
-export async function getAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getAccount(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
-    const { id } = (req as any).validated?.params as { id: string };
-
-    const account = await accountService.fetchAccountById(BigInt(id));
-
-    if (!account) {
-      throw NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { accountId: id });
-    }
-
+    const { id } = getValidated<{ id: bigint }>(req, "params");
+    const account = await accountService.fetchAccountById(id);
     res.status(200).json(serializeAccount(account));
   } catch (err) {
-    return next(
-      err instanceof Error
-        ? err
-        : InternalServerError("Internal Server Error", { originalError: String(err) })
-    );
+    next(err);
   }
 }
 
-export async function updateAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function updateAccount(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
-    const { id } = (req as any).validated.params as { id: string };
-    const data = (req as any).validated.body as {nickname?: string;status?: AccountStatus;};
-
-    const updated = await accountService.updateAccountById(BigInt(id), data);
+    const { id } = getValidated<{ id: bigint }>(req, "params");
+    const body = getValidated<AccountUpdateInput>(req, "body");
+    const updated = await accountService.updateAccountById(id, body);
     res.status(200).json(serializeAccount(updated));
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
-      return next(NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { accountId: req.params.id }));
-    }
-
-    return next(
-      err instanceof Error
-        ? err
-        : InternalServerError("Internal Server Error", { originalError: String(err) })
-    );
+    next(err);
   }
 }
 
-export async function deleteAccount(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function deleteAccount(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
   try {
-    const { id } = (req as any).validated.params as { id: string };
-
-    const closed = await accountService.deleteAccountById(BigInt(id));
+    const { id } = getValidated<{ id: bigint }>(req, "params");
+    const closed = await accountService.deleteAccountById(id);
     res.status(200).json(serializeAccount(closed));
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
-      return next(NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { accountId: req.params.id }));
-    }
-
-    return next(
-      err instanceof Error
-        ? err
-        : InternalServerError("Internal Server Error", { originalError: String(err) })
-    );
+    next(err);
   }
 }
