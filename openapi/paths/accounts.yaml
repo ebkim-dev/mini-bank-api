@@ -10,16 +10,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Account'
+              $ref: '#/components/schemas/AccountCreateRequest'
       responses:
         '201':
           description: Created new account
           content:
             application/json:
-              example:
-                id: "123"
-                customer_id: "321"
-                type: SAVINGS
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
         '400':
           description: Empty or malformed body
     get:
@@ -34,19 +32,33 @@ paths:
             type: string
             format: int64
           description: ID of the customer whose accounts are to be fetched
-          example: "321"
+          example: "1"
       responses:
         '200':
           description: List of accounts for the customer
           content: 
             application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
               example:
-                - id: "123"
-                  customer_id: "321"
+                - id: "1"
+                  customer_id: "1"
                   type: CHECKING
-                - id: "234"
-                  customer_id: "321"
-                  type: SAVINGS
+                  currency: USD
+                  nickname: alice
+                  status: ACTIVE
+                  balance: "0"
+                  created_at: "2026-02-17T12:00:00Z"
+                  updated_at: "2026-02-17T12:00:00Z"
+                - id: "2"
+                  customer_id: "1"
+                  type: SAVING
+                  currency: USD
+                  nickname: bob
+                  status: ACTIVE
+                  balance: "0"
+                  created_at: "2026-02-17T12:01:00Z"
+                  updated_at: "2026-02-17T12:01:00Z"
         '400':
           description: Invalid customer ID passed
         '404':
@@ -62,6 +74,7 @@ paths:
           in: path
           description: ID of account that needs to be fetched
           required: true
+          example: "1"
           schema:
             type: string
       responses:
@@ -69,10 +82,8 @@ paths:
           description: Retrieved account given account ID
           content: 
             application/json:
-              example:
-                id: "123"
-                customer_id: "321"
-                type: CHECKING
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
         '400': 
           description: Invalid account ID passed
         '404': 
@@ -87,6 +98,7 @@ paths:
           in: path
           description: ID of account that needs to be updated
           required: true
+          example: "1"
           schema:
             type: string
       requestBody:
@@ -100,10 +112,8 @@ paths:
           description: Updated account given account ID and new values
           content: 
             application/json:
-              example:
-                id: "123"
-                customer_id: "321"
-                type: CHECKING
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
         '400': 
           description: Invalid account ID or body passed
         '404': 
@@ -119,17 +129,15 @@ paths:
           in: path
           description: ID of account that needs to be closed
           required: true
+          example: "1"
           schema:
             type: string
       responses:
         '200':
-          description: Updated account given account ID and new values
+          description: Closed account given account ID
           content: 
             application/json:
-              example:
-                id: "123"
-                customer_id: "321"
-                type: CHECKING
-                status: CLOSED
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
         '400':
           description: Invalid account ID passed
