@@ -53,22 +53,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Account'
-    Account:
+    AccountCreateRequest:
       required:
         - customer_id
         - type
         - currency
       type: object
       properties:
-        id:
-          type: string
-          description: Auto-incremented account ID
         customer_id:
           type: string
-          example: "321"
         type:
           type: string
-          example: CHECKING
           enum:
             - CHECKING
             - SAVINGS
@@ -85,10 +80,12 @@ components:
           enum:
             - ACTIVE
             - CLOSED
-        balance:
-          type: number
-          format: double
-          description: Current account balance
+      example:
+        customer_id: "1"
+        type: CHECKING
+        currency: USD
+        nickname: alice
+        status: ACTIVE
     AccountUpdateRequest:
       type: object
       properties:
@@ -96,20 +93,52 @@ components:
           type: string
           maxLength: 100
           nullable: true
-          example: alice
         status:
           type: string
-          example: ACTIVE
           enum:
             - ACTIVE
             - CLOSED
+      example:
+        nickname: alice
+        status: ACTIVE
     ApiResponse:
       type: object
       properties:
-        code:
-          type: integer
-          format: int32
+        id:
+          type: string
+        customer_id:
+          type: string
         type:
           type: string
-        message:
+          enum:
+            - CHECKING
+            - SAVINGS
+        currency:
           type: string
+          maxLength: 3
+        nickname:
+          type: string
+          maxLength: 100
+          nullable: true
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - CLOSED
+        balance:
+          type: number
+          format: double
+        created_at:
+          type: string
+        updated_at:
+          type: string
+      example:
+        id: "1"
+        customer_id: "1"
+        type: CHECKING
+        currency: USD
+        nickname: alice
+        status: ACTIVE
+        balance: "0"
+        created_at: "2026-02-17T12:00:00Z"
+        updated_at: "2026-02-17T12:00:00Z"
