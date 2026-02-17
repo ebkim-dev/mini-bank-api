@@ -2,8 +2,6 @@ import type { Request, Response, NextFunction } from "express";
 import * as accountService from "../service/accountService";
 import { serializeAccount, serializeAccounts, getValidated } from "../utils/helpers";
 import { AccountCreateInput, AccountUpdateInput } from "../types/account";
-import { NotFoundError } from "../error/error"
-import { ErrorCode } from "../types/errorCodes"
 
 export async function createAccount(
   req: Request, 
@@ -25,11 +23,8 @@ export async function getAccountsByCustomerId(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { customer_id } = getValidated<{ customer_id: bigint }>(req, "query");
-    const accounts = await accountService.fetchAccountsByCustomerId(customer_id);
-    if (accounts.length === 0) {
-      throw NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Accounts not found", { customer_id });
-    }
+    const { customerId } = getValidated<{ customerId: bigint }>(req, "query");
+    const accounts = await accountService.fetchAccountsByCustomerId(customerId);
     res.status(200).json(serializeAccounts(accounts));
   } catch (err) {
     next(err);
