@@ -22,43 +22,43 @@ export async function fetchAccountsByCustomerId(
 }
 
 export async function fetchAccountById(
-  id: bigint
+  accountId: bigint
 ): Promise<Account> {
-  const account = await prismaClient.account.findUnique({ where: { id } });
+  const account = await prismaClient.account.findUnique({ where: { id: accountId } });
   if (!account) {
-    throw NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { id });
+    throw NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { accountId });
   }
   return account;
 }
 
 export async function updateAccountById(
-  id: bigint, 
+  accountId: bigint, 
   data: AccountUpdateInput
 ): Promise<Account> {
   try {
     return await prismaClient.account.update({
-      where: { id },
+      where: { id: accountId },
       data
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
-      throw NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { id });
+      throw NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { accountId });
     }
     throw err;
   }
 }
 
 export async function deleteAccountById(
-  id: bigint
+  accountId: bigint
 ): Promise<Account> {
   try {
     return await prismaClient.account.update({
-      where: { id },
+      where: { id: accountId },
       data: { status: AccountStatus.CLOSED }
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
-      throw NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { id });
+      throw NotFoundError(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found", { accountId });
     }
     throw err;
   }

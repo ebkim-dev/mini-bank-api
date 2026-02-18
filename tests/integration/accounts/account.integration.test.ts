@@ -1,4 +1,4 @@
-jest.mock("../../src/db/prismaClient", () => ({
+jest.mock("../../../src/db/prismaClient", () => ({
   account: {
     create: jest.fn(),
     findMany: jest.fn(),
@@ -8,32 +8,14 @@ jest.mock("../../src/db/prismaClient", () => ({
 }));
 
 import request from "supertest";
-import { createApp } from "../../src/app";
-import prisma from "../../src/db/prismaClient";
-import { AccountStatus } from "../../src/types/account";
-import { ErrorCode } from "../../src/types/errorCodes";
+import { createApp } from "../../../src/app";
+import prisma from "../../../src/db/prismaClient";
+import { AccountStatus } from "../../../src/types/account";
+import { ErrorCode } from "../../../src/types/errorCodes";
 
 const app = createApp();
 
 describe("POST /accounts", () => {
-  it("should reject empty body and return 400", async () => {
-    const mockAccount = {
-      id: "1",
-      customer_id: "1",
-      type: "SAVINGS",
-      currency: "USD",
-      created_at: new Date(),
-    };
-
-    (prisma.account.create as jest.Mock).mockResolvedValue(mockAccount);
-
-    const response = await request(app)
-      .post("/accounts")
-      .send();
-
-    expect(response.status).toBe(400);
-  });
-
   it("should create an account and return 201", async () => {
     const created_at = new Date();
 
@@ -65,6 +47,24 @@ describe("POST /accounts", () => {
       balance: "0",
     });
     expect(new Date(response.body.created_at)).toEqual(created_at);
+  });
+
+  it("should reject empty body and return 400", async () => {
+    const mockAccount = {
+      id: "1",
+      customer_id: "1",
+      type: "SAVINGS",
+      currency: "USD",
+      created_at: new Date(),
+    };
+
+    (prisma.account.create as jest.Mock).mockResolvedValue(mockAccount);
+
+    const response = await request(app)
+      .post("/accounts")
+      .send();
+
+    expect(response.status).toBe(400);
   });
 });
 

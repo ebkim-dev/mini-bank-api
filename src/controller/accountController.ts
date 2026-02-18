@@ -37,8 +37,8 @@ export async function getAccount(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = getValidated<{ id: bigint }>(req, "params");
-    const account = await accountService.fetchAccountById(id);
+    const { accountId } = getValidated<{ accountId: bigint }>(req, "params");
+    const account = await accountService.fetchAccountById(accountId);
     res.status(200).json(serializeAccount(account));
   } catch (err) {
     next(err);
@@ -51,9 +51,9 @@ export async function updateAccount(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = getValidated<{ id: bigint }>(req, "params");
+    const { accountId } = getValidated<{ accountId: bigint }>(req, "params");
     const body = getValidated<AccountUpdateInput>(req, "body");
-    const updated = await accountService.updateAccountById(id, body);
+    const updated = await accountService.updateAccountById(accountId, body);
     res.status(200).json(serializeAccount(updated));
   } catch (err) {
     next(err);
@@ -66,8 +66,8 @@ export async function deleteAccount(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = getValidated<{ id: bigint }>(req, "params");
-    const closed = await accountService.deleteAccountById(id);
+    const { accountId } = getValidated<{ accountId: bigint }>(req, "params");
+    const closed = await accountService.deleteAccountById(accountId);
     res.status(200).json(serializeAccount(closed));
   } catch (err) {
     next(err);

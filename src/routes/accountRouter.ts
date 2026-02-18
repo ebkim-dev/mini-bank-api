@@ -30,20 +30,20 @@ router.get(
 );
 
 router.get(
-  "/:id",
+  "/:accountId",
   validate(accountIdParamsSchema, "params"),
   getAccount
 );
 
 router.put(
-  "/:id",
+  "/:accountId",
   validate(accountIdParamsSchema, "params"),
   validate(updateAccountBodySchema, "body"),
   updateAccount
 );
 
 router.post(
-  "/:id/close",
+  "/:accountId/close",
   validate(accountIdParamsSchema, "params"),
   deleteAccount
 );
