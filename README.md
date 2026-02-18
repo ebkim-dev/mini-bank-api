@@ -1,5 +1,49 @@
 # MiniBankAPI
 
+## ⏳ Integration Test Cases To Write ⏳
+
+General
+* Unexpected server errors should return 500 (covered at error middleware level)
+
+POST /accounts 
+* Correct input ==> 201, new account is created and returned
+* Optional fields are missing ==> 201, new account is created and returned
+* A required field is missing ==> 400
+* Empty body is given ==> 400
+* Wrong field type is given (e.g. passing "abc" to customerId) ==> 400
+* Large input string is given (longer than maxLength) ==> 400
+
+GET /accounts?customerId=... 
+* 1+ account found for customerId ==> 200, array of found accounts is returned
+* No account found for customerId ==> 200, empty array is returned
+* customerId is missing ==> 400
+* customerId has invalid format ==> 400
+
+GET /accounts/:accountId
+* Account found for accountId ==> 200, account is returned
+* accountId has invalid format ==> 400
+* Account not found for accountId ==> 404
+
+PUT /accounts/:accountId 
+* nickname and status are both given ==> 200, account is updated and returned
+* nickname only is given ==> 200, account is updated and returned
+* status only is given ==> 200, account is updated and returned
+* Empty body is given ==> 200, account is returned
+* accountId has invalid format ==> 400
+* Large input string is given (longer than maxLength) ==> 400
+* Account not found for accountId ==> 404
+
+POST /accounts/:accountId/close 
+* Account found for accountId ==> 200, account is closed and returned
+* accountId has invalid format ==> 400
+* Account not found for accountId ==> 404
+
+## Next steps
+* AuthN/AuthZ
+* Adding /transactions endpoints
+
+
+
 MiniBankAPI is a Node.js + TypeScript REST API built incrementally in epics.
 
 **Epic 1** establishes the platform foundation and implements the Accounts module with:
