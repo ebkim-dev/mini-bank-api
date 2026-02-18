@@ -12,6 +12,8 @@ POST /accounts
 * Empty body is given ==> 400
 * Wrong field type is given (e.g. passing "abc" to customerId) ==> 400
 * Large input string is given (longer than maxLength) ==> 400
+* Invalid enum value - type = "SAVINGSS" or status="OPEN" ⇒ 400
+* Invalid currency format - currency="US" or "USDD" ⇒ 400
 
 GET /accounts?customerId=... 
 * 1+ account found for customerId ==> 200, array of found accounts is returned
@@ -37,6 +39,7 @@ POST /accounts/:accountId/close
 * Account found for accountId ==> 200, account is closed and returned
 * accountId has invalid format ==> 400
 * Account not found for accountId ==> 404
+* Close already closed account ==> either 409 or 200 idempotent
 
 ## Next steps
 * AuthN/AuthZ
