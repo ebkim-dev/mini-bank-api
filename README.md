@@ -1,5 +1,11 @@
 # MiniBankAPI
 
+## High-Level Overview
+
+### Request Lifecycle
+
+![Request Lifecycle](docs/images/request-lifecycle.png)
+
 ## ⏳ Integration Test Cases To Write ⏳
 
 General
