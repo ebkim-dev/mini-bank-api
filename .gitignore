@@ -10,6 +10,7 @@ src/generated
 
 # secrets
 .env
+.env.test
 .env.local
 
 
