@@ -23,6 +23,14 @@ export const BadRequestError = (
   return new AppError(400, code, message, details);
 };
 
+export const UnauthorizedError = (
+  code: string,
+  message: string,
+  details?: unknown
+): AppError => {
+  return new AppError(401, code, message, details);
+};
+
 export const NotFoundError = (
   code: string,
   message: string,
@@ -37,14 +45,6 @@ export const ConflictError = (
   details?: unknown
 ): AppError => {
   return new AppError(409, code, message, details);
-};
-
-export const UnauthorizedError = (
-  code: string,
-  message: string,
-  details?: unknown
-): AppError => {
-  return new AppError(401, code, message, details);
 };
 
 export const InternalServerError = (
