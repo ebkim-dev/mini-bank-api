@@ -1,15 +1,15 @@
 import { 
   AccountType,
   AccountStatus,
- } from "../types/account";
+ } from "../../src/types/account";
 
-import * as accountService from "../service/accountService";
-import * as accountController from "./accountController";
+import * as accountService from "../../src/service/accountService";
+import * as accountController from "../../src/controller/accountController";
 
 import {
   serializeAccount,
   serializeAccounts,
-} from "../utils/helpers";
+} from "../../src/utils/helpers";
 import { Decimal } from "@prisma/client/runtime/client";
 
 let next: jest.Mock;
