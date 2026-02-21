@@ -1,12 +1,9 @@
 
 import type { Request, Response, NextFunction, RequestHandler } from "express";
-
-// import * as jwt from "jsonwebtoken"
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { UnauthorizedError } from "../error/error";
 import { ErrorCode } from "../types/errorCodes";
 
-// Adjust this to your actual JWT payload shape
 export interface AuthPayload extends JwtPayload {
   userId: string;
   role: string;
