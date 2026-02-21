@@ -1,5 +1,5 @@
 
-jest.mock('../db/prismaClient', () => ({
+jest.mock('../../src/db/prismaClient', () => ({
   __esModule: true,
   default: {
     account: {
