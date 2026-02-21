@@ -2,6 +2,50 @@
 
 [Project Spec](docs/NodeJS%20Project.pdf) (found in `/docs/NodeJS Project.pdf`)
 
+## Project Setup
+
+After pulling:
+```
+npm install
+npx prisma generate
+```
+
+Make sure you have your copy of `.env` file in the project root:
+
+```env
+MYSQL_HOST=localhost
+MYSQL_USER=<your_username>
+MYSQL_PASSWORD=<your_password>
+MYSQL_DB=minibank
+MYSQL_PORT=3306
+
+PORT=3000
+NODE_ENV=development
+```
+
+To start server:
+```
+npm run dev
+```
+
+To run tests, run one of the following:
+```
+npx jest
+npx jest <path_to_test_module>
+npx jest --coverage
+```
+
+To run ONLY unit tests (--coverage flag optional):
+```
+cd <project_root>
+npx jest tests/unit --coverage
+```
+
+To see swagger documentation, first start the server. Then, paste this in your browser:
+```
+http://localhost:3000/docs/
+```
+
 ## Overview Diagrams
 
 ### High-Level Request Lifecycle
@@ -76,6 +120,7 @@ POST /accounts/:accountId/close
 * AuthN/AuthZ
 * Adding /transactions endpoints
 
+
 ------------
 
 MiniBankAPI is a Node.js + TypeScript REST API built incrementally in epics.
@@ -87,7 +132,6 @@ MiniBankAPI is a Node.js + TypeScript REST API built incrementally in epics.
 - Input validation using Zod
 - MySQL integration using Prisma ORM
 - Clean layered architecture (routes → controller → service → db)
-
 
 
 ---

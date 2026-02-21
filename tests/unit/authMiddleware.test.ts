@@ -2,17 +2,8 @@
 import * as authMiddleware from "../../src/auth/authMiddleware";
 import jwt from "jsonwebtoken";
 import { ErrorCode } from "../../src/types/errorCodes";
-import { UnauthorizedError } from "../../src/error/error";
 
 jest.mock("jsonwebtoken");
-
-// let next: jest.Mock;
-// let res: any;
-
-beforeEach(() => {
-  // next = jest.fn();
-  // res = {};
-});
 
 afterEach(() => {
   jest.restoreAllMocks();
@@ -112,7 +103,7 @@ describe("requireAuth middleware", () => {
 
     const req: any = {
       headers: {
-        authorization: "BEARER"
+        authorization: "Bearer"
       }
     };
 
@@ -137,12 +128,14 @@ describe("requireAuth middleware", () => {
 
     const mockedVerify = jwt.verify as jest.Mock;
     mockedVerify.mockImplementation(() => {
-      throw UnauthorizedError(ErrorCode.INVALID_TOKEN, "jwt expired");
+      const err: any = new Error("Some invalid token error");
+      err.name = "jwtError";
+      throw err;
     });
 
     const req: any = {
       headers: {
-        authorization: "BEARER my_token_blahblahblahblah"
+        authorization: "Bearer my_token_blahblahblahblah"
       }
     };
 

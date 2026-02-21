@@ -4,6 +4,10 @@ module.exports = {
   testEnvironment: 'node',
   testMatch: [
     '**/tests/**/*.test.ts',
-    '**/src/**/*.test.ts',
   ],
+  collectCoverageFrom: [
+    "src/**/*.ts",
+    "!src/config/**",
+    "!src/generated/**",
+  ]
 };
