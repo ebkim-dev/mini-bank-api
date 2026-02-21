@@ -112,7 +112,7 @@ describe("requireAuth middleware", () => {
 
     const req: any = {
       headers: {
-        authorization: "BEARER"
+        authorization: "Bearer"
       }
     };
 
@@ -137,7 +137,9 @@ describe("requireAuth middleware", () => {
 
     const mockedVerify = jwt.verify as jest.Mock;
     mockedVerify.mockImplementation(() => {
-      throw UnauthorizedError(ErrorCode.INVALID_TOKEN, "jwt expired");
+      const err: any = new Error("Some invalid token error");
+      err.name = "jwtError";
+      throw err;
     });
 
     const req: any = {
