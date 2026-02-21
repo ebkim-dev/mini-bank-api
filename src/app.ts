@@ -10,6 +10,10 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 
 export const createApp = (): Application => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("Missing JWT_SECRET environment variable");
+  }
+
   const app = express();
 
   app.use(express.json());
