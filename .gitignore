@@ -4,14 +4,13 @@ node_modules/
 dist/
 src/**/*.js
 src/**/*.js.map
-src/**/*.d.ts
 src/**/*.d.ts.map
 src/generated
+coverage/
 
 # secrets
 .env
 .env.local
-
 
 npm-debug.log
 .DS_Store
