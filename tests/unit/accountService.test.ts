@@ -14,13 +14,13 @@ jest.mock('../db/prismaClient', () => ({
 import { 
   AccountType,
   AccountStatus,
- } from "../types/account";
+ } from "../../src/types/account";
 
-import * as accountService from "../service/accountService";
-import prismaClient from '../db/prismaClient'
+import * as accountService from "../../src/service/accountService";
+import prismaClient from '../../src/db/prismaClient'
 
 import { Decimal } from "@prisma/client/runtime/client";
-import { Prisma } from "../generated/client";
+import { Prisma } from "../../src/generated/client";
 
 const mockAccount1 = {
   id: 1n,
