@@ -48,7 +48,7 @@ afterEach(() => {
 });
 
 describe("insertAccount service", () => {
-  it ("should return updated object given a valid account ID", async() => {
+  it("should return updated object given a valid account ID", async() => {
     const date = new Date();
     const mockAccount = {
       ...mockAccount1,
@@ -75,7 +75,7 @@ describe("insertAccount service", () => {
 });
 
 describe("fetchAccountsByCustomerId service", () => {
-  it ("should return array of retrieved accounts given a valid customer ID", async() => {
+  it("should return array of retrieved accounts given a valid customer ID", async() => {
     (prismaClient.account.findMany as jest.Mock).mockResolvedValue([mockAccount1, mockAccount2]);
 
     await expect(
@@ -85,7 +85,7 @@ describe("fetchAccountsByCustomerId service", () => {
 });
 
 describe("fetchAccountById service", () => {
-  it ("should return fetched accounts given a valid account ID", async() => {
+  it("should return fetched accounts given a valid account ID", async() => {
     (prismaClient.account.findUnique as jest.Mock).mockResolvedValue(mockAccount1);
 
     await expect(
@@ -103,7 +103,7 @@ describe("fetchAccountById service", () => {
 });
 
 describe("updateAccountById service", () => {
-  it ("should return updated object given a valid account ID", async() => {
+  it("should return updated object given a valid account ID", async() => {
     const mockUpdateBody = {
       nickname: "alice",
       status: AccountStatus.ACTIVE,
@@ -152,7 +152,7 @@ describe("updateAccountById service", () => {
 });
 
 describe("deleteAccountById service", () => {
-  it ("should return closed object given a valid account ID", async() => {
+  it("should return closed object given a valid account ID", async() => {
     const returnObject = {
       id: 9999999n,
       status: AccountStatus.CLOSED,
