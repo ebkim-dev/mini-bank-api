@@ -2,6 +2,26 @@
 
 [Project Spec](docs/NodeJS%20Project.pdf) (found in `/docs/NodeJS Project.pdf`)
 
+## Project Setup
+
+After pulling:
+```
+npm install
+npx prisma generate
+```
+
+To start server:
+```
+npm run dev
+```
+
+To run tests, run one of the following:
+```
+npx jest
+npx jest <path_to_test_module>
+npx jest --coverage
+```
+
 ## Overview Diagrams
 
 ### High-Level Request Lifecycle
@@ -76,6 +96,7 @@ POST /accounts/:accountId/close
 * AuthN/AuthZ
 * Adding /transactions endpoints
 
+
 ------------
 
 MiniBankAPI is a Node.js + TypeScript REST API built incrementally in epics.
@@ -87,7 +108,6 @@ MiniBankAPI is a Node.js + TypeScript REST API built incrementally in epics.
 - Input validation using Zod
 - MySQL integration using Prisma ORM
 - Clean layered architecture (routes → controller → service → db)
-
 
 
 ---
