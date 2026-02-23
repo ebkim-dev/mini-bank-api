@@ -17,7 +17,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/AccountResponse'
         '400':
           description: Empty or malformed body
     get:
@@ -39,7 +39,7 @@ paths:
           content: 
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/AccountResponse'
               example:
                 - id: "1"
                   customer_id: "1"
@@ -83,7 +83,7 @@ paths:
           content: 
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/AccountResponse'
         '400': 
           description: Invalid account ID passed
         '404': 
@@ -113,7 +113,7 @@ paths:
           content: 
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/AccountResponse'
         '400': 
           description: Invalid account ID or body passed
         '404': 
@@ -138,6 +138,6 @@ paths:
           content: 
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/AccountResponse'
         '400':
           description: Invalid account ID passed
