@@ -1,58 +1,5 @@
 components:
   schemas:
-    User:
-      required:
-        - username
-        - password_hash
-        - role
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          description: Auto-incremented user ID
-        username:
-          type: string
-          maxLength: 100
-          description: Unique username
-        password_hash:
-          type: string
-          maxLength: 255
-          description: Hashed password
-        role:
-          type: string
-          enum:
-            - ADMIN
-            - STANDARD
-    Customer:
-      required:
-        - first_name
-        - last_name
-        - email
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          description: Auto-incremented customer ID
-        first_name:
-          type: string
-          maxLength: 100
-        last_name:
-          type: string
-          maxLength: 100
-        email:
-          type: string
-          maxLength: 150
-          description: Unique email address
-        phone:
-          type: string
-          maxLength: 30
-          nullable: true
-        accounts:
-          type: array
-          items:
-            $ref: '#/components/schemas/Account'
     AccountCreateRequest:
       required:
         - customer_id
@@ -101,7 +48,7 @@ components:
       example:
         nickname: alice
         status: ACTIVE
-    ApiResponse:
+    AccountResponse:
       type: object
       properties:
         id:

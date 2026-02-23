@@ -1,0 +1,47 @@
+paths:
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: Register a new user
+      description: Registers a new user given valid username and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registered new user successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          description: Validation error (invalid input)
+        '409':
+          description: Username already exists
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Fetch account by account ID
+      description: Retrieve an account given its account ID. Returns the retrieved account on success.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200': 
+          description: Retrieved user given valid credentials
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400': 
+          description: Validation error (invalid input)
+        '401': 
+          description: Invalid credentials
