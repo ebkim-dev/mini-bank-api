@@ -12,7 +12,7 @@ let res: any;
 
 const mockAccountCreateInput: AccountCreateInput = {
   customer_id: 1n,
-  type: "SAVINGS",
+  type: AccountType.SAVINGS,
   currency: "USD",
   nickname: "alice",
   status: AccountStatus.ACTIVE,
