@@ -10,7 +10,7 @@ jest.mock("../../src/db/prismaClient", () => ({
 import request from "supertest";
 import { createApp } from "../../src/app";
 import prisma from "../../src/db/prismaClient";
-import { AccountStatus } from "../../src/types/account";
+import { AccountStatus } from "../../src/generated/enums";
 import { ErrorCode } from "../../src/types/errorCodes";
 
 const app = createApp();

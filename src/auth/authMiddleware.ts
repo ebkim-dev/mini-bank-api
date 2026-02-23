@@ -13,12 +13,7 @@ export function requireAuth(): RequestHandler {
   return (req: Request, _res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader) {
-      return next(
-        UnauthorizedError(ErrorCode.INVALID_TOKEN, "Authentication failed")
-      );
-    }
-    if (!authHeader.startsWith("Bearer ")) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return next(
         UnauthorizedError(ErrorCode.INVALID_TOKEN, "Authentication failed")
       );

@@ -1,19 +1,24 @@
 import type {
-  UserRegisterInput,
-  UserLoginInput,
-  UserOutput,
+  RegisterInput,
+  LoginInput,
+  RegisterOutput,
   LoginOutput,
+  JwtPayload,
 } from '../types/user';
 import bcrypt from "bcrypt";
 import prismaClient from '../db/prismaClient';
 import { UserRole } from "../generated/enums";
 import { Prisma } from "../generated/client";
-import { ConflictError } from "../error/error";
+import { ConflictError, UnauthorizedError } from "../error/error";
 import { ErrorCode } from '../types/errorCodes';
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET!;
+export const JWT_EXPIRES_IN = 3_600_000; // 1h
 
 export async function registerUser(
-  data: UserRegisterInput
-): Promise<UserOutput> {
+  data: RegisterInput
+): Promise<RegisterOutput> {
   try { 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
@@ -25,13 +30,7 @@ export async function registerUser(
       }
     });
 
-    const userOutput: UserOutput = {
-      id: userRecord.id,
-      username: userRecord.username,
-      role: userRecord.role,
-      created_at: userRecord.created_at,
-      updated_at: userRecord.updated_at,
-    }
+    const userOutput: RegisterOutput = { id: userRecord.id.toString() };
 
     return userOutput;
   } catch (err) {
@@ -40,4 +39,33 @@ export async function registerUser(
     }
     throw err;
   }
+}
+
+export async function loginUser(
+  data: LoginInput
+): Promise<LoginOutput> {
+  const user = await prismaClient.user.findUnique({ 
+    where: { username: data.username } 
+  });
+
+  if (!user || !(await bcrypt.compare(data.password, user.password_hash))) {
+    throw UnauthorizedError(ErrorCode.INVALID_CREDENTIALS, "Invalid credentials");
+  }
+  
+  const iat = Date.now();
+  const exp = iat + JWT_EXPIRES_IN;
+  
+  const payload: JwtPayload = {
+    sub: user.id.toString(),
+    role: user.role,
+    iat,
+    exp,
+  };
+
+  const token = jwt.sign(payload, JWT_SECRET);
+
+  return {
+    token,
+    expiresIn: JWT_EXPIRES_IN,
+  };
 }

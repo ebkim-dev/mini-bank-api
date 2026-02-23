@@ -10,6 +10,9 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
+const res: any = {};
+const next = jest.fn();
+
 describe("requireAuth middleware", () => {
   it("should not throw any errors given valid and fresh JWT", async () => {
     const mockedToken = {
@@ -25,9 +28,6 @@ describe("requireAuth middleware", () => {
         authorization: "Bearer my_token_blahblahblahblah"
       }
     };
-
-    const res: any = {};
-    const next = jest.fn();
 
     const middleware = authMiddleware.requireAuth();
     await middleware(req, res, next);
@@ -50,9 +50,6 @@ describe("requireAuth middleware", () => {
         authorization: undefined
       }
     };
-
-    const res: any = {};
-    const next = jest.fn();
 
     const middleware = authMiddleware.requireAuth();
     await middleware(req, res, next);
@@ -79,9 +76,6 @@ describe("requireAuth middleware", () => {
       }
     };
 
-    const res: any = {};
-    const next = jest.fn();
-
     const middleware = authMiddleware.requireAuth();
     await middleware(req, res, next);
 
@@ -107,9 +101,6 @@ describe("requireAuth middleware", () => {
       }
     };
 
-    const res: any = {};
-    const next = jest.fn();
-
     const middleware = authMiddleware.requireAuth();
     await middleware(req, res, next);
 
@@ -121,11 +112,6 @@ describe("requireAuth middleware", () => {
   });
   
   it("should throw 401 given expired token", async () => {
-    const mockedToken = {
-      userId: "123",
-      role: "ADMIN"
-    };
-
     const mockedVerify = jwt.verify as jest.Mock;
     mockedVerify.mockImplementation(() => {
       const err: any = new Error("Some invalid token error");
@@ -138,9 +124,6 @@ describe("requireAuth middleware", () => {
         authorization: "Bearer my_token_blahblahblahblah"
       }
     };
-
-    const res: any = {};
-    const next = jest.fn();
 
     const middleware = authMiddleware.requireAuth();
     await middleware(req, res, next);
