@@ -2,25 +2,28 @@
 import { UserRole } from "../generated/enums"
 
 
-export type UserRegisterInput = {
+export type RegisterInput = {
   username: string;
   password: string;
 };
 
-export type UserLoginInput = {
+export type LoginInput = {
   username: string;
   password: string;
 };
 
-export interface UserOutput {
-  id: bigint;
-  username: string;
-  role: UserRole;
-  created_at: Date;
-  updated_at: Date;
+export type RegisterOutput = {
+  id: string;
+};
+
+export type LoginOutput = {
+  token: string;
+  expiresIn: number;
 }
 
-export interface LoginOutput {
-  token: string;
-  user: UserOutput;
+export type JwtPayload = {
+  sub: string;
+  role: UserRole;
+  iat: number;
+  exp: number;
 }

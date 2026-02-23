@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { AccountType, AccountStatus } from "../types/account";
+import { AccountType, AccountStatus } from "../generated/enums";
+import { Decimal } from "@prisma/client/runtime/client";
 
 const zBigIntFromAny = z.preprocess((val) => {
   if (typeof val === "bigint") return val;
@@ -10,13 +11,21 @@ const zBigIntFromAny = z.preprocess((val) => {
 
 export const accountIdParamsSchema = z
   .object({
-    id: z.string().min(1).regex(/^[0-9]+$/, "id must be a numeric string"),
+    id: z
+      .string()
+      .min(1)
+      .regex(/^[0-9]+$/, "id must be a numeric string")
+      .transform((x) => BigInt(x)),
   })
   .strict();
 
 export const getAccountsQuerySchema = z
   .object({
-    customerId: z.string().min(1).regex(/^[0-9]+$/, "customerId must be a numeric string"),
+    customerId: z
+      .string()
+      .min(1)
+      .regex(/^[0-9]+$/, "customerId must be a numeric string")
+      .transform((x) => BigInt(x)),
   })
   .strict();
 
@@ -30,7 +39,7 @@ export const createAccountBodySchema = z
       .transform((s) => s.toUpperCase()),
     nickname: z.string().max(100).optional().nullable(),
     status: z.enum(AccountStatus).optional().default(AccountStatus.ACTIVE),
-    balance: z.string().optional().transform((x) => parseFloat(x ?? "0")),
+    balance: z.string().optional().default("0").transform((x) => new Decimal(x)),
   })
   .strict();
 

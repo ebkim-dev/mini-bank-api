@@ -1,41 +1,42 @@
-import { 
-  AccountType,
-  AccountStatus,
- } from "../../src/types/account";
 
 import * as accountService from "../../src/service/accountService";
 import * as accountController from "../../src/controller/accountController";
-
-import {
-  serializeAccount,
-  serializeAccounts,
-} from "../../src/utils/helpers";
 import { Decimal } from "@prisma/client/runtime/client";
+import { AccountType, AccountStatus } from "../../src/generated/enums";
+import { AccountCreateInput, AccountOutput } from "../../src/types/account";
 
 let next: jest.Mock;
 let jsonMock: jest.Mock;
 let statusMock: jest.Mock;
 let res: any;
 
-const mockAccount1 = {
-  id: 1n,
+const mockAccountCreateInput: AccountCreateInput = {
   customer_id: 1n,
+  type: "SAVINGS",
+  currency: "USD",
+  nickname: "alice",
+  status: AccountStatus.ACTIVE,
+  balance: 0,
+}
+
+const mockAccountOutput1: AccountOutput = {
+  customer_id: 1n.toString(),
   type: AccountType.SAVINGS,
   currency: "USD",
   nickname: "alice",
   status: AccountStatus.ACTIVE,
-  balance: new Decimal(0),
-};
-
-const mockAccount2 = {
-  id: 2n,
-  customer_id: 1n,
+  balance: (new Decimal(0)).toString(),
+}
+const mockAccountOutput2: AccountOutput = {
+  customer_id: 1n.toString(),
   type: AccountType.CHECKING,
   currency: "USD",
   nickname: "bob",
   status: AccountStatus.ACTIVE,
-  balance: new Decimal(0),
-};
+  balance: (new Decimal(0)).toString(),
+}
+
+const serviceError = new Error("Service encountered an error");
 
 beforeEach(() => {
   next = jest.fn();
@@ -52,41 +53,21 @@ afterEach(() => {
 
 describe("createAccount controller", () => {
   it("should call insertAccount and return 201 with serialized account", async () => {
-    const currentDate = new Date();
-    const mockAccount = {
-      ...mockAccount1,
-      created_at: currentDate,
-      updated_at: currentDate,
-    }
-
-    jest.spyOn(accountService, "insertAccount").mockResolvedValue(mockAccount);
-
-    const req: any = {
-      validated: {
-        body: {
-          customer_id: 1n,
-          type: "SAVINGS",
-          currency: "USD",
-        },
-      },
-    };
-
+    const req: any = { validated: { body: { ...mockAccountCreateInput } } };
+    
+    jest.spyOn(accountService, "insertAccount").mockResolvedValue(mockAccountOutput1);
     await accountController.createAccount(req, res, next);
 
     expect(accountService.insertAccount).toHaveBeenCalledWith(req.validated.body);
     expect(statusMock).toHaveBeenCalledWith(201);
-    expect(jsonMock).toHaveBeenCalledWith(serializeAccount(mockAccount));
+    expect(jsonMock).toHaveBeenCalledWith(mockAccountOutput1);
     expect(next).not.toHaveBeenCalled();
   });
   
   it("should call next when service throws", async () => {
-    const error = new Error("Service encountered an error");
-    jest.spyOn(accountService, "insertAccount").mockRejectedValue(error);
+    const req: any = { validated: { body: { ...mockAccountCreateInput } } };
 
-    const req: any = {
-      validated: { body: { mock: "mockInput" } },
-    };
-
+    jest.spyOn(accountService, "insertAccount").mockRejectedValue(serviceError);
     await accountController.createAccount(req, res, next);
 
     expect(statusMock).not.toHaveBeenCalled();
@@ -96,65 +77,40 @@ describe("createAccount controller", () => {
 
 describe("getAccountsByCustomerId controller", () => {
   it("should call fetchAccountsByCustomerId and return 200 with empty array if no accounts are found", async () => {
-    jest.spyOn(accountService, "fetchAccountsByCustomerId")
-      .mockResolvedValue([]);
+    const req: any = { validated: { query: { customer_id: 9999999n } } };
 
-    const req: any = {
-      validated: {
-        query: {
-          customerId: 9999999n
-        }
-      },
-    };
-
+    jest.spyOn(accountService, "fetchAccountsByCustomerId").mockResolvedValue([]);
     await accountController.getAccountsByCustomerId(req, res, next);
 
-    expect(accountService.fetchAccountsByCustomerId).toHaveBeenCalledWith(req.validated.query.customerId);
+    expect(accountService.fetchAccountsByCustomerId).toHaveBeenCalledWith(
+      req.validated.query.customer_id
+    );
     expect(statusMock).toHaveBeenCalledWith(200);
-    expect(jsonMock).toHaveBeenCalledWith(serializeAccounts([]));
+    expect(jsonMock).toHaveBeenCalledWith([]);
     expect(next).not.toHaveBeenCalled();
   });
 
   it("should call fetchAccountsByCustomerId and return 200 with an array of serialized accounts", async () => {
-    const currentDate = new Date();
-    const datedMockAccount1 = {
-      ...mockAccount1,
-      created_at: currentDate,
-      updated_at: currentDate,
-    }
-    const datedMockAccount2 = {
-      ...mockAccount2,
-      created_at: currentDate,
-      updated_at: currentDate,
-    }
+    const req: any = { validated: { query: { customer_id: 1n } } };
 
     jest.spyOn(accountService, "fetchAccountsByCustomerId")
-      .mockResolvedValue([datedMockAccount1, datedMockAccount2]);
-
-    const req: any = {
-      validated: {
-        query: {
-          customerId: 1n
-        }
-      },
-    };
+      .mockResolvedValue([mockAccountOutput1, mockAccountOutput2]);
 
     await accountController.getAccountsByCustomerId(req, res, next);
 
-    expect(accountService.fetchAccountsByCustomerId).toHaveBeenCalledWith(req.validated.query.customerId);
+    expect(accountService.fetchAccountsByCustomerId).toHaveBeenCalledWith(
+      req.validated.query.customer_id
+    );
     expect(statusMock).toHaveBeenCalledWith(200);
-    expect(jsonMock).toHaveBeenCalledWith(serializeAccounts([datedMockAccount1, datedMockAccount2]));
+    expect(jsonMock).toHaveBeenCalledWith([mockAccountOutput1, mockAccountOutput2]);
     expect(next).not.toHaveBeenCalled();
   });
   
   it("should call next when service throws", async () => {
-    const error = new Error("Service encountered an error");
-    jest.spyOn(accountService, "fetchAccountsByCustomerId")
-      .mockRejectedValue(error);
+    const req: any = { validated: { query: { customer_id: 9999999n } } };
 
-    const req: any = {
-      validated: { body: { customerId: 9999999n } },
-    };
+    jest.spyOn(accountService, "fetchAccountsByCustomerId")
+      .mockRejectedValue(serviceError);
 
     await accountController.getAccountsByCustomerId(req, res, next);
 
@@ -165,41 +121,23 @@ describe("getAccountsByCustomerId controller", () => {
 
 describe("getAccount controller", () => {
   it("should call fetchAccountById and return 200 with serialized account", async () => {
-    const currentDate = new Date();
-    
-    const mockAccount = {
-      ...mockAccount1,
-      created_at: currentDate,
-      updated_at: currentDate,
-    }
+    const req: any = { validated: { params: { id: 1n } } };
 
-    jest.spyOn(accountService, "fetchAccountById").mockResolvedValue(mockAccount);
-
-    const req: any = {
-      validated: {
-        params: {
-          id: 1n
-        }
-      },
-    };
-
+    jest.spyOn(accountService, "fetchAccountById").mockResolvedValue(mockAccountOutput1);
     await accountController.getAccount(req, res, next);
 
-    expect(accountService.fetchAccountById).toHaveBeenCalledWith(req.validated.params.id);
+    expect(accountService.fetchAccountById).toHaveBeenCalledWith(
+      req.validated.params.id
+    );
     expect(statusMock).toHaveBeenCalledWith(200);
-    expect(jsonMock).toHaveBeenCalledWith(serializeAccount(mockAccount));
+    expect(jsonMock).toHaveBeenCalledWith(mockAccountOutput1);
     expect(next).not.toHaveBeenCalled();
   });
 
   it("should call next when service throws", async () => {
-    const error = new Error("Service encountered an error");
-    jest.spyOn(accountService, "fetchAccountById")
-      .mockRejectedValue(error);
+    const req: any = { validated: { params: { id: 9999999n } } };
 
-    const req: any = {
-      validated: { body: { id: 9999999n } },
-    };
-
+    jest.spyOn(accountService, "fetchAccountById").mockRejectedValue(serviceError);
     await accountController.getAccount(req, res, next);
 
     expect(statusMock).not.toHaveBeenCalled();
@@ -209,45 +147,38 @@ describe("getAccount controller", () => {
 
 describe("updateAccount controller", () => {
   it("should call updateAccountById and return 200 with serialized account", async () => {
-    const currentDate = new Date();
-    
-    const mockAccount = {
-      ...mockAccount1,
-      created_at: currentDate,
-      updated_at: currentDate,
-    }
-
-    jest.spyOn(accountService, "updateAccountById").mockResolvedValue(mockAccount);
-
     const req: any = {
       validated: {
-        params: {
-          id: 1n,
-        },
+        params: { id: 1n },
         body: {
-          nickname: "alice",
-          status: AccountStatus.ACTIVE
+          nickname: "asdf"
         },
       },
     };
 
+    const updatedAccountOutput: AccountOutput = {
+      ...mockAccountOutput1,
+      nickname: "asdf"
+    };
+
+    jest.spyOn(accountService, "updateAccountById")
+      .mockResolvedValue(updatedAccountOutput);
+
     await accountController.updateAccount(req, res, next);
 
-    expect(accountService.updateAccountById).toHaveBeenCalledWith(req.validated.params.id, req.validated.body);
+    expect(accountService.updateAccountById).toHaveBeenCalledWith(
+      req.validated.params.id,
+      req.validated.body
+    );
     expect(statusMock).toHaveBeenCalledWith(200);
-    expect(jsonMock).toHaveBeenCalledWith(serializeAccount(mockAccount));
+    expect(jsonMock).toHaveBeenCalledWith(updatedAccountOutput);
     expect(next).not.toHaveBeenCalled();
   });
 
   it("should call next when service throws", async () => {
-    const error = new Error("Service encountered an error");
-    jest.spyOn(accountService, "fetchAccountById")
-      .mockRejectedValue(error);
+    const req: any = { validated: { body: { id: 9999999n } } };
 
-    const req: any = {
-      validated: { body: { id: 9999999n } },
-    };
-
+    jest.spyOn(accountService, "fetchAccountById").mockRejectedValue(serviceError);
     await accountController.getAccount(req, res, next);
 
     expect(statusMock).not.toHaveBeenCalled();
@@ -257,41 +188,27 @@ describe("updateAccount controller", () => {
 
 describe("deleteAccount controller", () => {
   it("should call deleteAccountById and return 200 with serialized account", async () => {
-    const currentDate = new Date();
-    
-    const mockAccount = {
-      ...mockAccount1,
-      created_at: currentDate,
-      updated_at: currentDate,
-    }
-
-    jest.spyOn(accountService, "deleteAccountById").mockResolvedValue(mockAccount);
-
-    const req: any = {
-      validated: {
-        params: {
-          id: 1n
-        }
-      },
+    const req: any = { validated: { params: { id: 1n } } };
+    const closedAccountOutput: AccountOutput = {
+      ...mockAccountOutput1,
+      status: AccountStatus.CLOSED
     };
 
+    jest.spyOn(accountService, "deleteAccountById").mockResolvedValue(closedAccountOutput);
     await accountController.deleteAccount(req, res, next);
 
-    expect(accountService.deleteAccountById).toHaveBeenCalledWith(req.validated.params.id);
+    expect(accountService.deleteAccountById).toHaveBeenCalledWith(
+      req.validated.params.id
+    );
     expect(statusMock).toHaveBeenCalledWith(200);
-    expect(jsonMock).toHaveBeenCalledWith(serializeAccount(mockAccount));
+    expect(jsonMock).toHaveBeenCalledWith(closedAccountOutput);
     expect(next).not.toHaveBeenCalled();
   });
 
   it("should call next when service throws", async () => {
-    const error = new Error("Service encountered an error");
-    jest.spyOn(accountService, "fetchAccountById")
-      .mockRejectedValue(error);
+    const req: any = { validated: { body: { id: 9999999n } } };
 
-    const req: any = {
-      validated: { body: { id: 9999999n } },
-    };
-
+    jest.spyOn(accountService, "fetchAccountById").mockRejectedValue(serviceError);
     await accountController.getAccount(req, res, next);
 
     expect(statusMock).not.toHaveBeenCalled();
