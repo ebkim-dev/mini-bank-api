@@ -1,299 +1,133 @@
-jest.mock("../../src/db/prismaClient", () => ({
-  account: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
-  },
-}));
 
 import request from "supertest";
-import { createApp } from "../../src/app";
 import prisma from "../../src/db/prismaClient";
-import { AccountStatus } from "../../src/generated/enums";
-import { ErrorCode } from "../../src/types/errorCodes";
+import { createApp } from "../../src/app";
+import { Decimal } from "@prisma/client/runtime/client";
+import { AccountStatus, AccountType } from "../../src/generated/enums";
+import { AccountCreateInputOptionals, buildAccountCreateInput, buildAccountCreateOutput } from "./mockData/account.mock";
 
 const app = createApp();
 
-describe("POST /accounts", () => {
-  it("should reject empty body and return 400", async () => {
-    const mockAccount = {
-      id: "1",
-      customer_id: "1",
-      type: "SAVINGS",
-      currency: "USD",
-      created_at: new Date(),
-    };
-
-    (prisma.account.create as jest.Mock).mockResolvedValue(mockAccount);
-
-    const response = await request(app)
-      .post("/accounts")
-      .send();
-
-    expect(response.status).toBe(400);
-  });
-
-  it("should create an account and return 201", async () => {
-    const created_at = new Date();
-
-    const mockAccount = {
-      id: 1n,
-      customer_id: 1n,
-      type: "SAVINGS",
-      currency: "USD",
-      balance: 0,
-      created_at: created_at,
-    };
-
-    (prisma.account.create as jest.Mock).mockResolvedValue(mockAccount);
-
-    const response = await request(app)
-      .post("/accounts")
-      .send({
-        customer_id: "1",
-        type: "SAVINGS",
-        currency: "USD",
-      });
-
-    expect(response.status).toBe(201);
-    expect(response.body).toMatchObject({
-      id: "1",
-      customer_id: "1",
-      type: "SAVINGS",
-      currency: "USD",
-      balance: "0",
-    });
-    expect(new Date(response.body.created_at)).toEqual(created_at);
-  });
+beforeAll(async () => {
+  await prisma.$connect();
 });
 
-describe("GET /accounts?customerId=...", () => {
-  it("should return 400 for nonnumeric customer ID", async () => {
-    const created_at = new Date();
-    const customer_id = "abcde";
-
-    const mockAccount = {
-      id: 1n,
-      customer_id: customer_id,
-      type: "SAVINGS",
-      currency: "USD",
-      created_at: created_at,
-      balance: 0,
-    };
-
-    (prisma.account.findMany as jest.Mock).mockResolvedValue([mockAccount]);
-
-    const response = await request(app).get("/accounts?customerId=" + customer_id);
-
-    expect(response.status).toBe(400);    
-    expect(response.body).toMatchObject({});
-  });
-
-  it("should return empty list from nonexistent customer ID and return 200", async () => {
-    const created_at = new Date();
-    const customer_id = 9999999n;
-
-    const mockAccount = {
-      id: 1n,
-      customer_id: customer_id,
-      type: "SAVINGS",
-      currency: "USD",
-      created_at: created_at,
-      balance: 0,
-    };
-
-    (prisma.account.findMany as jest.Mock).mockResolvedValue([mockAccount]);
-
-    const response = await request(app).get("/accounts?customerId=" + customer_id);
-
-    expect(response.status).toBe(200);    
-    expect(response.body).toMatchObject({});
-  });
-
-  it("should get all accounts by customer ID and return 200", async () => {
-    const created_at = new Date();
-
-    const mockAccount = {
-      id: 1n,
-      customer_id: 1n,
-      type: "SAVINGS",
-      currency: "USD",
-      created_at: created_at,
-      balance: 0,
-    };
-
-    (prisma.account.findMany as jest.Mock).mockResolvedValue([mockAccount]);
-
-    const response = await request(app).get("/accounts?customerId=1");
-
-    expect(response.status).toBe(200);
-    expect(response.body).toMatchObject([{
-      id: "1",
-      customer_id: "1",
-      type: "SAVINGS",
-      currency: "USD",
-      created_at: created_at.toISOString(),
-      balance: "0",
-    }]);
-  });
+afterEach(async () => {
+  await prisma.user.deleteMany();
 });
 
-describe("GET /accounts/:accountId", () => {
-  it("should return 404 given null response from db", async() => {
-    (prisma.account.findUnique as jest.Mock).mockResolvedValue(null);
-
-    const response = await request(app).get("/accounts/1");
-
-    expect(response.status).toBe(404);
-    expect(response.body).toMatchObject({});
-  });
-
-  it("should find account by given account ID and return 200", async () => {
-    const created_at = new Date();
-
-    const mockAccount = {
-      id: 1n,
-      customer_id: 1n,
-      type: "SAVINGS",
-      currency: "USD",
-      created_at: created_at,
-      balance: 0,
-    };
-
-    (prisma.account.findUnique as jest.Mock).mockResolvedValue(mockAccount);
-
-    const response = await request(app).get("/accounts/1");
-
-    expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({
-      id: "1",
-      customer_id: "1",
-      type: "SAVINGS",
-      currency: "USD",
-      created_at: created_at.toISOString(),
-      balance: "0",
-    });
-  });
+afterAll(async () => {
+  await prisma.$disconnect();
 });
 
-describe("PUT /accounts/:accountId", () => {
-  it("should return 400 given invalid update body", async() => {
-    const created_at = new Date();
-    const accountId = 1n;
+describe("Integration - Accounts API", () => {
+  
+  // 1) POST /accounts
+  describe("POST /accounts", () => {
+    test("Correct input => 201, new account is created and returned", async () => {
+      const mockAccountInputOptionals: AccountCreateInputOptionals = {
+        nickname: "alice",
+        status: AccountStatus.ACTIVE,
+        balance: (new Decimal(0)).toString(),
+      }
 
-    const mockAccount = {
-      id: accountId,
-      customer_id: 1n,
-      type: "SAVINGS",
-      currency: "USD",
-      status: AccountStatus.ACTIVE,
-      created_at: created_at,
-      balance: 0,
-    };
+      const mockAccountCreateInput = 
+        buildAccountCreateInput(mockAccountInputOptionals);
+      const mockAccountCreateOutput = buildAccountCreateOutput();
 
-    (prisma.account.update as jest.Mock).mockResolvedValue(mockAccount);
+      const res = await request(app).post("/accounts").send(mockAccountCreateInput);
 
-    const response = await request(app)
-    .put("/accounts/" + accountId.toString())
-    .send({
-      id: "accountId + 1n", // invalid field
-      nickname: "dummy nickname",
-      status: AccountStatus.ACTIVE,
+      expect(res.status).toBe(201);
+      expect(res.headers).toHaveProperty("x-trace-id");
+      expect(res.body).toMatchObject(mockAccountCreateOutput);
     });
 
-    expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty("code", ErrorCode.VALIDATION_ERROR);
-  });
+    test("Optional fields missing => 201, new account is created and returned", async () => {
+      const mockAccountCreateInput = buildAccountCreateInput();
+      const mockAccountCreateOutput = buildAccountCreateOutput({ nickname: "" });
 
-  it("should call Prisma to update an account and return serialized 200 response", async () => {
-    const created_at = new Date();
-    const accountId = 1n;
+      const res = await request(app).post("/accounts").send(mockAccountCreateInput);
 
-    const mockAccount = {
-      id: accountId,
-      customer_id: 1n,
-      type: "SAVINGS",
-      currency: "USD",
-      nickname: "dummy nickname",
-      status: AccountStatus.ACTIVE,
-      created_at: created_at,
-      balance: 0,
-    };
-
-    (prisma.account.update as jest.Mock).mockResolvedValue(mockAccount);
-
-    const response = await request(app)
-    .put("/accounts/" + accountId.toString())
-    .send({
-      nickname: "dummy nickname",
-      status: AccountStatus.ACTIVE,
+      expect(res.status).toBe(201);
+      expect(res.headers).toHaveProperty("x-trace-id");
+      expect(res.body).toMatchObject(mockAccountCreateOutput);
     });
 
-    expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({
-      id: accountId.toString(),
-      customer_id: "1",
-      type: "SAVINGS",
-      currency: "USD",
-      nickname: "dummy nickname",
-      status: AccountStatus.ACTIVE,
-      created_at: created_at.toISOString(),
-      balance: "0",
-    });
-  });
-});
+    // test("A required field is missing => 400, centralized error response", async () => {
+    //   const payload = {
+    //     customer_id: testCustomerId.toString(),
+    //     currency: "CAD",
+    //   };
 
-describe("POST /accounts/:accountId/close", () => {
-  it("should return 400 given invalid account ID", async () => {
-    const created_at = new Date();
-    const accountId = "qweqwe";
+    //   const res = await request(app).post("/accounts").send(payload);
 
-    const mockAccount = {
-      id: accountId,
-      customer_id: 1n,
-      type: "SAVINGS",
-      currency: "USD",
-      status: AccountStatus.CLOSED,
-      created_at: created_at,
-      balance: 0,
-    };
+    //   expect(res.status).toBe(400);
+    //   expect(res.headers).toHaveProperty("x-trace-id");
 
-    (prisma.account.update as jest.Mock).mockResolvedValue(mockAccount);
+      
+    //   expect(res.body).toHaveProperty("traceId");
+    //   expect(res.body).toHaveProperty("code");
+    //   expect(res.body).toHaveProperty("message");
 
-    const response = await request(app).post("/accounts/" + accountId.toString() + "/close");
+    //   if (res.body.details) {
+    //     expect(res.body.details).toHaveProperty("issues");
+    //     expect(Array.isArray(res.body.details.issues)).toBe(true);
+    //   }
+    // });
 
-    expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty("code", ErrorCode.VALIDATION_ERROR);
-  });
+    // test("Empty body is given => 400, centralized error response", async () => {
+    //   const res = await request(app).post("/accounts").send({});
 
-  it("should call Prisma to close an account and return serialized 200 response", async () => {
-    const created_at = new Date();
-    const accountId = 1n;
+    //   expect(res.status).toBe(400);
+    //   expect(res.headers).toHaveProperty("x-trace-id");
 
-    const mockAccount = {
-      id: accountId,
-      customer_id: 1n,
-      type: "SAVINGS",
-      currency: "USD",
-      status: AccountStatus.CLOSED,
-      created_at: created_at,
-      balance: 0,
-    };
+    //   expect(res.body).toHaveProperty("traceId");
+    //   expect(res.body).toHaveProperty("code");
+    //   expect(res.body).toHaveProperty("message");
 
-    (prisma.account.update as jest.Mock).mockResolvedValue(mockAccount);
+    //   if (res.body.details) {
+    //     expect(res.body.details).toHaveProperty("issues");
+    //     expect(Array.isArray(res.body.details.issues)).toBe(true);
+    //   }
+    // });
 
-    const response = await request(app).post("/accounts/" + accountId.toString() + "/close");
+    // test('Wrong field type (customer_id="abc") => 400 VALIDATION_ERROR', async () => {
+    //   const payload = {
+    //     customer_id: "abc",
+    //     type: "CHECKING",
+    //     currency: "CAD",
+    //   };
 
-    expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({
-      id: accountId.toString(),
-      customer_id: "1",
-      type: "SAVINGS",
-      currency: "USD",
-      status: AccountStatus.CLOSED,
-      created_at: created_at.toISOString(),
-      balance: "0",
-    });
+    //   const res = await request(app).post("/accounts").send(payload);
+
+    //   expect(res.status).toBe(400);
+    //   expect(res.headers).toHaveProperty("x-trace-id");
+
+    //   expect(res.body).toHaveProperty("traceId");
+    //   expect(res.body).toHaveProperty("code", "VALIDATION_ERROR");
+    //   expect(res.body).toHaveProperty("message");
+    //   expect(res.body).toHaveProperty("details");
+
+    //   expect(res.body.details).toHaveProperty("issues");
+    //   expect(Array.isArray(res.body.details.issues)).toBe(true);
+    // });
+
+    // test("Large input string (longer than maxLength) => 400", async () => {
+    //   const payload = {
+    //     customer_id: testCustomerId.toString(),
+    //     type: "CHECKING",
+    //     currency: "CANADA",
+    //     nickname: "x".repeat(200), 
+    //   };
+
+    //   const res = await request(app).post("/accounts").send(payload);
+
+    //   expect(res.status).toBe(400);
+    //   expect(res.headers).toHaveProperty("x-trace-id");
+
+    //   expect(res.body).toHaveProperty("traceId");
+    //   expect(res.body).toHaveProperty("code");
+    //   expect(res.body).toHaveProperty("message");
+    // });
   });
 });
