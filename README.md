@@ -13,10 +13,10 @@ npx prisma generate
 Make sure you have your copy of `.env` file in the project root:
 
 ```env
-MYSQL_HOST=localhost
+MYSQL_HOST=<hostname>
 MYSQL_USER=<your_username>
 MYSQL_PASSWORD=<your_password>
-MYSQL_DB=minibank
+MYSQL_DB=<db_name>
 MYSQL_PORT=3306
 
 PORT=3000
@@ -74,6 +74,17 @@ http://localhost:3000/docs/
 1. Controller sends status `200` and JSON response
 1. Express sends response to client
 
+## Authorization
+
+### Accounts
+
+| Endpoint                 | ADMIN   | STANDARD |
+| --------                 | ------- | -------- |
+| POST /accounts           | ✅     | ❌       |
+| GET /accounts            | ✅     | Only own |
+| GET /accounts/:id        | ✅     | Only own |
+| PUT /accounts/:id        | ✅     | Only own |
+| POST /accounts/:id/close | ✅     | ❌       |
 
 ## ⏳ Integration Test Cases To Write ⏳
 
