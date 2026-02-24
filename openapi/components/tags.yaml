@@ -1,5 +1,7 @@
 tags:
   - name: health
     description: Simple API health check
+  - name: auth
+    description: Register and login
   - name: accounts
     description: Access to accounts data

@@ -12,14 +12,14 @@ model User {
   id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
   username      String   @unique @db.VarChar(100)
   password_hash String   @db.VarChar(255)
-  role          Role
+  role          UserRole     @default(STANDARD)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt @default(now())
 
   @@map("users")
 }
 
-enum Role {
+enum UserRole {
   ADMIN
   STANDARD
 }

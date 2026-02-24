@@ -1,13 +1,6 @@
 
-export enum AccountType {
-  CHECKING = 'CHECKING',
-  SAVINGS = 'SAVINGS',
-}
 
-export enum AccountStatus {
-  ACTIVE = 'ACTIVE',
-  CLOSED = 'CLOSED',
-}
+import { AccountType, AccountStatus } from "../generated/enums";
 
 export type AccountCreateInput = {
   customer_id: bigint;
@@ -21,4 +14,13 @@ export type AccountCreateInput = {
 export type AccountUpdateInput = {
   nickname?: string;
   status?: AccountStatus;
+};
+
+export type AccountOutput = {
+  customer_id: string;
+  type: AccountType;
+  currency: string;
+  nickname?: string;
+  status: AccountStatus;
+  balance: string;
 };

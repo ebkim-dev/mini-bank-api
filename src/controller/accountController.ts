@@ -1,31 +1,34 @@
 import type { Request, Response, NextFunction } from "express";
 import * as accountService from "../service/accountService";
-import { serializeAccount, serializeAccounts, getValidated } from "../utils/helpers";
-import { AccountCreateInput, AccountUpdateInput } from "../types/account";
+import { 
+  AccountCreateInput,
+  AccountUpdateInput,
+  AccountOutput,
+} from "../types/account";
 
 export async function createAccount(
-  req: Request, 
-  res: Response, 
+  req: Request,
+  res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const body = getValidated<AccountCreateInput>(req, "body");
-    const newAccount = await accountService.insertAccount(body);
-    res.status(201).json(serializeAccount(newAccount));
+    const body: AccountCreateInput = (req as any).validated.body;
+    const newAccount: AccountOutput = await accountService.insertAccount(body);
+    res.status(201).json(newAccount);
   } catch (err) {
     next(err);
   }
 }
 
 export async function getAccountsByCustomerId(
-  req: Request, 
-  res: Response, 
+  req: Request,
+  res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const { customerId } = getValidated<{ customerId: bigint }>(req, "query");
-    const accounts = await accountService.fetchAccountsByCustomerId(customerId);
-    res.status(200).json(serializeAccounts(accounts));
+    const { customer_id } = (req as any).validated.query;
+    const accounts: AccountOutput[] = await accountService.fetchAccountsByCustomerId(customer_id);
+    res.status(200).json(accounts);
   } catch (err) {
     next(err);
   }
@@ -37,9 +40,9 @@ export async function getAccount(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = getValidated<{ id: bigint }>(req, "params");
-    const account = await accountService.fetchAccountById(id);
-    res.status(200).json(serializeAccount(account));
+    const { id } = (req as any).validated.params;
+    const account: AccountOutput = await accountService.fetchAccountById(id);
+    res.status(200).json(account);
   } catch (err) {
     next(err);
   }
@@ -51,10 +54,10 @@ export async function updateAccount(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = getValidated<{ id: bigint }>(req, "params");
-    const body = getValidated<AccountUpdateInput>(req, "body");
-    const updated = await accountService.updateAccountById(id, body);
-    res.status(200).json(serializeAccount(updated));
+    const { id } = (req as any).validated.params;
+    const body: AccountUpdateInput = (req as any).validated.body;
+    const updated: AccountOutput = await accountService.updateAccountById(id, body);
+    res.status(200).json(updated);
   } catch (err) {
     next(err);
   }
@@ -66,9 +69,9 @@ export async function deleteAccount(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = getValidated<{ id: bigint }>(req, "params");
-    const closed = await accountService.deleteAccountById(id);
-    res.status(200).json(serializeAccount(closed));
+    const { id } = (req as any).validated.params;
+    const closed: AccountOutput = await accountService.deleteAccountById(id);
+    res.status(200).json(closed);
   } catch (err) {
     next(err);
   }
