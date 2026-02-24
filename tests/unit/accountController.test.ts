@@ -1,9 +1,9 @@
 
-import * as accountService from "../../src/service/accountService";
-import * as accountController from "../../src/controller/accountController";
+import * as accountService from "../../src/account/accountService";
+import * as accountController from "../../src/account/accountController";
 import { Decimal } from "@prisma/client/runtime/client";
 import { AccountType, AccountStatus } from "../../src/generated/enums";
-import { AccountCreateInput, AccountOutput } from "../../src/types/account";
+import { AccountCreateInput, AccountOutput } from "../../src/account/account";
 
 let next: jest.Mock;
 let jsonMock: jest.Mock;

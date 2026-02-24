@@ -20,7 +20,7 @@ import {
   LoginInput, 
   LoginOutput, 
   RegisterInput,
-} from "../../src/types/user";
+} from "../../src/auth/user";
 
 const mockRegisterInput: RegisterInput = {
   username: "mockUser",

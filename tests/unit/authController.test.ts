@@ -5,7 +5,7 @@ import {
   LoginOutput,
   RegisterInput,
   RegisterOutput,
-} from "../../src/types/user";
+} from "../../src/auth/user";
 
 const mockRegisterInput: RegisterInput = {
   username: "alice",
