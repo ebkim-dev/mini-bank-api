@@ -4,7 +4,7 @@ import type {
   RegisterOutput,
   LoginOutput,
   JwtPayload,
-} from '../types/user';
+} from './user';
 import bcrypt from "bcrypt";
 import prismaClient from '../db/prismaClient';
 import { UserRole } from "../generated/enums";

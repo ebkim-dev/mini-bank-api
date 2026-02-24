@@ -2,14 +2,14 @@ import type {
   AccountCreateInput,
   AccountOutput,
   AccountUpdateInput,
-} from '../types/account';
+} from './account';
 import type { Account } from '../generated/client';
 import prismaClient from '../db/prismaClient'
 import { Prisma } from "../generated/client";
 import { AccountStatus } from "../generated/enums";
 import { NotFoundError } from "../error/error";
 import { ErrorCode } from "../types/errorCodes";
-import { serializeAccount } from '../utils/accountUtils';
+import { serializeAccount } from './accountUtils';
 
 export async function insertAccount(
   data: AccountCreateInput
