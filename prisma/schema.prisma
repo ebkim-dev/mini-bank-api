@@ -12,7 +12,7 @@ model User {
   id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
   username      String   @unique @db.VarChar(100)
   password_hash String   @db.VarChar(255)
-  role          UserRole     @default(STANDARD)
+  role          UserRole @default(STANDARD)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt @default(now())
 
