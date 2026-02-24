@@ -5,7 +5,7 @@ import {
   getAccount,
   updateAccount,
   deleteAccount,
-} from "../controller/accountController";
+} from "./accountController";
 
 import { validate } from "../middleware/validationMiddleware";
 import {
@@ -13,7 +13,7 @@ import {
   updateAccountBodySchema,
   getAccountsQuerySchema,
   accountIdParamsSchema,
-} from "../validationSchemas/accountSchemas";
+} from "./accountSchemas";
 
 const router = Router();
 

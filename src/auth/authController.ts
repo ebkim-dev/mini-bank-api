@@ -3,7 +3,7 @@ import * as authService from "./authService";
 import type {
   RegisterInput,
   LoginInput,
-} from '../types/user';
+} from './user';
 
 export async function register(
   req: Request, 

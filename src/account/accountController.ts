@@ -1,10 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
-import * as accountService from "../service/accountService";
+import * as accountService from "./accountService";
 import { 
   AccountCreateInput,
   AccountUpdateInput,
   AccountOutput,
-} from "../types/account";
+} from "./account";
 
 export async function createAccount(
   req: Request,
