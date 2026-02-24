@@ -1,10 +1,14 @@
 
+<<<<<<< HEAD
 # Accounts Authorization Matrix
+=======
+
+>>>>>>> 48a14eb (add protected routes to accounts endpoints)
 
 | Endpoint                 | ADMIN   | STANDARD |
 | --------                 | ------- | -------- |
-| POST /accounts           | ✅     | ❌       |
-| GET /accounts            | ✅     | Only own |
-| GET /accounts/:id        | ✅     | Only own |
-| PUT /accounts/:id        | ✅     | Only own |
-| POST /accounts/:id/close | ✅     | ❌       |
+| POST /accounts           | ✅ | ❌ |
+| GET /accounts            | ✅ | ✅ |
+| GET /accounts/:id        | ✅ | ✅ |
+| PUT /accounts/:id        | ✅ | ❌ |
+| POST /accounts/:id/close | ✅ | ❌ |

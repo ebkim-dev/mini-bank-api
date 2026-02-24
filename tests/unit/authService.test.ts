@@ -50,8 +50,7 @@ const mockUserRecord: User = {
 };
 
 afterEach(() => {
-  jest.restoreAllMocks();
-  jest.clearAllMocks();
+  jest.resetAllMocks();
 });
 
 describe("registerUser service", () => {
