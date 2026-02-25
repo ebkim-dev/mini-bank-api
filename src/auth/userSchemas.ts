@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { UserRole } from "../generated/enums";
 
 export const registerBodySchema = z
   .object({
@@ -13,3 +14,14 @@ export const loginBodySchema = z
     password: z.string().min(8).max(128),
   })
   .strict();
+
+export const jwtPayloadSchema = z
+  .object({
+    sub: z.string(),
+    role: z.enum(UserRole),
+    iat: z.number(),
+    exp: z.number()
+  })
+  .strict();
+
+  

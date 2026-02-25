@@ -1,13 +1,9 @@
 
 import type { Request, Response, NextFunction, RequestHandler } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
-import { UnauthorizedError } from "../error/error";
+import jwt from "jsonwebtoken";
+import { ForbiddenError, UnauthorizedError } from "../error/error";
 import { ErrorCode } from "../types/errorCodes";
-
-export interface AuthPayload extends JwtPayload {
-  userId: string;
-  role: string;
-}
+import { UserRole } from "../generated/enums";
 
 export function requireAuth(): RequestHandler {
   return (req: Request, _res: Response, next: NextFunction) => {
@@ -27,15 +23,13 @@ export function requireAuth(): RequestHandler {
     }
 
     try {
+      // throws if jwt is expired
       const decoded = jwt.verify(
         token,
         process.env.JWT_SECRET as string
-      ) as AuthPayload;
+      );
 
-      req.user = {
-        userId: decoded.userId,
-        role: decoded.role,
-      };
+      req.user = decoded;
 
       return next();
     } catch (err) {
@@ -43,5 +37,17 @@ export function requireAuth(): RequestHandler {
         UnauthorizedError(ErrorCode.INVALID_TOKEN, "Authentication failed")
       );
     }
+  };
+};
+
+export function requireRole(role: UserRole): RequestHandler {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (req.user.role !== role) {
+      return next(
+        ForbiddenError(ErrorCode.FORBIDDEN, "Insufficient permissions")
+      );
+    }
+
+    return next();
   };
 };

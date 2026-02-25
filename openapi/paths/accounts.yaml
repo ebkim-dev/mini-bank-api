@@ -1,10 +1,12 @@
 paths:
   /accounts:
     post:
-      tags:
-        - accounts
       summary: Create a new account
       description: Creates a new account for a customer. Returns the account data on success.
+      tags:
+        - accounts
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -21,10 +23,12 @@ paths:
         '400':
           description: Empty or malformed body
     get:
-      tags:
-        - accounts
       summary: Get accounts by customer ID
       description: Retrieve all accounts for a customer. Returns the array of retrieved accounts on success.
+      tags:
+        - accounts
+      security:
+        - bearerAuth: []
       parameters:
         - in: query
           name: customerId
@@ -65,10 +69,12 @@ paths:
           description: Customer not found
   /accounts/{accountId}:
     get:
-      tags:
-        - accounts
       summary: Fetch account by account ID
       description: Retrieve an account given its account ID. Returns the retrieved account on success.
+      tags:
+        - accounts
+      security:
+        - bearerAuth: []
       parameters:
         - name: accountId
           in: path
@@ -89,10 +95,12 @@ paths:
         '404': 
           description: Account not found
     put:
-      tags:
-        - accounts
       summary: Update account by account ID
       description: Update an account given its account ID and new values. Returns the updated account on success.
+      tags:
+        - accounts
+      security:
+        - bearerAuth: []
       parameters:
         - name: accountId
           in: path
@@ -120,10 +128,12 @@ paths:
           description: Account not found
   /accounts/{accountId}/close:    
     post:
-      tags:
-        - accounts
       summary: Close the given account.
       description: Marks the given account as closed. Returns the closed account on success.
+      tags:
+        - accounts
+      security:
+        - bearerAuth: []
       parameters:
         - name: accountId
           in: path
