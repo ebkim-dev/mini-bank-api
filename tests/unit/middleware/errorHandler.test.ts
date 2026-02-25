@@ -1,8 +1,6 @@
 
 import * as errorHandlers from "../../../src/middleware/errorHandler";
-import jwt from "jsonwebtoken";
 import { ErrorCode } from "../../../src/types/errorCodes";
-import { UserRole } from "../../../src/generated/enums";
 import { AppError } from "../../../src/error/error";
 
 jest.mock("../../../src/logging/logger", () => ({
@@ -71,6 +69,7 @@ describe("errorHandler", () => {
     });
     expect(next).not.toHaveBeenCalled();
   });
+  
   it("should set appropriate code and response given non-AppError", async() => {
     const err: number = 42;
     errorHandlers.errorHandler(err, req, res, next);
