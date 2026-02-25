@@ -1,3 +1,4 @@
+import { ErrorCode } from "../types/errorCodes";
 
 export class AppError extends Error {
   public readonly statusCode: number;
@@ -31,6 +32,14 @@ export const UnauthorizedError = (
   return new AppError(401, code, message, details);
 };
 
+export const ForbiddenError = (
+  code: string,
+  message: string,
+  details?: unknown
+): AppError => {
+  return new AppError(403, code, message, details);
+};
+
 export const NotFoundError = (
   code: string,
   message: string,
@@ -51,5 +60,5 @@ export const InternalServerError = (
   message = "Something went wrong",
   details?: unknown
 ): AppError => {
-  return new AppError(500, "INTERNAL_SERVER_ERROR", message, details);
+  return new AppError(500, ErrorCode.INTERNAL_SERVER_ERROR, message, details);
 };

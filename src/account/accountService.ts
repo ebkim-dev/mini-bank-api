@@ -4,16 +4,22 @@ import type {
   AccountUpdateInput,
 } from './account';
 import type { Account } from '../generated/client';
+import type { AuthInput } from '../auth/user';
 import prismaClient from '../db/prismaClient'
 import { Prisma } from "../generated/client";
-import { AccountStatus } from "../generated/enums";
-import { NotFoundError } from "../error/error";
+import { AccountStatus, UserRole } from "../generated/enums";
+import { ForbiddenError, NotFoundError } from "../error/error";
 import { ErrorCode } from "../types/errorCodes";
 import { serializeAccount } from './accountUtils';
 
 export async function insertAccount(
-  data: AccountCreateInput
+  data: AccountCreateInput,
+  authInput: AuthInput
 ): Promise<AccountOutput> {
+  if (authInput.role !== UserRole.ADMIN) {
+    throw ForbiddenError(ErrorCode.FORBIDDEN, "Only admins can create accounts");
+  }
+
   const accountRecord: Account = await prismaClient.account.create({
     data: {
       customer_id: data.customer_id,
@@ -52,8 +58,13 @@ export async function fetchAccountById(
 
 export async function updateAccountById(
   id: bigint, 
-  data: AccountUpdateInput
+  data: AccountUpdateInput,
+  authInput: AuthInput
 ): Promise<AccountOutput> {
+  if (authInput.role !== UserRole.ADMIN) {
+    throw ForbiddenError(ErrorCode.FORBIDDEN, "Only admins can update accounts");
+  }
+
   try {
     const accountRecord: Account = 
       await prismaClient.account.update({
@@ -71,8 +82,13 @@ export async function updateAccountById(
 }
 
 export async function deleteAccountById(
-  id: bigint
+  id: bigint,
+  authInput: AuthInput
 ): Promise<AccountOutput> {
+  if (authInput.role !== UserRole.ADMIN) {
+    throw ForbiddenError(ErrorCode.FORBIDDEN, "Only admins can close accounts");
+  }
+
   try {
     const accountRecord: Account = 
       await prismaClient.account.update({

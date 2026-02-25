@@ -13,7 +13,7 @@ function formatZodIssues(err: ZodError) {
 
 export function validate(
   schema: ZodSchema<any>,
-  source: "body" | "query" | "params"
+  source: "body" | "query" | "params" | "user"
 ): RequestHandler {
   return (req: Request, _res: Response, next: NextFunction) => {
     try {
