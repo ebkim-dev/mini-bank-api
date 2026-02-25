@@ -1,5 +1,16 @@
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import * as authService from "../../../src/auth/authService";
+import { Prisma, User } from "../../../src/generated/client";
+import { UserRole } from "../../../src/generated/enums";
+import { 
+  RegisterOutput,
+  LoginInput, 
+  LoginOutput, 
+  RegisterInput,
+} from "../../../src/auth/user";
 
-jest.mock('../../src/db/prismaClient', () => ({
+jest.mock('../../../src/db/prismaClient', () => ({
   __esModule: true,
   default: {
     user: {
@@ -8,19 +19,7 @@ jest.mock('../../src/db/prismaClient', () => ({
     },
   },
 }));
-
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import prismaClient from '../../src/db/prismaClient'
-import * as authService from "../../src/auth/authService";
-import { Prisma, User } from "../../src/generated/client";
-import { UserRole } from "../../src/generated/enums"
-import { 
-  RegisterOutput,
-  LoginInput, 
-  LoginOutput, 
-  RegisterInput,
-} from "../../src/auth/user";
+import prismaClient from '../../../src/db/prismaClient';
 
 const mockRegisterInput: RegisterInput = {
   username: "mockUser",

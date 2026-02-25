@@ -1,11 +1,11 @@
 
-import * as authService from "../../src/auth/authService";
-import * as authController from "../../src/auth/authController";
+import * as authService from "../../../src/auth/authService";
+import * as authController from "../../../src/auth/authController";
 import {
   LoginOutput,
   RegisterInput,
   RegisterOutput,
-} from "../../src/auth/user";
+} from "../../../src/auth/user";
 
 const mockRegisterInput: RegisterInput = {
   username: "alice",

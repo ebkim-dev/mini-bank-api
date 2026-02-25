@@ -1,5 +1,15 @@
+import * as accountService from "../../../src/account/accountService";
+import { Decimal } from "@prisma/client/runtime/client";
+import { Account, Prisma } from "../../../src/generated/client";
+import { AccountType, AccountStatus, UserRole } from "../../../src/generated/enums";
+import type { AuthInput } from '../../../src/auth/user';
+import type { 
+  AccountCreateInput, 
+  AccountOutput, 
+  AccountUpdateInput
+} from "../../../src/account/account";
 
-jest.mock('../../src/db/prismaClient', () => ({
+jest.mock('../../../src/db/prismaClient', () => ({
   __esModule: true,
   default: {
     account: {
@@ -10,14 +20,7 @@ jest.mock('../../src/db/prismaClient', () => ({
     },
   },
 }));
-
-import * as accountService from "../../src/account/accountService";
-import prismaClient from '../../src/db/prismaClient'
-import { AccountType, AccountStatus, UserRole } from "../../src/generated/enums";
-import { Decimal } from "@prisma/client/runtime/client";
-import { Account, Prisma } from "../../src/generated/client";
-import type { AccountCreateInput, AccountOutput, AccountUpdateInput } from "../../src/account/account";
-import type { AuthInput } from '../../src/auth/user';
+import prismaClient from '../../../src/db/prismaClient';
 
 const mockAccountCreateInput: AccountCreateInput = {
   customer_id: 1n,

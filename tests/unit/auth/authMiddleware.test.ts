@@ -1,10 +1,10 @@
 
-import * as authMiddleware from "../../src/auth/authMiddleware";
+import * as authMiddleware from "../../../src/auth/authMiddleware";
 import jwt from "jsonwebtoken";
-import { ErrorCode } from "../../src/types/errorCodes";
-import { UserRole } from "../../src/generated/enums";
-import { AuthInput, JwtPayload } from "../../src/auth/user";
-import { JWT_EXPIRES_IN } from "../../src/auth/authService";
+import { ErrorCode } from "../../../src/types/errorCodes";
+import { UserRole } from "../../../src/generated/enums";
+import { JwtPayload } from "../../../src/auth/user";
+import { JWT_EXPIRES_IN } from "../../../src/auth/authService";
 
 jest.mock("jsonwebtoken");
 
