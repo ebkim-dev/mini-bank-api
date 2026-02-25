@@ -37,3 +37,16 @@ export function buildLoginInput(
     ...overrides,
   };
 }
+
+export type LoginOutput = {
+  token: string;
+  expiresIn: number;
+};
+
+export function buildLoginOutput(overrides: Partial<LoginOutput> = {}): LoginOutput {
+  return {
+    token: expect.any(String) as any,
+    expiresIn: 3600000,
+    ...overrides,
+  };
+}

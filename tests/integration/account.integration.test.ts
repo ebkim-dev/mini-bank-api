@@ -107,7 +107,7 @@ describe("Integration - Accounts API", () => {
     });
 
     test("A required field is missing => 400", async () => {
-      // Remove required field: currency
+     
       const badInput: any = buildAccountCreateInput();
       delete badInput.currency;
 
@@ -242,7 +242,6 @@ describe("Integration - Accounts API", () => {
       expect(Array.isArray(res.body)).toBe(true);
       expect(res.body.length).toBeGreaterThanOrEqual(2);
 
-      // Loose matching: at least one should look like an account output
       expect(res.body[0]).toHaveProperty("customer_id", "1");
       expect(res.body[0]).toHaveProperty("type");
       expect(res.body[0]).toHaveProperty("currency");
@@ -289,7 +288,6 @@ describe("Integration - Accounts API", () => {
     });
   });
 
-  // 3) GET /accounts/:accountId
   describe("GET /accounts/:accountId", () => {
     test("Account found for accountId => 200, account is returned", async () => {
       const accountId = await createAccountAndGetId({ nickname: "alice" });
@@ -302,7 +300,6 @@ describe("Integration - Accounts API", () => {
       expect(res.status).toBe(200);
       expect(res.headers).toHaveProperty("x-trace-id");
 
-      // Should look like the serialized account
       expect(res.body).toHaveProperty("customer_id", "1");
       expect(res.body).toHaveProperty("type");
       expect(res.body).toHaveProperty("currency");
@@ -339,7 +336,6 @@ describe("Integration - Accounts API", () => {
     // 200 (standard case)
   });
 
-  // 4) PUT /accounts/:accountId
   describe("PUT /accounts/:accountId", () => {
     test("nickname and status are both given => 200, account is updated and returned", async () => {
       const accountId = await createAccountAndGetId({ nickname: "old" });
@@ -464,7 +460,6 @@ describe("Integration - Accounts API", () => {
     });
   });
 
-  // 5) POST /accounts/:accountId/close
   describe("POST /accounts/:accountId/close", () => {
     test("Account found for accountId => 200, account is closed and returned", async () => {
       const accountId = await createAccountAndGetId({ status: AccountStatus.ACTIVE });
