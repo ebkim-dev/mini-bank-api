@@ -137,7 +137,7 @@ describe("Auth integration", () => {
         expect(first.status).toBe(201);
 
         const second = await request(app).post("/auth/register").send(secondInput);
-        expect([400, 409]).toContain(second.status);
+        expect(second.status).toBe(409);
         expect(second.headers).toHaveProperty("x-trace-id");
       });
 
@@ -153,7 +153,7 @@ describe("Auth integration", () => {
     });
 
       describe("POST /auth/login", () => {
-      test("Correct credentials => 200 (or 201), login succeeds", async () => {
+      test("Correct credentials => 201, login succeeds", async () => {
         
         const registerInput = buildRegisterInput();
         const registerRes = await request(app)

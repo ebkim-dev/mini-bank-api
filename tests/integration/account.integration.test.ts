@@ -1,4 +1,3 @@
-
 import request from "supertest";
 import prisma from "../../src/db/prismaClient";
 import { createApp } from "../../src/app";
@@ -69,7 +68,6 @@ afterAll(async () => {
 
 let token: string;
 describe("Integration - Accounts API", () => {
-  // 1) POST /accounts
   describe("POST /accounts", () => {
     test("Correct input => 201, new account is created and returned", async () => {
       const mockAccountInputOptionals: AccountCreateInputOptionals = {
@@ -220,7 +218,6 @@ describe("Integration - Accounts API", () => {
 
   describe("GET /accounts?customerId=...", () => {
     test("1+ account found for customerId => 200, array of found accounts is returned", async () => {
-      // Create 2 accounts for customer_id=1
       await request(app)
         .post("/accounts")
         .set("Authorization", `Bearer ${token}`)
@@ -332,8 +329,6 @@ describe("Integration - Accounts API", () => {
       expect(res.status).toBe(401);
       expect(res.headers).toHaveProperty("x-trace-id");
     });
-
-    // 200 (standard case)
   });
 
   describe("PUT /accounts/:accountId", () => {
@@ -500,21 +495,19 @@ describe("Integration - Accounts API", () => {
     test("Close already closed account => either 409 or 200 idempotent", async () => {
       const accountId = await createAccountAndGetId({ status: AccountStatus.ACTIVE });
 
-      // First close
       const first = await request(app)
         .post(`/accounts/${accountId}/close`)
         .set("Authorization", `Bearer ${token}`)
         .send({});
+        expect(first.status).toBe(200);
 
-      expect([200, 409]).toContain(first.status);
-
-      // Second close (idempotent or conflict depending on implementation)
+      
       const second = await request(app)
         .post(`/accounts/${accountId}/close`)
         .set("Authorization", `Bearer ${token}`)
         .send({});
-
-      expect([200, 409]).toContain(second.status);
+        expect(second.status).toBe(200);
+      
       expect(second.headers).toHaveProperty("x-trace-id");
     });
 
@@ -530,7 +523,6 @@ describe("Integration - Accounts API", () => {
       expect(res.headers).toHaveProperty("x-trace-id");
     });
 
-    // 403 (standard role)
     it('should return 403 given STANDARD role', async() => {
       const accountId = await createAccountAndGetId({ status: AccountStatus.ACTIVE });
       token = buildToken(UserRole.STANDARD, "1h");
