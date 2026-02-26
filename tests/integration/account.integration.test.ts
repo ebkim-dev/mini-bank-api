@@ -2,14 +2,13 @@ import request from "supertest";
 import prisma from "../../src/db/prismaClient";
 import { createApp } from "../../src/app";
 import { Decimal } from "@prisma/client/runtime/client";
-import { AccountStatus } from "../../src/generated/enums";
 import { 
   AccountCreateInputOptionals, 
   buildAccountCreateInput, 
   buildAccountCreateOutput
 } from "./mockData/account.mock";
 import jwt, { SignOptions } from "jsonwebtoken";
-import { UserRole } from "../../src/generated/enums";
+import { UserRole, AccountStatus } from "../../src/generated/enums";
 
 const app = createApp();
 
@@ -492,7 +491,7 @@ describe("Integration - Accounts API", () => {
       expect(res.headers).toHaveProperty("x-trace-id");
     });
 
-    test("Close already closed account => either 409 or 200 idempotent", async () => {
+    test("Close already closed account => 200", async () => {
       const accountId = await createAccountAndGetId({ status: AccountStatus.ACTIVE });
 
       const first = await request(app)
