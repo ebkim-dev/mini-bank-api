@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction, RequestHandler } from "express";
 import { ZodError, ZodSchema } from "zod";
 import { BadRequestError } from "../error/error";
-import { ErrorCode } from "../types/errorCodes";
+import { EventCode } from "../types/eventCodes";
 
 function formatZodIssues(err: ZodError) {
   return err.issues.map((i) => ({
@@ -26,7 +26,7 @@ export function validate(
     } catch (err) {
       if (err instanceof ZodError) {
         return next(
-          BadRequestError(ErrorCode.VALIDATION_ERROR, "Validation failed", {
+          BadRequestError(EventCode.VALIDATION_ERROR, "Validation failed", {
             issues: formatZodIssues(err),
           })
         );

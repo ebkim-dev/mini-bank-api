@@ -1,6 +1,6 @@
 
 import * as errorHandlers from "../../../src/middleware/errorHandler";
-import { ErrorCode } from "../../../src/types/errorCodes";
+import { EventCode } from "../../../src/types/eventCodes";
 import { AppError } from "../../../src/error/error";
 
 jest.mock("../../../src/logging/logger", () => ({
@@ -85,7 +85,7 @@ describe("errorHandler", () => {
     expect(statusMock).toHaveBeenCalledWith(500);
     expect(jsonMock).toHaveBeenCalledWith({
       traceId: "mock-trace-id",
-      code: ErrorCode.INTERNAL_SERVER_ERROR,
+      code: EventCode.INTERNAL_SERVER_ERROR,
       message: "Unexpected error occurred",
       details: { originalError: err }
     });

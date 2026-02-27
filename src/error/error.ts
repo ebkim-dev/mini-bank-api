@@ -1,4 +1,4 @@
-import { ErrorCode } from "../types/errorCodes";
+import { EventCode } from "../types/eventCodes";
 
 export class AppError extends Error {
   public readonly statusCode: number;
@@ -60,5 +60,5 @@ export const InternalServerError = (
   message = "Something went wrong",
   details?: unknown
 ): AppError => {
-  return new AppError(500, ErrorCode.INTERNAL_SERVER_ERROR, message, details);
+  return new AppError(500, EventCode.INTERNAL_SERVER_ERROR, message, details);
 };

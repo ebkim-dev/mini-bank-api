@@ -15,6 +15,7 @@ const mockedJwtPayload: JwtPayload = {
   exp: now + JWT_EXPIRES_IN,
 };
 const mockedAuthInput: AuthInput = {
+  actorId: "123",
   role: UserRole.ADMIN
 }
 
@@ -107,7 +108,8 @@ describe("getAccountsByCustomerId controller", () => {
     await accountController.getAccountsByCustomerId(req, res, next);
 
     expect(accountService.fetchAccountsByCustomerId).toHaveBeenCalledWith(
-      req.validated.query.customer_id
+      req.validated.query.customer_id,
+      mockedAuthInput
     );
     expect(statusMock).toHaveBeenCalledWith(200);
     expect(jsonMock).toHaveBeenCalledWith([]);
@@ -126,7 +128,8 @@ describe("getAccountsByCustomerId controller", () => {
     await accountController.getAccountsByCustomerId(req, res, next);
 
     expect(accountService.fetchAccountsByCustomerId).toHaveBeenCalledWith(
-      req.validated.query.customer_id
+      req.validated.query.customer_id,
+      mockedAuthInput
     );
     expect(statusMock).toHaveBeenCalledWith(200);
     expect(jsonMock).toHaveBeenCalledWith([mockAccountOutput1, mockAccountOutput2]);
@@ -160,7 +163,8 @@ describe("getAccount controller", () => {
     await accountController.getAccount(req, res, next);
 
     expect(accountService.fetchAccountById).toHaveBeenCalledWith(
-      req.validated.params.id
+      req.validated.params.id,
+      mockedAuthInput
     );
     expect(statusMock).toHaveBeenCalledWith(200);
     expect(jsonMock).toHaveBeenCalledWith(mockAccountOutput1);
