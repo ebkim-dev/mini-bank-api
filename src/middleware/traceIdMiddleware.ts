@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import { randomUUID } from "crypto";
 
 export const traceIdMiddleware = (
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): void => {

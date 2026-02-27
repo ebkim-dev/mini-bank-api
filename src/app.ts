@@ -1,6 +1,6 @@
 
 import express, { Application } from "express";
-import { traceIdMiddleware } from "./middleware/traceId";
+import { traceIdMiddleware } from "./middleware/traceIdMiddleware";
 import { requestLoggerMiddleware } from "./middleware/requestLoggerMiddleware";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler";
 import healthRouter from "./health/healthRouter";

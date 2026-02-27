@@ -3,8 +3,15 @@ import { NextFunction, Request, Response } from "express";
 import { AppError, InternalServerError, NotFoundError } from "../error/error";
 import { logger } from "../logging/logger";
 
-export const notFoundHandler = (req: Request, res: Response, next: NextFunction): void => {
-  const err = NotFoundError("ROUTE_NOT_FOUND", `Route ${req.method} ${req.originalUrl} not found`);
+export const notFoundHandler = (
+  req: Request, 
+  _res: Response, 
+  next: NextFunction
+): void => {
+  const err = NotFoundError(
+    "ROUTE_NOT_FOUND", 
+    `Route ${req.method} ${req.originalUrl} not found`
+  );
   next(err);
 };
 
@@ -12,7 +19,7 @@ export const errorHandler = (
   err: unknown,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
   const traceId = res.locals.traceId as string | undefined;
 
@@ -26,11 +33,14 @@ export const errorHandler = (
     });
   }
 
-  logger.error(appError as any, {
-    traceId,
-    path: req.originalUrl,
-    method: req.method,
-  });
+  logger.error(
+    appError as any, 
+    {
+      traceId,
+      method: req.method,
+      path: req.originalUrl,
+    }
+  );
 
   const errorResponse = {
     traceId,
