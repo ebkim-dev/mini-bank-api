@@ -2,7 +2,7 @@
 import type { Request, Response, NextFunction, RequestHandler } from "express";
 import jwt from "jsonwebtoken";
 import { ForbiddenError, UnauthorizedError } from "../error/error";
-import { ErrorCode } from "../types/errorCodes";
+import { EventCode } from "../types/eventCodes";
 import { UserRole } from "../generated/enums";
 
 export function requireAuth(): RequestHandler {
@@ -11,14 +11,14 @@ export function requireAuth(): RequestHandler {
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return next(
-        UnauthorizedError(ErrorCode.INVALID_TOKEN, "Authentication failed")
+        UnauthorizedError(EventCode.INVALID_TOKEN, "Authentication failed")
       );
     }
 
     const token = authHeader.split(" ")[1];
     if (!token) {
       return next(
-        UnauthorizedError(ErrorCode.INVALID_TOKEN, "Authentication failed")
+        UnauthorizedError(EventCode.INVALID_TOKEN, "Authentication failed")
       );
     }
 
@@ -34,7 +34,7 @@ export function requireAuth(): RequestHandler {
       return next();
     } catch (err) {
       return next(
-        UnauthorizedError(ErrorCode.INVALID_TOKEN, "Authentication failed")
+        UnauthorizedError(EventCode.INVALID_TOKEN, "Authentication failed")
       );
     }
   };
@@ -44,7 +44,7 @@ export function requireRole(role: UserRole): RequestHandler {
   return (req: Request, _res: Response, next: NextFunction) => {
     if (req.user.role !== role) {
       return next(
-        ForbiddenError(ErrorCode.FORBIDDEN, "Insufficient permissions")
+        ForbiddenError(EventCode.FORBIDDEN, "Insufficient permissions")
       );
     }
 

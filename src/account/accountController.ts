@@ -17,7 +17,10 @@ export async function createAccount(
     const jwtPayload: JwtPayload = (req as any).validated.user;
     const newAccount: AccountOutput = await accountService.insertAccount(
       body, 
-      { role: jwtPayload.role }
+      { 
+        actorId: jwtPayload.sub,
+        role: jwtPayload.role
+      }
     );
     res.status(201).json(newAccount);
   } catch (err) {
@@ -32,8 +35,13 @@ export async function getAccountsByCustomerId(
 ): Promise<void> {
   try {
     const { customer_id } = (req as any).validated.query;
+    const jwtPayload: JwtPayload = (req as any).validated.user;
     const accounts: AccountOutput[] = await accountService.fetchAccountsByCustomerId(
-      customer_id
+      customer_id,
+      { 
+        actorId: jwtPayload.sub,
+        role: jwtPayload.role
+      }
     );
     res.status(200).json(accounts);
   } catch (err) {
@@ -48,8 +56,13 @@ export async function getAccount(
 ): Promise<void> {
   try {
     const { id } = (req as any).validated.params;
+    const jwtPayload: JwtPayload = (req as any).validated.user;
     const account: AccountOutput = await accountService.fetchAccountById(
       id,
+      { 
+        actorId: jwtPayload.sub,
+        role: jwtPayload.role
+      }
     );
     res.status(200).json(account);
   } catch (err) {
@@ -69,7 +82,10 @@ export async function updateAccount(
     const updated: AccountOutput = await accountService.updateAccountById(
       id,
       body,
-      { role: jwtPayload.role }
+      { 
+        actorId: jwtPayload.sub,
+        role: jwtPayload.role
+      }
     );
     res.status(200).json(updated);
   } catch (err) {
@@ -87,7 +103,10 @@ export async function deleteAccount(
     const jwtPayload: JwtPayload = (req as any).validated.user;
     const closed: AccountOutput = await accountService.deleteAccountById(
       id,
-      { role: jwtPayload.role }
+      { 
+        actorId: jwtPayload.sub,
+        role: jwtPayload.role
+      }
     );
     res.status(200).json(closed);
   } catch (err) {

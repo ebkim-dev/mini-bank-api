@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { validate } from "../../../src/middleware/validationMiddleware";
 import { AppError } from "../../../src/error/error";
-import { ErrorCode } from "../../../src/types/errorCodes";
+import { EventCode } from "../../../src/types/eventCodes";
 
 describe("validationMiddleware.validate", () => {
   function makeReq(overrides?: Partial<any>) {
@@ -72,7 +72,7 @@ describe("validationMiddleware.validate", () => {
 
     const appErr = errArg as AppError;
     expect(appErr.statusCode).toBe(400);
-    expect(appErr.code).toBe(ErrorCode.VALIDATION_ERROR);
+    expect(appErr.code).toBe(EventCode.VALIDATION_ERROR);
     expect(appErr.message).toBe("Validation failed");
     
     expect(appErr.details).toBeDefined();

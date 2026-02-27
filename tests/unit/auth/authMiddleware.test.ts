@@ -1,7 +1,7 @@
 
 import * as authMiddleware from "../../../src/auth/authMiddleware";
 import jwt from "jsonwebtoken";
-import { ErrorCode } from "../../../src/types/errorCodes";
+import { EventCode } from "../../../src/types/eventCodes";
 import { UserRole } from "../../../src/generated/enums";
 import { JwtPayload } from "../../../src/auth/user";
 import { JWT_EXPIRES_IN } from "../../../src/auth/authService";
@@ -58,7 +58,7 @@ describe("requireAuth middleware", () => {
 
     const calledWith = next.mock.calls[0][0];
     expect(calledWith).toBeInstanceOf(Error);
-    expect(calledWith.code).toBe(ErrorCode.INVALID_TOKEN);
+    expect(calledWith.code).toBe(EventCode.INVALID_TOKEN);
   });
   
   it("should throw 401 given invalid header", async () => {
@@ -73,7 +73,7 @@ describe("requireAuth middleware", () => {
 
     const calledWith = next.mock.calls[0][0];
     expect(calledWith).toBeInstanceOf(Error);
-    expect(calledWith.code).toBe(ErrorCode.INVALID_TOKEN);
+    expect(calledWith.code).toBe(EventCode.INVALID_TOKEN);
   });
   
   it("should throw 401 given missing token", async () => {
@@ -88,7 +88,7 @@ describe("requireAuth middleware", () => {
 
     const calledWith = next.mock.calls[0][0];
     expect(calledWith).toBeInstanceOf(Error);
-    expect(calledWith.code).toBe(ErrorCode.INVALID_TOKEN);
+    expect(calledWith.code).toBe(EventCode.INVALID_TOKEN);
   });
   
   it("should throw 401 given expired token", async () => {
@@ -109,7 +109,7 @@ describe("requireAuth middleware", () => {
 
     const calledWith = next.mock.calls[0][0];
     expect(calledWith).toBeInstanceOf(Error);
-    expect(calledWith.code).toBe(ErrorCode.INVALID_TOKEN);
+    expect(calledWith.code).toBe(EventCode.INVALID_TOKEN);
   });
 });
 
@@ -135,6 +135,6 @@ describe("requireRole middleware", () => {
 
     const calledWith = next.mock.calls[0][0];
     expect(calledWith).toBeInstanceOf(Error);
-    expect(calledWith.code).toBe(ErrorCode.FORBIDDEN);
+    expect(calledWith.code).toBe(EventCode.FORBIDDEN);
   });
 });

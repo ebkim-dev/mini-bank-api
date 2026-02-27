@@ -32,9 +32,11 @@ const mockAccountUpdateInput: AccountUpdateInput = {
   status: AccountStatus.ACTIVE,
 }
 const mockAuthInputAdmin: AuthInput = {
+  actorId: "123",
   role: UserRole.ADMIN
 }
 const mockAuthInputStandard: AuthInput = {
+  actorId: "234",
   role: UserRole.STANDARD
 }
 
@@ -134,7 +136,7 @@ describe("fetchAccountsByCustomerId service", () => {
     (prismaClient.account.findMany as jest.Mock)
       .mockResolvedValue([mockAccountRecord1, mockAccountRecord2]);
 
-    await expect(accountService.fetchAccountsByCustomerId(1n))
+    await expect(accountService.fetchAccountsByCustomerId(1n, mockAuthInputStandard))
       .resolves.toMatchObject([mockAccountOutput1, mockAccountOutput2]);
   });
 
@@ -142,7 +144,7 @@ describe("fetchAccountsByCustomerId service", () => {
     (prismaClient.account.findMany as jest.Mock)
       .mockRejectedValue(unknownPrismaError);
 
-    await expect(accountService.fetchAccountsByCustomerId(1n))
+    await expect(accountService.fetchAccountsByCustomerId(1n, mockAuthInputStandard))
       .rejects.toThrow(UNKNOWN_ERROR_MESSAGE);
   });
 });
@@ -152,7 +154,7 @@ describe("fetchAccountById service", () => {
     (prismaClient.account.findUnique as jest.Mock)
       .mockResolvedValue(mockAccountRecord1);
 
-    await expect(accountService.fetchAccountById(1n))
+    await expect(accountService.fetchAccountById(1n, mockAuthInputStandard))
       .resolves.toMatchObject(mockAccountOutput1);
   });
 
@@ -160,7 +162,7 @@ describe("fetchAccountById service", () => {
     (prismaClient.account.findUnique as jest.Mock)
       .mockResolvedValue(null);
    
-    await expect(accountService.fetchAccountById(9999999n))
+    await expect(accountService.fetchAccountById(9999999n, mockAuthInputAdmin))
       .rejects
       .toThrow(NOT_FOUND_ERROR_MESSAGE);
   });
@@ -169,7 +171,7 @@ describe("fetchAccountById service", () => {
     (prismaClient.account.findUnique as jest.Mock)
       .mockRejectedValue(unknownPrismaError);
 
-    await expect(accountService.fetchAccountById(1n))
+    await expect(accountService.fetchAccountById(1n, mockAuthInputAdmin))
       .rejects
       .toThrow(UNKNOWN_ERROR_MESSAGE);
   });

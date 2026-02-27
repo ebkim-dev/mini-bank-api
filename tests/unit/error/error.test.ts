@@ -8,7 +8,7 @@ import {
   InternalServerError,
 } from "../../../src/error/error";
 
-import { ErrorCode } from "../../../src/types/errorCodes";
+import { EventCode } from "../../../src/types/eventCodes";
 
 describe("error.ts", () => {
   test("AppError sets fields + keeps prototype chain (instanceof works)", () => {
@@ -78,7 +78,7 @@ describe("error.ts", () => {
 
     expect(err).toBeInstanceOf(AppError);
     expect(err.statusCode).toBe(500);
-    expect(err.code).toBe(ErrorCode.INTERNAL_SERVER_ERROR);
+    expect(err.code).toBe(EventCode.INTERNAL_SERVER_ERROR);
     expect(err.message).toBe("Something went wrong"); 
     expect(err.details).toBeUndefined();
   });
@@ -88,7 +88,7 @@ describe("error.ts", () => {
 
     expect(err).toBeInstanceOf(AppError);
     expect(err.statusCode).toBe(500);
-    expect(err.code).toBe(ErrorCode.INTERNAL_SERVER_ERROR);
+    expect(err.code).toBe(EventCode.INTERNAL_SERVER_ERROR);
     expect(err.message).toBe("DB down");
     expect(err.details).toEqual({ service: "mysql" });
   });
