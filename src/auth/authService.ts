@@ -21,7 +21,7 @@ import {
 import { getDurationMs } from '../utils/calculateDuration';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
-export const JWT_EXPIRES_IN = 3_600_000; // 1h
+export const JWT_EXPIRES_IN = 3600; // 1h
 
 export async function registerUser(
   data: RegisterInput
@@ -101,17 +101,17 @@ export async function loginUser(
   }
   
   const serializedId = userRecord.id.toString();
-  const iat = Date.now();
-  const exp = iat + JWT_EXPIRES_IN;
   
   const payload: JwtPayload = {
     sub: userRecord.id.toString(),
     role: userRecord.role,
-    iat,
-    exp,
   };
 
-  const token = jwt.sign(payload, JWT_SECRET);
+  const token = jwt.sign(
+    payload,
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
     
   const event: AuthSuccessEvent = {
     executionStatus: ExecutionStatus.SUCCESS,

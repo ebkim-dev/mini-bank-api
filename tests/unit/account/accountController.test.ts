@@ -5,14 +5,11 @@ import { Decimal } from "@prisma/client/runtime/client";
 import { AccountType, AccountStatus, UserRole } from "../../../src/generated/enums";
 import { AccountCreateInput, AccountOutput } from "../../../src/account/account";
 import { AuthInput, JwtPayload } from "../../../src/auth/user";
-import { JWT_EXPIRES_IN } from "../../../src/auth/authService";
 
 const now = Date.now();
 const mockedJwtPayload: JwtPayload = {
   sub: "123",
-  role: UserRole.ADMIN,
-  iat: now,
-  exp: now + JWT_EXPIRES_IN,
+  role: UserRole.ADMIN
 };
 const mockedAuthInput: AuthInput = {
   actorId: "123",
