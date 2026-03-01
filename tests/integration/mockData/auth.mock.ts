@@ -1,3 +1,5 @@
+import { JWT_EXPIRES_IN } from "../../../src/auth/authService";
+
 export type RegisterInput = {
   username: string;
   password: string;
@@ -46,7 +48,7 @@ export type LoginOutput = {
 export function buildLoginOutput(overrides: Partial<LoginOutput> = {}): LoginOutput {
   return {
     token: expect.any(String) as any,
-    expiresIn: 3600000,
+    expiresIn: JWT_EXPIRES_IN,
     ...overrides,
   };
 }

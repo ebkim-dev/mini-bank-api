@@ -4,19 +4,15 @@ import jwt from "jsonwebtoken";
 import { EventCode } from "../../../src/types/eventCodes";
 import { UserRole } from "../../../src/generated/enums";
 import { JwtPayload } from "../../../src/auth/user";
-import { JWT_EXPIRES_IN } from "../../../src/auth/authService";
 
 jest.mock("jsonwebtoken");
 
 const res: any = {};
 const mockedVerify = jwt.verify as jest.Mock;
 
-const now = Date.now();
 const mockedJwtPayload: JwtPayload = {
   sub: "123",
-  role: UserRole.ADMIN,
-  iat: now,
-  exp: now + JWT_EXPIRES_IN,
+  role: UserRole.ADMIN
 };
 
 let next: jest.Mock;

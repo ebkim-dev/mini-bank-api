@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { logger } from "../logging/logger";
+import { getDurationMs } from "../utils/calculateDuration";
 
 export const requestLoggerMiddleware = (
   req: Request,
@@ -8,9 +9,7 @@ export const requestLoggerMiddleware = (
 ): void => {
   const startTime = process.hrtime.bigint();
   res.on("finish", () => {
-    const endTime = process.hrtime.bigint();
-    const durationMs = Number(endTime - startTime) / 1_000_000;
-
+    const durationMs = getDurationMs(startTime);
     const traceId = res.locals.traceId as string | undefined;
 
     logger.info("HTTP request completed", {
