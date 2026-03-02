@@ -25,7 +25,7 @@ const mockRegisterInput: RegisterInput = {
   username: "mockUser",
   password: "12341234",
 };
-const currentDate = new Date();
+const mockDate = new Date();
 const mockRegisterOutput: RegisterOutput = {
   id: 42n.toString(),
 };
@@ -44,8 +44,8 @@ const mockUserRecord: User = {
   username: "mockUser",
   password_hash: "hashedpw",
   role: UserRole.ADMIN,
-  created_at: currentDate,
-  updated_at: currentDate,
+  created_at: mockDate,
+  updated_at: mockDate,
 };
 
 afterEach(() => {

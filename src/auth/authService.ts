@@ -5,20 +5,20 @@ import type {
   LoginOutput,
   JwtPayload,
 } from './user';
+import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import prismaClient from '../db/prismaClient';
 import { UserRole } from "../generated/enums";
 import { Prisma } from "../generated/client";
-import { ConflictError, UnauthorizedError } from "../error/error";
 import { EventCode } from '../types/eventCodes';
-import jwt from "jsonwebtoken";
+import { getDurationMs } from '../utils/calculateDuration';
+import { ConflictError, UnauthorizedError } from "../error/error";
 import { 
   ExecutionStatus, 
   AuthSuccessEvent, 
   logEvent, 
   AuthFailureEvent
 } from '../logging/logSchemas';
-import { getDurationMs } from '../utils/calculateDuration';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 export const JWT_EXPIRES_IN = 3600; // 1h

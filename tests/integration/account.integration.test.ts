@@ -1,82 +1,62 @@
 import request from "supertest";
-import prisma from "../../src/db/prismaClient";
 import { createApp } from "../../src/app";
 import { Decimal } from "@prisma/client/runtime/client";
-import { 
-  AccountCreateInputOptionals, 
-  buildAccountCreateInput, 
-  buildAccountCreateOutput
-} from "./mockData/account.mock";
-import jwt, { SignOptions } from "jsonwebtoken";
 import { UserRole, AccountStatus } from "../../src/generated/enums";
+import { 
+  buildAccountCreateInput, 
+  buildAccountCreateOutput,
+  buildMockAccountRecord,
+  buildToken
+} from "./mockData/account.mock";
+
+jest.mock("../../src/db/prismaClient", () => ({
+  __esModule: true,
+  default: {
+    account: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn()
+    }
+  },
+}));
+import prismaClient from "../../src/db/prismaClient";
+import { Prisma } from "../../src/generated/client";
 
 const app = createApp();
-
-function buildToken(
-  role: UserRole, 
-  expiresIn: NonNullable<SignOptions["expiresIn"]>
-) {
-  return jwt.sign(
-    {
-      sub: "123",
-      role: role,
-    },
-    process.env.JWT_SECRET as string,
-    { expiresIn }
-  );
-}
-
-async function createAccountAndGetId(
-  inputOverrides: Partial<ReturnType<typeof buildAccountCreateInput>> = {}
-): Promise<string> {
-  const input = buildAccountCreateInput(inputOverrides);
-
-  const res = await request(app)
-    .post("/accounts")
-    .set("Authorization", `Bearer ${token}`)
-    .send(input);
-
-  expect(res.status).toBe(201);
-
-  const account = await prisma.account.findFirst({
-    where: { customer_id: BigInt(1) },
-    orderBy: { id: "desc" },
-  });
-  if (!account) throw new Error("Account was not created in DB");
-
-  return account.id.toString();
-}
+const mockAccountId: string = "1";
+let token: string;
 
 beforeAll(async () => {
-  await prisma.$connect();
-});
-
-beforeEach(async () => {
   token = buildToken(UserRole.ADMIN, "1h");
 })
 
-afterEach(async () => {
-  await prisma.account.deleteMany();
+const mockCreate = prismaClient.account.create as jest.Mock;
+const mockUpdate = prismaClient.account.update as jest.Mock;
+const mockFindUnique = prismaClient.account.findUnique as jest.Mock;
+const mockFindMany = prismaClient.account.findMany as jest.Mock;
+beforeEach(async () => {
+  jest.clearAllMocks();
+  mockCreate.mockResolvedValue(buildMockAccountRecord());
+  mockUpdate.mockResolvedValue(buildMockAccountRecord());
+  mockFindUnique.mockResolvedValue(buildMockAccountRecord());
+  mockFindMany.mockResolvedValue([]);
 });
 
-afterAll(async () => {
-  await prisma.$disconnect();
-});
-
-
-let token: string;
 describe("Integration - Accounts API", () => {
   describe("POST /accounts", () => {
     test("Correct input => 201, new account is created and returned", async () => {
-      const mockAccountInputOptionals: AccountCreateInputOptionals = {
+      const mockAccountCreateInput = buildAccountCreateInput({
         nickname: "alice",
         status: AccountStatus.ACTIVE,
-        balance: (new Decimal(0)).toString(),
-      }
-
-      const mockAccountCreateInput = 
-        buildAccountCreateInput(mockAccountInputOptionals);
-      const mockAccountCreateOutput = buildAccountCreateOutput();
+        balance: (new Decimal(0)).toString()
+      });
+      const mockAccountCreateOutput = buildAccountCreateOutput({
+        nickname: "alice"
+      });
+      mockCreate.mockResolvedValue(buildMockAccountRecord({
+        nickname: "alice"
+      }));
 
       const res = await request(app)
         .post("/accounts")
@@ -90,7 +70,9 @@ describe("Integration - Accounts API", () => {
 
     test("Optional fields missing => 201, new account is created and returned", async () => {
       const mockAccountCreateInput = buildAccountCreateInput();
-      const mockAccountCreateOutput = buildAccountCreateOutput({ nickname: "" });
+      const mockAccountCreateOutput = buildAccountCreateOutput();
+
+      console.log(mockAccountCreateInput);
 
       const res = await request(app)
         .post("/accounts")
@@ -202,11 +184,11 @@ describe("Integration - Accounts API", () => {
 
     it('should return 403 given STANDARD role', async() => {
       const mockAccountCreateInput = buildAccountCreateInput();
-      token = buildToken(UserRole.STANDARD, "1h");
+      const standardToken = buildToken(UserRole.STANDARD, "1h");
 
       const res = await request(app)
         .post("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("Authorization", `Bearer ${standardToken}`)
         .send(buildAccountCreateInput(mockAccountCreateInput));
 
       expect(res.status).toBe(403);
@@ -216,19 +198,15 @@ describe("Integration - Accounts API", () => {
 
   describe("GET /accounts?customerId=...", () => {
     test("1+ account found for customerId => 200, array of found accounts is returned", async () => {
-      await request(app)
-        .post("/accounts")
-        .set("Authorization", `Bearer ${token}`)
-        .send(buildAccountCreateInput({ nickname: "a1" }));
-      await request(app)
-        .post("/accounts")
-        .set("Authorization", `Bearer ${token}`)
-        .send(buildAccountCreateInput({ nickname: "a2" }));
+      mockFindMany.mockResolvedValue([
+        buildMockAccountRecord(),
+        buildMockAccountRecord({ id: 2n })
+      ]);
 
-      token = buildToken(UserRole.STANDARD, "1h");
+      const standardToken = buildToken(UserRole.STANDARD, "1h");
       const res = await request(app)
         .get("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("Authorization", `Bearer ${standardToken}`)
         .query({ customerId: "1" });
 
       expect(res.status).toBe(200);
@@ -236,10 +214,10 @@ describe("Integration - Accounts API", () => {
 
       expect(Array.isArray(res.body)).toBe(true);
       expect(res.body.length).toBeGreaterThanOrEqual(2);
-
-      expect(res.body[0]).toHaveProperty("customer_id", "1");
-      expect(res.body[0]).toHaveProperty("type");
-      expect(res.body[0]).toHaveProperty("currency");
+      expect(res.body).toEqual([
+        buildAccountCreateOutput(),
+        buildAccountCreateOutput(),
+      ]);
     });
 
     test("No account found for customerId => 200, empty array is returned", async () => {
@@ -285,12 +263,10 @@ describe("Integration - Accounts API", () => {
 
   describe("GET /accounts/:accountId", () => {
     test("Account found for accountId => 200, account is returned", async () => {
-      const accountId = await createAccountAndGetId({ nickname: "alice" });
-
-      token = buildToken(UserRole.STANDARD, "1h");
+      const standardToken = buildToken(UserRole.STANDARD, "1h");
       const res = await request(app)
-        .get(`/accounts/${accountId}`)
-        .set("Authorization", `Bearer ${token}`);
+        .get(`/accounts/${mockAccountId}`)
+        .set("Authorization", `Bearer ${standardToken}`);
 
       expect(res.status).toBe(200);
       expect(res.headers).toHaveProperty("x-trace-id");
@@ -310,6 +286,8 @@ describe("Integration - Accounts API", () => {
     });
 
     test("Account not found for accountId => 404", async () => {
+      mockFindUnique.mockResolvedValue(null);
+
       const res = await request(app)
         .get(`/accounts/999999999`)
         .set("Authorization", `Bearer ${token}`);
@@ -319,9 +297,8 @@ describe("Integration - Accounts API", () => {
     });
 
     it('should return 401 given missing token', async () => {
-      const accountId = await createAccountAndGetId({ nickname: "alice" });
       const res = await request(app)
-        .get(`/accounts/${accountId}`)
+        .get(`/accounts/${mockAccountId}`)
         .set("Authorization", `Bearer`);
 
       expect(res.status).toBe(401);
@@ -331,12 +308,18 @@ describe("Integration - Accounts API", () => {
 
   describe("PUT /accounts/:accountId", () => {
     test("nickname and status are both given => 200, account is updated and returned", async () => {
-      const accountId = await createAccountAndGetId({ nickname: "old" });
+      mockUpdate.mockResolvedValue(buildMockAccountRecord({
+        nickname: "newNick", 
+        status: AccountStatus.CLOSED
+      }));
 
       const res = await request(app)
-        .put(`/accounts/${accountId}`)
+        .put(`/accounts/${mockAccountId}`)
         .set("Authorization", `Bearer ${token}`)
-        .send({ nickname: "newNick", status: AccountStatus.CLOSED });
+        .send({ 
+          nickname: "newNick", 
+          status: AccountStatus.CLOSED
+        });
 
       expect(res.status).toBe(200);
       expect(res.headers).toHaveProperty("x-trace-id");
@@ -349,10 +332,12 @@ describe("Integration - Accounts API", () => {
     });
 
     test("nickname only is given => 200, account is updated and returned", async () => {
-      const accountId = await createAccountAndGetId({ nickname: "old" });
+      mockUpdate.mockResolvedValue(buildMockAccountRecord({
+        nickname: "onlyNick",
+      }));
 
       const res = await request(app)
-        .put(`/accounts/${accountId}`)
+        .put(`/accounts/${mockAccountId}`)
         .set("Authorization", `Bearer ${token}`)
         .send({ nickname: "onlyNick" });
 
@@ -366,10 +351,12 @@ describe("Integration - Accounts API", () => {
     });
 
     test("status only is given => 200, account is updated and returned", async () => {
-      const accountId = await createAccountAndGetId({ status: AccountStatus.ACTIVE });
+      mockUpdate.mockResolvedValue(buildMockAccountRecord({
+        status: AccountStatus.CLOSED
+      }));
 
       const res = await request(app)
-        .put(`/accounts/${accountId}`)
+        .put(`/accounts/${mockAccountId}`)
         .set("Authorization", `Bearer ${token}`)
         .send({ status: AccountStatus.CLOSED });
 
@@ -383,10 +370,8 @@ describe("Integration - Accounts API", () => {
     });
 
     test("Empty body is given => 400, atleast one field required", async () => {
-      const accountId = await createAccountAndGetId({ nickname: "same" });
-
       const res = await request(app)
-        .put(`/accounts/${accountId}`)
+        .put(`/accounts/${mockAccountId}`)
         .set("Authorization", `Bearer ${token}`)
         .send({});
 
@@ -406,11 +391,10 @@ describe("Integration - Accounts API", () => {
     });
 
     test("Large input string is given (longer than maxLength) => 400", async () => {
-      const accountId = await createAccountAndGetId({ nickname: "ok" });
       const longNickname = "a".repeat(500);
 
       const res = await request(app)
-        .put(`/accounts/${accountId}`)
+        .put(`/accounts/${mockAccountId}`)
         .set("Authorization", `Bearer ${token}`)
         .send({ nickname: longNickname });
 
@@ -419,6 +403,13 @@ describe("Integration - Accounts API", () => {
     });
 
     test("Account not found for accountId => 404", async () => {
+      const mockError = { code: "P2025" } as any;
+      Object.setPrototypeOf(
+        mockError,
+        Prisma.PrismaClientKnownRequestError.prototype
+      );
+      mockUpdate.mockRejectedValue(mockError);
+
       const res = await request(app)
         .put(`/accounts/999999999`)
         .set("Authorization", `Bearer ${token}`)
@@ -429,9 +420,8 @@ describe("Integration - Accounts API", () => {
     });
 
     it('should return 401 given invalid token', async () => {
-      const accountId = await createAccountAndGetId({ nickname: "oldName" });
       const res = await request(app)
-        .put(`/accounts/${accountId}`)
+        .put(`/accounts/${mockAccountId}`)
         .set("Authorization", "Bearer wrongToken")
         .send({ nickname: "newName" });
 
@@ -440,12 +430,11 @@ describe("Integration - Accounts API", () => {
     });
 
     it('should return 403 given STANDARD role', async() => {
-      const accountId = await createAccountAndGetId({ nickname: "oldName" });
-      token = buildToken(UserRole.STANDARD, "1h");
+      const standardToken = buildToken(UserRole.STANDARD, "1h");
 
       const res = await request(app)
-        .put(`/accounts/${accountId}`)
-        .set("Authorization", `Bearer ${token}`)
+        .put(`/accounts/${mockAccountId}`)
+        .set("Authorization", `Bearer ${standardToken}`)
         .send({ nickname: "newName" });
 
       expect(res.status).toBe(403);
@@ -455,10 +444,12 @@ describe("Integration - Accounts API", () => {
 
   describe("POST /accounts/:accountId/close", () => {
     test("Account found for accountId => 200, account is closed and returned", async () => {
-      const accountId = await createAccountAndGetId({ status: AccountStatus.ACTIVE });
+      mockUpdate.mockResolvedValue(buildMockAccountRecord({
+        status: AccountStatus.CLOSED
+      }));
 
       const res = await request(app)
-        .post(`/accounts/${accountId}/close`)
+        .post(`/accounts/${mockAccountId}/close`)
         .set("Authorization", `Bearer ${token}`)
         .send({});
 
@@ -481,6 +472,13 @@ describe("Integration - Accounts API", () => {
     });
 
     test("Account not found for accountId => 404", async () => {
+      const mockError = { code: "P2025" } as any;
+      Object.setPrototypeOf(
+        mockError,
+        Prisma.PrismaClientKnownRequestError.prototype
+      );
+      mockUpdate.mockRejectedValue(mockError);
+
       const res = await request(app)
         .post(`/accounts/999999999/close`)
         .set("Authorization", `Bearer ${token}`)
@@ -491,17 +489,20 @@ describe("Integration - Accounts API", () => {
     });
 
     test("Close already closed account => 200", async () => {
-      const accountId = await createAccountAndGetId({ status: AccountStatus.ACTIVE });
+      mockUpdate.mockResolvedValueOnce(buildMockAccountRecord({
+        status: AccountStatus.CLOSED
+      })).mockResolvedValueOnce(buildMockAccountRecord({
+        status: AccountStatus.CLOSED
+      }));
 
       const first = await request(app)
-        .post(`/accounts/${accountId}/close`)
+        .post(`/accounts/${mockAccountId}/close`)
         .set("Authorization", `Bearer ${token}`)
         .send({});
         expect(first.status).toBe(200);
-
       
       const second = await request(app)
-        .post(`/accounts/${accountId}/close`)
+        .post(`/accounts/${mockAccountId}/close`)
         .set("Authorization", `Bearer ${token}`)
         .send({});
         expect(second.status).toBe(200);
@@ -510,24 +511,22 @@ describe("Integration - Accounts API", () => {
     });
 
     it('should return 401 given expired token', async () => {
-      const accountId = await createAccountAndGetId({ status: AccountStatus.ACTIVE });
-      token = buildToken(UserRole.ADMIN, -1);
+      const expiredToken = buildToken(UserRole.ADMIN, -1);
       
       const res = await request(app)
-        .post(`/accounts/${accountId}/close`)
-        .set("Authorization", `Bearer ${token}`);
+        .post(`/accounts/${mockAccountId}/close`)
+        .set("Authorization", `Bearer ${expiredToken}`);
 
       expect(res.status).toBe(401);
       expect(res.headers).toHaveProperty("x-trace-id");
     });
 
     it('should return 403 given STANDARD role', async() => {
-      const accountId = await createAccountAndGetId({ status: AccountStatus.ACTIVE });
-      token = buildToken(UserRole.STANDARD, "1h");
+      const standardToken = buildToken(UserRole.STANDARD, "1h");
 
       const res = await request(app)
-        .post(`/accounts/${accountId}/close`)
-        .set("Authorization", `Bearer ${token}`);
+        .post(`/accounts/${mockAccountId}/close`)
+        .set("Authorization", `Bearer ${standardToken}`);
 
       expect(res.status).toBe(403);
       expect(res.headers).toHaveProperty("x-trace-id");
