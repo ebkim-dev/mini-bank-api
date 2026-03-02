@@ -1,5 +1,5 @@
 import request from "supertest";
-import bcrypt from "bcrypt";
+import * as crypto from "crypto";
 import { createApp } from "../../src/app";
 import { UserRole } from "../../src/generated/enums";
 import { Prisma, User } from "../../src/generated/client";
@@ -9,6 +9,22 @@ import {
   buildLoginInput, 
   buildLoginOutput
 } from "./mockData/auth.mock";
+
+jest.mock("bcrypt", () => ({
+  hash: jest.fn().mockResolvedValue("hashedPassword"),
+  compare: jest.fn((plain: string, _hash: string) => {
+    if (plain === "mockPassword") {
+      return Promise.resolve(true);
+    }
+    return Promise.resolve(false);
+  }),
+}));
+import bcrypt from "bcrypt";
+
+jest.mock("../../src/redis/redisClient", () => ({
+  redisClient: { set: jest.fn() }
+}));
+import { redisClient } from "../../src/redis/redisClient";
 
 jest.mock("../../src/db/prismaClient", () => ({
   __esModule: true,
@@ -28,23 +44,19 @@ function buildMockUserRecord(overrides = {}): User {
   const mockUserRecord: User = {
     id: "550e8400-e29b-41d4-a716-446655440042",
     username: "mockUser",
-    password_hash: hashedMockPassword,
+    password_hash: "hashedPassword",
     role: UserRole.ADMIN,
     created_at: mockDate,
     updated_at: mockDate,
   };
-  return mockUserRecord
+  return mockUserRecord;
 }
 
-const mockPassword = "password";
-let hashedMockPassword: string;
-
-beforeEach(async () => {
-  hashedMockPassword = await bcrypt.hash(mockPassword, 10);
-  (prismaClient.user.create as jest.Mock)
-    .mockResolvedValue(buildMockUserRecord());
-  (prismaClient.user.findUnique as jest.Mock)
-    .mockResolvedValue(buildMockUserRecord());
+const mockCreate = prismaClient.user.create as jest.Mock;
+const mockFindUnique = prismaClient.user.findUnique as jest.Mock;
+beforeEach(() => {
+  mockCreate.mockResolvedValue(buildMockUserRecord());
+  mockFindUnique.mockResolvedValue(buildMockUserRecord());
 });
 
 describe("POST /auth/register", () => {
@@ -190,7 +202,7 @@ describe("POST /auth/login", () => {
 
     const loginInput = buildLoginInput({
       username: registerInput.username,
-      password: mockPassword,
+      password: "mockPassword",
     });
 
     const loginRes = await request(app)
@@ -199,7 +211,7 @@ describe("POST /auth/login", () => {
 
     expect(loginRes.status).toBe(200);
     expect(loginRes.headers).toHaveProperty("x-trace-id");
-    expect(loginRes.body).toMatchObject(buildLoginOutput());
+    expect(loginRes.body.sessionId).toEqual(expect.any(String));
   });
 
   test("Missing username => 400", async () => {

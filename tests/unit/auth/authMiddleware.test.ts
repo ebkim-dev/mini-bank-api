@@ -5,20 +5,25 @@ import { EventCode } from "../../../src/types/eventCodes";
 import { UserRole } from "../../../src/generated/enums";
 import { JwtPayload } from "../../../src/auth/user";
 
-jest.mock("jsonwebtoken");
 
-const res: any = {};
-const mockedVerify = jwt.verify as jest.Mock;
+jest.mock("../../../src/redis/redisClient", () => ({
+  redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
+}));
+import { redisClient } from "../../../src/redis/redisClient";
+
+jest.mock("jsonwebtoken");
 
 const mockedJwtPayload: JwtPayload = {
   sub: "123",
   role: UserRole.ADMIN
 };
 
+const res: any = {};
+const mockedVerify = jwt.verify as jest.Mock;
 let next: jest.Mock;
 beforeEach(() => {
   next = jest.fn();
-  mockedVerify.mockImplementation(() => (mockedJwtPayload));
+  mockedVerify.mockReturnValue(mockedJwtPayload);
 })
 
 afterEach(() => {
@@ -26,10 +31,8 @@ afterEach(() => {
 });
 
 describe("requireAuth middleware", () => {
-  it("should not throw any errors given valid and fresh JWT", async () => {
-    const req: any = { headers: {
-      authorization: "Bearer my_token_blahblahblahblah"
-    }};
+  it("should not throw any errors given valid sessionId", async () => {
+    const req: any = { headers: { "x-session-id": "mockSessionId" } };
 
     const middleware = authMiddleware.requireAuth();
     await middleware(req, res, next);
@@ -37,7 +40,7 @@ describe("requireAuth middleware", () => {
     expect(req.user).toEqual(mockedJwtPayload);
     expect(next).toHaveBeenCalledTimes(1);
     expect(mockedVerify).toHaveBeenCalledWith(
-      "my_token_blahblahblahblah",
+      "mock_jwt_token",
       process.env.JWT_SECRET
     );
   });

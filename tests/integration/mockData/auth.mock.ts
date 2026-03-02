@@ -41,14 +41,12 @@ export function buildLoginInput(
 }
 
 export type LoginOutput = {
-  token: string;
-  expiresIn: number;
+  sessionId: string;
 };
 
 export function buildLoginOutput(overrides: Partial<LoginOutput> = {}): LoginOutput {
   return {
-    token: expect.any(String) as any,
-    expiresIn: JWT_EXPIRES_IN,
+    sessionId: "mockSessionId",
     ...overrides,
   };
 }

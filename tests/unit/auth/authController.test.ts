@@ -15,8 +15,7 @@ const mockRegisterOutput: RegisterOutput = {
   id: 42n.toString(),
 };
 const mockLoginOutput: LoginOutput = {
-  token: "my_json_web_token",
-  expiresIn: authService.JWT_EXPIRES_IN,
+  sessionId: "mockSessionId",
 };
 
 let next: jest.Mock;
