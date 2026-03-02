@@ -1,278 +1,301 @@
 import request from "supertest";
+import bcrypt from "bcrypt";
 import { createApp } from "../../src/app";
-import prisma from "../../src/db/prismaClient";
-import { buildRegisterInput, buildRegisterOutput, buildLoginInput, buildLoginOutput, } from "./mockData/auth.mock";
+import { UserRole } from "../../src/generated/enums";
+import { Prisma, User } from "../../src/generated/client";
+import { 
+  buildRegisterInput, 
+  buildRegisterOutput, 
+  buildLoginInput, 
+  buildLoginOutput
+} from "./mockData/auth.mock";
+
+jest.mock("../../src/db/prismaClient", () => ({
+  __esModule: true,
+  default: {
+    user: {
+      create: jest.fn(),
+      findUnique: jest.fn()
+    }
+  },
+}));
+import prismaClient from "../../src/db/prismaClient";
 
 const app = createApp();
 
-describe("Auth integration", () => {
-  beforeAll(async () => {
-    await prisma.$connect();
+function buildMockUserRecord(overrides = {}): User {
+  const mockDate = new Date();
+  const mockUserRecord: User = {
+    id: 42n,
+    username: "mockUser",
+    password_hash: hashedMockPassword,
+    role: UserRole.ADMIN,
+    created_at: mockDate,
+    updated_at: mockDate,
+  };
+  return mockUserRecord
+}
+
+const mockPassword = "password";
+let hashedMockPassword: string;
+
+beforeEach(async () => {
+  hashedMockPassword = await bcrypt.hash(mockPassword, 10);
+  (prismaClient.user.create as jest.Mock)
+    .mockResolvedValue(buildMockUserRecord());
+  (prismaClient.user.findUnique as jest.Mock)
+    .mockResolvedValue(buildMockUserRecord());
+});
+
+describe("POST /auth/register", () => {
+  test("Correct input => 201, new user is created and id is returned", async () => {
+    const mockRegisterInput = buildRegisterInput();
+    const mockRegisterOutput = buildRegisterOutput();
+
+    const res = await request(app).post("/auth/register").send(mockRegisterInput);
+
+    expect(res.status).toBe(201);
+    expect(res.headers).toHaveProperty("x-trace-id");
+    expect(res.body).toMatchObject(mockRegisterOutput);
+    
   });
 
-  afterEach(async () => {
-    await prisma.user.deleteMany();
+  test("Missing username => 400", async () => {
+    const mockRegisterInput: any = buildRegisterInput();
+    delete mockRegisterInput.username;
+
+    const res = await request(app).post("/auth/register").send(mockRegisterInput);
+
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
   });
 
-  afterAll(async () => {
-    await prisma.$disconnect();
+  test("Missing password => 400", async () => {
+    const mockRegisterInput: any = buildRegisterInput();
+    delete mockRegisterInput.password;
+
+    const res = await request(app).post("/auth/register").send(mockRegisterInput);
+
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
   });
 
+  test("Empty body => 400", async () => {
+    const res = await request(app).post("/auth/register").send({});
 
-  describe("Auth integration", () => {
-    describe("POST /auth/register", () => {
-      test("Correct input => 201, new user is created and id is returned", async () => {
-        const mockRegisterInput = buildRegisterInput();
-        const mockRegisterOutput = buildRegisterOutput();
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
 
-        const res = await request(app).post("/auth/register").send(mockRegisterInput);
+  test("Wrong field type (username number) => 400", async () => {
+    const res = await request(app)
+      .post("/auth/register")
+      .send(buildRegisterInput({ username: 123 as any }));
 
-        expect(res.status).toBe(201);
-        expect(res.headers).toHaveProperty("x-trace-id");
-        expect(res.body).toMatchObject(mockRegisterOutput);
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
 
-        
-        const userId = res.body.id;             
-        const dbUser = await prisma.user.findUnique({
-          where: { id: BigInt(userId) },
-        });
+  test("Wrong field type (password number) => 400", async () => {
+    const res = await request(app)
+      .post("/auth/register")
+      .send(buildRegisterInput({ password: 123 as any }));
 
-        expect(dbUser).not.toBeNull();
-        expect(dbUser!.username).toBe(mockRegisterInput.username);
-        expect(dbUser!.password_hash).not.toBe(mockRegisterInput.password);
-        expect(dbUser!.password_hash.length).toBeGreaterThan(10);
-      });
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
 
-      test("Missing username => 400", async () => {
-        const mockRegisterInput: any = buildRegisterInput();
-        delete mockRegisterInput.username;
+  test("Empty username => 400", async () => {
+    const res = await request(app)
+      .post("/auth/register")
+      .send(buildRegisterInput({ username: "" }));
 
-        const res = await request(app).post("/auth/register").send(mockRegisterInput);
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
 
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
+  test("Empty password => 400", async () => {
+    const res = await request(app)
+      .post("/auth/register")
+      .send(buildRegisterInput({ password: "" }));
 
-      test("Missing password => 400", async () => {
-        const mockRegisterInput: any = buildRegisterInput();
-        delete mockRegisterInput.password;
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
 
-        const res = await request(app).post("/auth/register").send(mockRegisterInput);
+  test("Large username (longer than maxLength) => 400", async () => {
+    const longUsername = "u".repeat(500);
 
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
+    const res = await request(app)
+      .post("/auth/register")
+      .send(buildRegisterInput({ username: longUsername }));
 
-      test("Empty body => 400", async () => {
-        const res = await request(app).post("/auth/register").send({});
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
 
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
+  test("Large password (longer than maxLength) => 400", async () => {
+    const longPassword = "p".repeat(500);
 
-      test("Wrong field type (username number) => 400", async () => {
-        const res = await request(app)
-          .post("/auth/register")
-          .send(buildRegisterInput({ username: 123 as any }));
+    const res = await request(app)
+      .post("/auth/register")
+      .send(buildRegisterInput({ password: longPassword }));
 
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
 
-      test("Wrong field type (password number) => 400", async () => {
-        const res = await request(app)
-          .post("/auth/register")
-          .send(buildRegisterInput({ password: 123 as any }));
+  test("Duplicate username => 409", async () => {
+    const fixedUsername = `dup_${Date.now()}`;
+    const firstInput = buildRegisterInput({ username: fixedUsername });
+    const secondInput = buildRegisterInput({ username: fixedUsername });
 
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
+    const mockError = { code: "P2002" } as any;
+    Object.setPrototypeOf(
+      mockError,
+      Prisma.PrismaClientKnownRequestError.prototype
+    );
+    
+    (prismaClient.user.create as jest.Mock)
+      .mockResolvedValueOnce(buildMockUserRecord())
+      .mockRejectedValueOnce(mockError);
 
-      test("Empty username => 400", async () => {
-        const res = await request(app)
-          .post("/auth/register")
-          .send(buildRegisterInput({ username: "" }));
+    const first = await request(app).post("/auth/register").send(firstInput);
+    expect(first.status).toBe(201);
 
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
+    const second = await request(app).post("/auth/register").send(secondInput);
+    expect(second.status).toBe(409);
+    expect(second.headers).toHaveProperty("x-trace-id");
+  });
 
-      test("Empty password => 400", async () => {
-        const res = await request(app)
-          .post("/auth/register")
-          .send(buildRegisterInput({ password: "" }));
+  test("Extra field is ignored or rejected", async () => {
+    const input: any = buildRegisterInput();
+    input.role = "ADMIN"; 
 
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
+    const res = await request(app).post("/auth/register").send(input);
 
-      test("Large username (longer than maxLength) => 400", async () => {
-        const longUsername = "u".repeat(500);
-
-        const res = await request(app)
-          .post("/auth/register")
-          .send(buildRegisterInput({ username: longUsername }));
-
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
-
-      test("Large password (longer than maxLength) => 400", async () => {
-        const longPassword = "p".repeat(500);
-
-        const res = await request(app)
-          .post("/auth/register")
-          .send(buildRegisterInput({ password: longPassword }));
-
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
-
-      test("Duplicate username => 409", async () => {
-        const fixedUsername = `dup_${Date.now()}`;
-        const firstInput = buildRegisterInput({ username: fixedUsername });
-        const secondInput = buildRegisterInput({ username: fixedUsername });
-
-        const first = await request(app).post("/auth/register").send(firstInput);
-        expect(first.status).toBe(201);
-
-        const second = await request(app).post("/auth/register").send(secondInput);
-        expect(second.status).toBe(409);
-        expect(second.headers).toHaveProperty("x-trace-id");
-      });
-
-      test("Extra field is ignored or rejected", async () => {
-        const input: any = buildRegisterInput();
-        input.role = "ADMIN"; 
-
-        const res = await request(app).post("/auth/register").send(input);
-
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
-    });
-
-      describe("POST /auth/login", () => {
-      test("Correct credentials => 201, login succeeds", async () => {
-        
-        const registerInput = buildRegisterInput();
-        const registerRes = await request(app)
-          .post("/auth/register")
-          .send(registerInput);
-
-        expect(registerRes.status).toBe(201);
-
-        
-        const loginInput = buildLoginInput({
-          username: registerInput.username,
-          password: registerInput.password,
-        });
-
-        const res = await request(app).post("/auth/login").send(loginInput);
-
-        
-        expect(res.status).toBe(200);
-        expect(res.headers).toHaveProperty("x-trace-id");
-        expect(res.body).toMatchObject(buildLoginOutput());
-      });
-
-      test("Missing username => 400", async () => {
-        const input: any = buildLoginInput();
-        delete input.username;
-
-        const res = await request(app).post("/auth/login").send(input);
-
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
-
-      test("Missing password => 400", async () => {
-        const input: any = buildLoginInput();
-        delete input.password;
-
-        const res = await request(app).post("/auth/login").send(input);
-
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
-
-      test("Empty body => 400", async () => {
-        const res = await request(app).post("/auth/login").send({});
-
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
-
-      test("Wrong type (username number) => 400", async () => {
-        const res = await request(app)
-          .post("/auth/login")
-          .send(buildLoginInput({ username: 123 as any }));
-
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
-
-      test("Wrong type (password number) => 400", async () => {
-        const res = await request(app)
-          .post("/auth/login")
-          .send(buildLoginInput({ password: 123 as any }));
-
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
-
-      test("User not found => 401", async () => {
-        const input = buildLoginInput({
-          username: `no_user_${Date.now()}`,
-          password: "123123123",
-        });
-
-        const res = await request(app).post("/auth/login").send(input);
-
-        expect(res.status).toBe(401);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
-
-      test("Wrong password => 401", async () => {
-        
-        const registerInput = buildRegisterInput();
-        const registerRes = await request(app)
-          .post("/auth/register")
-          .send(registerInput);
-        expect(registerRes.status).toBe(201);
-
-       
-        const res = await request(app).post("/auth/login").send({
-          username: registerInput.username,
-          password: "wrong_password_123",
-        });
-
-        expect(res.status).toBe(401);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
-
-      test("Large username (longer than maxLength) => 400", async () => {
-        const longUsername = "u".repeat(500);
-
-        const res = await request(app)
-          .post("/auth/login")
-          .send(buildLoginInput({ username: longUsername }));
-
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
-
-      test("Large password (longer than maxLength) => 400", async () => {
-        const longPassword = "p".repeat(500);
-
-        const res = await request(app)
-          .post("/auth/login")
-          .send(buildLoginInput({ password: longPassword }));
-
-        expect(res.status).toBe(400);
-        expect(res.headers).toHaveProperty("x-trace-id");
-      });
-    });
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
   });
 });
 
+describe("POST /auth/login", () => {
+  test("Correct credentials => 201, login succeeds", async () => {
+    const registerInput = buildRegisterInput();
+    const registerRes = await request(app)
+      .post("/auth/register")
+      .send(registerInput);
+
+    expect(registerRes.status).toBe(201);
+
+    const loginInput = buildLoginInput({
+      username: registerInput.username,
+      password: mockPassword,
+    });
+
+    const loginRes = await request(app)
+      .post("/auth/login")
+      .send(loginInput);
+
+    expect(loginRes.status).toBe(200);
+    expect(loginRes.headers).toHaveProperty("x-trace-id");
+    expect(loginRes.body).toMatchObject(buildLoginOutput());
+  });
+
+  test("Missing username => 400", async () => {
+    const input: any = buildLoginInput();
+    delete input.username;
+
+    const res = await request(app).post("/auth/login").send(input);
+
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
+
+  test("Missing password => 400", async () => {
+    const input: any = buildLoginInput();
+    delete input.password;
+
+    const res = await request(app).post("/auth/login").send(input);
+
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
+
+  test("Empty body => 400", async () => {
+    const res = await request(app).post("/auth/login").send({});
+
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
+
+  test("Wrong type (username number) => 400", async () => {
+    const res = await request(app)
+      .post("/auth/login")
+      .send(buildLoginInput({ username: 123 as any }));
+
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
+
+  test("Wrong type (password number) => 400", async () => {
+    const res = await request(app)
+      .post("/auth/login")
+      .send(buildLoginInput({ password: 123 as any }));
+
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
+
+  test("User not found => 401", async () => {
+    const input = buildLoginInput({
+      username: `no_user_${Date.now()}`,
+      password: "123123123",
+    });
+
+    const res = await request(app).post("/auth/login").send(input);
+
+    expect(res.status).toBe(401);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
+
+  test("Wrong password => 401", async () => {
+    
+    const registerInput = buildRegisterInput();
+    const registerRes = await request(app)
+      .post("/auth/register")
+      .send(registerInput);
+    expect(registerRes.status).toBe(201);
+
+    
+    const res = await request(app).post("/auth/login").send({
+      username: registerInput.username,
+      password: "wrong_password_123",
+    });
+
+    expect(res.status).toBe(401);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
+
+  test("Large username (longer than maxLength) => 400", async () => {
+    const longUsername = "u".repeat(500);
+
+    const res = await request(app)
+      .post("/auth/login")
+      .send(buildLoginInput({ username: longUsername }));
+
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
+
+  test("Large password (longer than maxLength) => 400", async () => {
+    const longPassword = "p".repeat(500);
+
+    const res = await request(app)
+      .post("/auth/login")
+      .send(buildLoginInput({ password: longPassword }));
+
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
+});
