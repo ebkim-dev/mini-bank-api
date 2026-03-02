@@ -4,26 +4,28 @@ import jwt from "jsonwebtoken";
 import { ForbiddenError, UnauthorizedError } from "../error/error";
 import { EventCode } from "../types/eventCodes";
 import { UserRole } from "../generated/enums";
+import { redisClient } from "../redis/redisClient";
 
 export function requireAuth(): RequestHandler {
-  return (req: Request, _res: Response, next: NextFunction) => {
-    const authHeader = req.headers.authorization;
+  return async (req: Request, _res: Response, next: NextFunction) => {
+    const sessionHeader = req.headers["x-session-id"];
+    const sessionId = 
+      Array.isArray(sessionHeader) ? sessionHeader[0] : sessionHeader;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return next(
-        UnauthorizedError(EventCode.INVALID_TOKEN, "Authentication failed")
-      );
-    }
-
-    const token = authHeader.split(" ")[1];
-    if (!token) {
+    if (!sessionId) {
       return next(
         UnauthorizedError(EventCode.INVALID_TOKEN, "Authentication failed")
       );
     }
 
     try {
-      // throws if jwt is expired
+      const token = await redisClient.get(`session:${sessionId}`);
+      if (!token) {
+        return next(
+          UnauthorizedError(EventCode.INVALID_TOKEN, "Authentication failed")
+        );
+      }
+
       const decoded = jwt.verify(
         token,
         process.env.JWT_SECRET as string

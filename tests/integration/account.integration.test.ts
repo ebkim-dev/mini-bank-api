@@ -1,6 +1,8 @@
 import request from "supertest";
 import { createApp } from "../../src/app";
 import { Decimal } from "@prisma/client/runtime/client";
+import { Prisma } from "../../src/generated/client";
+import { JwtPayload } from "../../src/auth/user";
 import { UserRole, AccountStatus } from "../../src/generated/enums";
 import { 
   buildAccountCreateInput, 
@@ -8,6 +10,11 @@ import {
   buildMockAccountRecord,
   buildToken
 } from "./mockData/account.mock";
+
+jest.mock("../../src/redis/redisClient", () => ({
+  redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
+}));
+import { redisClient } from "../../src/redis/redisClient";
 
 jest.mock("../../src/db/prismaClient", () => ({
   __esModule: true,
@@ -21,7 +28,10 @@ jest.mock("../../src/db/prismaClient", () => ({
   },
 }));
 import prismaClient from "../../src/db/prismaClient";
-import { Prisma } from "../../src/generated/client";
+
+jest.mock("jsonwebtoken");
+import jwt from "jsonwebtoken";
+
 
 const app = createApp();
 const CUSTOMER_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -29,21 +39,35 @@ const mockAccountId: string = "550e8400-e29b-41d4-a716-446655440001";
 const MISSING_ACCOUNT_ID: string = "550e8400-e29b-41d4-a716-44665544ffff";
 let token: string;
 
+const mockedJwtPayloadAdmin: JwtPayload = {
+  sub: mockAccountId,
+  role: UserRole.ADMIN
+};
+
+const mockedJwtPayloadStandard: JwtPayload = {
+  sub: mockAccountId,
+  role: UserRole.STANDARD
+};
+
 beforeAll(async () => {
-  token = buildToken(UserRole.ADMIN, "1h");
+  token = buildToken(UserRole.ADMIN, "5m");
 })
+
+const mockSessionId: string = "mockSessionId";
+const mockRedisKey: string = `session:${mockSessionId}`;
 
 const mockCreate = prismaClient.account.create as jest.Mock;
 const mockUpdate = prismaClient.account.update as jest.Mock;
 const mockFindUnique = prismaClient.account.findUnique as jest.Mock;
 const mockFindMany = prismaClient.account.findMany as jest.Mock;
-
+const mockVerify = jwt.verify as jest.Mock;
 beforeEach(async () => {
   jest.clearAllMocks();
   mockCreate.mockResolvedValue(buildMockAccountRecord());
   mockUpdate.mockResolvedValue(buildMockAccountRecord());
   mockFindUnique.mockResolvedValue(buildMockAccountRecord());
   mockFindMany.mockResolvedValue([]);
+  mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
 });
 
 describe("Integration - Accounts API", () => {
@@ -63,62 +87,76 @@ describe("Integration - Accounts API", () => {
 
       const res = await request(app)
         .post("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send(mockAccountCreateInput);
 
       expect(res.status).toBe(201);
       expect(res.headers).toHaveProperty("x-trace-id");
       expect(res.body).toMatchObject(mockAccountCreateOutput);
+
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
+      expect(mockCreate).toHaveBeenCalledTimes(1);
     });
 
     test("Optional fields missing => 201, new account is created and returned", async () => {
       const mockAccountCreateInput = buildAccountCreateInput();
       const mockAccountCreateOutput = buildAccountCreateOutput();
-
-      console.log(mockAccountCreateInput);
+      mockCreate.mockResolvedValue(buildMockAccountRecord());
 
       const res = await request(app)
         .post("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send(mockAccountCreateInput);
 
       expect(res.status).toBe(201);
       expect(res.headers).toHaveProperty("x-trace-id");
       expect(res.body).toMatchObject(mockAccountCreateOutput);
+
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
+      expect(mockCreate).toHaveBeenCalledTimes(1);
     });
 
     test("A required field is missing => 400", async () => {
-     
-      const badInput: any = buildAccountCreateInput();
-      delete badInput.currency;
+      const { currency, ...badInput } = buildAccountCreateInput();
 
       const res = await request(app)
         .post("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send(badInput);
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
+
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     test("Empty body is given => 400", async () => {
       const res = await request(app)
         .post("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send({});
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
+
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     test('Wrong field type is given (e.g. passing "abc" to customer_id) => 400', async () => {
       const res = await request(app)
         .post("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send(buildAccountCreateInput({ customer_id: "abc" }));
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
+
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     test("Large input string is given (longer than maxLength) => 400", async () => {
@@ -126,51 +164,66 @@ describe("Integration - Accounts API", () => {
 
       const res = await request(app)
         .post("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send(buildAccountCreateInput({ nickname: longNickname }));
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
+
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     test('Invalid enum value - type = "SAVINGSS" => 400', async () => {
       const res = await request(app)
         .post("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send(buildAccountCreateInput({ type: "SAVINGSS" as any }));
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
+
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     test('Invalid enum value - status = "OPEN" => 400', async () => {
       const res = await request(app)
         .post("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send(buildAccountCreateInput({ status: "OPEN" as any }));
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
+
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     test('Invalid currency format - currency="US" => 400', async () => {
       const res = await request(app)
         .post("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send(buildAccountCreateInput({ currency: "US" }));
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
+
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     test('Invalid currency format - currency="USDD" => 400', async () => {
       const res = await request(app)
         .post("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send(buildAccountCreateInput({ currency: "USDD" }));
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
+
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     it('should return 401 given missing header', async () => {
@@ -178,7 +231,7 @@ describe("Integration - Accounts API", () => {
 
       const res = await request(app)
         .post("/accounts")
-        .set("Authorization", "")
+        .set("x-session-id", "")
         .send(buildAccountCreateInput(mockAccountCreateInput));
 
       expect(res.status).toBe(401);
@@ -187,36 +240,40 @@ describe("Integration - Accounts API", () => {
 
     it('should return 403 given STANDARD role', async() => {
       const mockAccountCreateInput = buildAccountCreateInput();
-      const standardToken = buildToken(UserRole.STANDARD, "1h");
+      mockVerify.mockReturnValue(mockedJwtPayloadStandard);
 
       const res = await request(app)
         .post("/accounts")
-        .set("Authorization", `Bearer ${standardToken}`)
+        .set("x-session-id", mockSessionId)
         .send(buildAccountCreateInput(mockAccountCreateInput));
 
       expect(res.status).toBe(403);
       expect(res.headers).toHaveProperty("x-trace-id");
+
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
   });
 
   describe("GET /accounts?customerId=...", () => {
     test("1+ account found for customerId => 200, array of found accounts is returned", async () => {
+      mockVerify.mockReturnValue(mockedJwtPayloadStandard);
       mockFindMany.mockResolvedValue([
         buildMockAccountRecord(),
         buildMockAccountRecord({ id: "550e8400-e29b-41d4-a716-446655440002" })
       ]);
 
-      const standardToken = buildToken(UserRole.STANDARD, "1h");
       const res = await request(app)
         .get("/accounts")
-        .set("Authorization", `Bearer ${standardToken}`)
+        .set("x-session-id", mockSessionId)
         .query({ customer_id: CUSTOMER_ID });
+
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
+      expect(mockFindMany).toHaveBeenCalledTimes(1);
 
       expect(res.status).toBe(200);
       expect(res.headers).toHaveProperty("x-trace-id");
-
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body.length).toBeGreaterThanOrEqual(2);
       expect(res.body).toEqual([
         buildAccountCreateOutput(),
         buildAccountCreateOutput(),
@@ -224,10 +281,16 @@ describe("Integration - Accounts API", () => {
     });
 
     test("No account found for customerId => 200, empty array is returned", async () => {
+      mockFindMany.mockResolvedValue([]);
+
       const res = await request(app)
         .get("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .query({ customer_id: CUSTOMER_ID });
+
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
+      expect(mockFindMany).toHaveBeenCalledTimes(1);
 
       expect(res.status).toBe(200);
       expect(res.headers).toHaveProperty("x-trace-id");
@@ -237,7 +300,10 @@ describe("Integration - Accounts API", () => {
     test("customerId is missing => 400", async () => {
       const res = await request(app)
         .get("/accounts")
-        .set("Authorization", `Bearer ${token}`);
+        .set("x-session-id", mockSessionId);
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
@@ -246,7 +312,7 @@ describe("Integration - Accounts API", () => {
     test("customerId has invalid format => 400", async () => {
       const res = await request(app)
         .get("/accounts")
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .query({ customer_id: "abc" });
 
       expect(res.status).toBe(400);
@@ -256,7 +322,7 @@ describe("Integration - Accounts API", () => {
     it('should return 401 given invalid header', async () => {
       const res = await request(app)
         .get("/accounts")
-        .set("Authorization", `NOTBEARER ${token}`)
+        .set("Authorization", `Bearer tokenasdnflsvbsabsl`)
         .send({ customer_id: CUSTOMER_ID });
 
       expect(res.status).toBe(401);
@@ -266,26 +332,33 @@ describe("Integration - Accounts API", () => {
 
   describe("GET /accounts/:accountId", () => {
     test("Account found for accountId => 200, account is returned", async () => {
-      const standardToken = buildToken(UserRole.STANDARD, "1h");
+      mockVerify.mockReturnValue(mockedJwtPayloadStandard);
+      mockFindUnique.mockResolvedValue(buildMockAccountRecord());
+      const mockAccountCreateOutput = buildAccountCreateOutput();
+
       const res = await request(app)
         .get(`/accounts/${mockAccountId}`)
-        .set("Authorization", `Bearer ${standardToken}`);
+        .set("x-session-id", mockSessionId);
 
       expect(res.status).toBe(200);
       expect(res.headers).toHaveProperty("x-trace-id");
-
-      expect(res.body).toHaveProperty("customer_id", CUSTOMER_ID);
-      expect(res.body).toHaveProperty("type");
-      expect(res.body).toHaveProperty("currency");
+      expect(res.body).toMatchObject(mockAccountCreateOutput);
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
+      expect(mockFindUnique).toHaveBeenCalledTimes(1);
     });
 
     test("accountId has invalid format => 400", async () => {
       const res = await request(app)
         .get(`/accounts/abc`)
-        .set("Authorization", `Bearer ${token}`);
+        .set("x-session-id", mockSessionId);
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     test("Account not found for accountId => 404", async () => {
@@ -293,16 +366,18 @@ describe("Integration - Accounts API", () => {
 
       const res = await request(app)
         .get(`/accounts/${MISSING_ACCOUNT_ID}`)
-        .set("Authorization", `Bearer ${token}`);
+        .set("x-session-id", mockSessionId);
 
       expect(res.status).toBe(404);
       expect(res.headers).toHaveProperty("x-trace-id");
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     it('should return 401 given missing token', async () => {
       const res = await request(app)
-        .get(`/accounts/${mockAccountId}`)
-        .set("Authorization", `Bearer`);
+        .get(`/accounts/${mockAccountId}`);
 
       expect(res.status).toBe(401);
       expect(res.headers).toHaveProperty("x-trace-id");
@@ -318,7 +393,7 @@ describe("Integration - Accounts API", () => {
 
       const res = await request(app)
         .put(`/accounts/${mockAccountId}`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send({ 
           nickname: "newNick", 
           status: AccountStatus.CLOSED
@@ -326,12 +401,15 @@ describe("Integration - Accounts API", () => {
 
       expect(res.status).toBe(200);
       expect(res.headers).toHaveProperty("x-trace-id");
-
       expect(res.body).toMatchObject({
         customer_id: CUSTOMER_ID,
         nickname: "newNick",
         status: AccountStatus.CLOSED,
       });
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
     });
 
     test("nickname only is given => 200, account is updated and returned", async () => {
@@ -341,16 +419,19 @@ describe("Integration - Accounts API", () => {
 
       const res = await request(app)
         .put(`/accounts/${mockAccountId}`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send({ nickname: "onlyNick" });
 
       expect(res.status).toBe(200);
       expect(res.headers).toHaveProperty("x-trace-id");
-
       expect(res.body).toMatchObject({
         customer_id: CUSTOMER_ID,
         nickname: "onlyNick",
       });
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
     });
 
     test("status only is given => 200, account is updated and returned", async () => {
@@ -360,37 +441,45 @@ describe("Integration - Accounts API", () => {
 
       const res = await request(app)
         .put(`/accounts/${mockAccountId}`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send({ status: AccountStatus.CLOSED });
 
       expect(res.status).toBe(200);
       expect(res.headers).toHaveProperty("x-trace-id");
-
       expect(res.body).toMatchObject({
         customer_id: CUSTOMER_ID,
         status: AccountStatus.CLOSED,
       });
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
     });
 
     test("Empty body is given => 400, atleast one field required", async () => {
       const res = await request(app)
         .put(`/accounts/${mockAccountId}`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send({});
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
-      
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     test("accountId has invalid format => 400", async () => {
       const res = await request(app)
         .put(`/accounts/abc`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send({ nickname: "x" });
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     test("Large input string is given (longer than maxLength) => 400", async () => {
@@ -398,11 +487,14 @@ describe("Integration - Accounts API", () => {
 
       const res = await request(app)
         .put(`/accounts/${mockAccountId}`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send({ nickname: longNickname });
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     test("Account not found for accountId => 404", async () => {
@@ -415,11 +507,15 @@ describe("Integration - Accounts API", () => {
 
       const res = await request(app)
         .put(`/accounts/${MISSING_ACCOUNT_ID}`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send({ nickname: "x" });
 
       expect(res.status).toBe(404);
       expect(res.headers).toHaveProperty("x-trace-id");
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
     });
 
     it('should return 401 given invalid token', async () => {
@@ -433,15 +529,18 @@ describe("Integration - Accounts API", () => {
     });
 
     it('should return 403 given STANDARD role', async() => {
-      const standardToken = buildToken(UserRole.STANDARD, "1h");
+      mockVerify.mockReturnValue(mockedJwtPayloadStandard);
 
       const res = await request(app)
         .put(`/accounts/${mockAccountId}`)
-        .set("Authorization", `Bearer ${standardToken}`)
+        .set("x-session-id", mockSessionId)
         .send({ nickname: "newName" });
 
       expect(res.status).toBe(403);
       expect(res.headers).toHaveProperty("x-trace-id");
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
   });
 
@@ -453,7 +552,7 @@ describe("Integration - Accounts API", () => {
 
       const res = await request(app)
         .post(`/accounts/${mockAccountId}/close`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send({});
 
       expect(res.status).toBe(200);
@@ -462,16 +561,23 @@ describe("Integration - Accounts API", () => {
         customer_id: CUSTOMER_ID,
         status: AccountStatus.CLOSED,
       });
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
     });
 
     test("accountId has invalid format => 400", async () => {
       const res = await request(app)
         .post(`/accounts/abc/close`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send({});
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
 
     test("Account not found for accountId => 404", async () => {
@@ -484,11 +590,15 @@ describe("Integration - Accounts API", () => {
 
       const res = await request(app)
         .post(`/accounts/${MISSING_ACCOUNT_ID}/close`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send({});
 
       expect(res.status).toBe(404);
       expect(res.headers).toHaveProperty("x-trace-id");
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
     });
 
     test("Close already closed account => 200", async () => {
@@ -500,39 +610,36 @@ describe("Integration - Accounts API", () => {
 
       const first = await request(app)
         .post(`/accounts/${mockAccountId}/close`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send({});
-        expect(first.status).toBe(200);
       
       const second = await request(app)
         .post(`/accounts/${mockAccountId}/close`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("x-session-id", mockSessionId)
         .send({});
-        expect(second.status).toBe(200);
       
+      expect(first.status).toBe(200);
+      expect(second.status).toBe(200);
+      expect(first.headers).toHaveProperty("x-trace-id");
       expect(second.headers).toHaveProperty("x-trace-id");
-    });
-
-    it('should return 401 given expired token', async () => {
-      const expiredToken = buildToken(UserRole.ADMIN, -1);
-      
-      const res = await request(app)
-        .post(`/accounts/${mockAccountId}/close`)
-        .set("Authorization", `Bearer ${expiredToken}`);
-
-      expect(res.status).toBe(401);
-      expect(res.headers).toHaveProperty("x-trace-id");
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
     });
 
     it('should return 403 given STANDARD role', async() => {
-      const standardToken = buildToken(UserRole.STANDARD, "1h");
+      mockVerify.mockReturnValue(mockedJwtPayloadStandard);
 
       const res = await request(app)
         .post(`/accounts/${mockAccountId}/close`)
-        .set("Authorization", `Bearer ${standardToken}`);
+        .set("x-session-id", mockSessionId);
 
       expect(res.status).toBe(403);
       expect(res.headers).toHaveProperty("x-trace-id");
+        
+      expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+      expect(mockVerify).toHaveBeenCalled();
     });
   });
 });

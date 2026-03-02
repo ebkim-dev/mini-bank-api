@@ -19,9 +19,13 @@ export const jwtPayloadSchema = z
   .object({
     sub: z.uuid("sub must be a valid UUID"),
     role: z.enum(UserRole),
-    iat: z.number(),
-    exp: z.number()
   })
   .strict();
 
-  
+export const sessionIdSchema = z
+  .object({
+    "x-session-id": z.uuid(),
+  })
+  .strict();
+
+

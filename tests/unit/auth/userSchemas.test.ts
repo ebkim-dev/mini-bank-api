@@ -93,14 +93,10 @@ describe("userSchemas.ts", () => {
       const parsed = jwtPayloadSchema.parse({
         sub: UUID,
         role: UserRole.ADMIN,
-        iat: 1700000000,
-        exp: 1700003600,
       });
 
       expect(parsed.sub).toBe(UUID);
       expect(parsed.role).toBe(UserRole.ADMIN);
-      expect(parsed.iat).toBe(1700000000);
-      expect(parsed.exp).toBe(1700003600);
     });
 
     test("rejects invalid role (must be enum value)", () => {
@@ -108,8 +104,6 @@ describe("userSchemas.ts", () => {
         jwtPayloadSchema.parse({
           sub: UUID,
           role: "SUPER_ADMIN",
-          iat: 1700000000,
-          exp: 1700003600,
         })
       ).toThrow();
     });
@@ -119,8 +113,6 @@ describe("userSchemas.ts", () => {
         jwtPayloadSchema.parse({
           sub: UUID,
           role: UserRole.STANDARD,
-          iat: 1700000000,
-          exp: 1700003600,
           extra: "nope",
         })
       ).toThrow();

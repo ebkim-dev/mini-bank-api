@@ -13,6 +13,8 @@ import { Prisma } from "../generated/client";
 import { EventCode } from '../types/eventCodes';
 import { getDurationMs } from '../utils/calculateDuration';
 import { ConflictError, UnauthorizedError } from "../error/error";
+import { redisClient } from '../redis/redisClient';
+import { randomUUID } from "crypto";
 import { 
   ExecutionStatus, 
   AuthSuccessEvent, 
@@ -21,12 +23,13 @@ import {
 } from '../logging/logSchemas';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
-export const JWT_EXPIRES_IN = 3600; // 1h
+export const JWT_EXPIRES_IN = 900;
+export const REDIS_SESSION_TTL_SEC = 900; // 15min
 
 export async function registerUser(
   data: RegisterInput
 ): Promise<RegisterOutput> {
-  const start = process.hrtime.bigint();
+  const startTime = process.hrtime.bigint();
   try { 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
@@ -43,7 +46,7 @@ export async function registerUser(
     
     const event: AuthSuccessEvent = {
       executionStatus: ExecutionStatus.SUCCESS,
-      durationMs: getDurationMs(start),
+      durationMs: getDurationMs(startTime),
       userId: serializedId,
       username: userRecord.username,
       userRole: userRecord.role
@@ -58,7 +61,7 @@ export async function registerUser(
     ) {
       const event: AuthFailureEvent = {
         executionStatus: ExecutionStatus.FAILURE,
-        durationMs: getDurationMs(start),
+        durationMs: getDurationMs(startTime),
         username: data.username,
         errorCode: EventCode.USERNAME_ALREADY_EXISTS
       };
@@ -76,7 +79,7 @@ export async function registerUser(
 export async function loginUser(
   data: LoginInput
 ): Promise<LoginOutput> {
-  const start = process.hrtime.bigint();
+  const startTime = process.hrtime.bigint();
 
   const userRecord = await prismaClient.user.findUnique({ 
     where: { username: data.username } 
@@ -88,7 +91,7 @@ export async function loginUser(
   ) {
     const event: AuthFailureEvent = {
       executionStatus: ExecutionStatus.FAILURE,
-      durationMs: getDurationMs(start),
+      durationMs: getDurationMs(startTime),
       username: data.username,
       errorCode: EventCode.INVALID_CREDENTIALS
     };
@@ -100,8 +103,6 @@ export async function loginUser(
     );
   }
   
-  const serializedId = userRecord.id;
-  
   const payload: JwtPayload = {
     sub: userRecord.id,
     role: userRecord.role,
@@ -112,18 +113,20 @@ export async function loginUser(
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
+  
+  const sessionId = randomUUID();
+  await redisClient.set(`session:${sessionId}`, token, {
+    EX: REDIS_SESSION_TTL_SEC,
+  });
     
   const event: AuthSuccessEvent = {
     executionStatus: ExecutionStatus.SUCCESS,
-    durationMs: getDurationMs(start),
-    userId: serializedId,
+    durationMs: getDurationMs(startTime),
+    userId: userRecord.id.toString(),
     username: userRecord.username,
     userRole: userRecord.role
   };
   logEvent(EventCode.LOGIN_SUCCESS, event);
 
-  return {
-    token,
-    expiresIn: JWT_EXPIRES_IN,
-  };
+  return { sessionId };
 }

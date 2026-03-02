@@ -4,7 +4,7 @@ import { UserRole } from "../generated/enums"
 export interface JwtPayload {
   sub: string;
   role: UserRole;
-}
+};
 
 export type RegisterInput = {
   username: string;
@@ -21,11 +21,10 @@ export type RegisterOutput = {
 };
 
 export type LoginOutput = {
-  token: string;
-  expiresIn: number;
-}
+  sessionId: string;
+};
 
 export type AuthInput = {
   actorId: string;
   role: UserRole;
-}
+};
