@@ -6,18 +6,21 @@ import { AccountType, AccountStatus, UserRole } from "../../../src/generated/enu
 import { AccountCreateInput, AccountOutput } from "../../../src/account/account";
 import { AuthInput, JwtPayload } from "../../../src/auth/user";
 
+const CUSTOMER_ID = "550e8400-e29b-41d4-a716-446655440000";
+const ACCOUNT_ID = "550e8400-e29b-41d4-a716-446655440001";
+const MISSING_ACCOUNT_ID = "550e8400-e29b-41d4-a716-44665544ffff";
 const now = Date.now();
 const mockedJwtPayload: JwtPayload = {
-  sub: "123",
+  sub: CUSTOMER_ID,
   role: UserRole.ADMIN
 };
 const mockedAuthInput: AuthInput = {
-  actorId: "123",
+  actorId: CUSTOMER_ID,
   role: UserRole.ADMIN
 }
 
 const mockAccountCreateInput: AccountCreateInput = {
-  customer_id: 1n,
+  customer_id: CUSTOMER_ID,
   type: AccountType.SAVINGS,
   currency: "USD",
   nickname: "alice",
@@ -26,15 +29,16 @@ const mockAccountCreateInput: AccountCreateInput = {
 }
 
 const mockAccountOutput1: AccountOutput = {
-  customer_id: 1n.toString(),
+  customer_id: CUSTOMER_ID,
   type: AccountType.SAVINGS,
   currency: "USD",
   nickname: "alice",
   status: AccountStatus.ACTIVE,
   balance: (new Decimal(0)).toString(),
 }
+
 const mockAccountOutput2: AccountOutput = {
-  customer_id: 1n.toString(),
+  customer_id: CUSTOMER_ID,
   type: AccountType.CHECKING,
   currency: "USD",
   nickname: "bob",
@@ -97,7 +101,7 @@ describe("createAccount controller", () => {
 describe("getAccountsByCustomerId controller", () => {
   it("should call fetchAccountsByCustomerId and return 200 with empty array if no accounts are found", async () => {
     const req: any = { validated: { 
-      query: { customer_id: 9999999n },
+      query: { customer_id: CUSTOMER_ID },
       user: mockedJwtPayload
     }};
 
@@ -115,7 +119,7 @@ describe("getAccountsByCustomerId controller", () => {
 
   it("should call fetchAccountsByCustomerId and return 200 with an array of serialized accounts", async () => {
     const req: any = { validated: { 
-      query: { customer_id: 1n },
+      query: { customer_id: CUSTOMER_ID },
       user: mockedJwtPayload
     }};
 
@@ -135,7 +139,7 @@ describe("getAccountsByCustomerId controller", () => {
   
   it("should call next when service throws", async () => {
     const req: any = { validated: { 
-      query: { customer_id: 9999999n },
+      query: { customer_id: CUSTOMER_ID },
       user: mockedJwtPayload
     }};
 
@@ -152,7 +156,7 @@ describe("getAccountsByCustomerId controller", () => {
 describe("getAccount controller", () => {
   it("should call fetchAccountById and return 200 with serialized account", async () => {
     const req: any = { validated: { 
-      params: { id: 1n },
+      params: { id: ACCOUNT_ID },
       user: mockedJwtPayload
     }};
 
@@ -170,7 +174,7 @@ describe("getAccount controller", () => {
 
   it("should call next when service throws", async () => {
     const req: any = { validated: { 
-      params: { id: 9999999n },
+      params: { id: MISSING_ACCOUNT_ID },
       user: mockedJwtPayload
      } };
 
@@ -185,7 +189,7 @@ describe("getAccount controller", () => {
 describe("updateAccount controller", () => {
   it("should call updateAccountById and return 200 with serialized account", async () => {
     const req: any = { validated: {
-        params: { id: 1n },
+        params: { id: ACCOUNT_ID },
         body: { nickname: "asdf" },
         user: mockedJwtPayload
     }};
@@ -212,12 +216,13 @@ describe("updateAccount controller", () => {
 
   it("should call next when service throws", async () => {
     const req: any = { validated: { 
-      body: { id: 9999999n },
+      params: { id: ACCOUNT_ID },
+      body: { nickname: "asdf" },
       user: mockedJwtPayload
     }};
 
-    jest.spyOn(accountService, "fetchAccountById").mockRejectedValue(serviceError);
-    await accountController.getAccount(req, res, next);
+    jest.spyOn(accountService, "updateAccountById").mockRejectedValue(serviceError);
+    await accountController.updateAccount(req, res, next);
 
     expect(statusMock).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalledTimes(1);
@@ -249,12 +254,12 @@ describe("deleteAccount controller", () => {
 
   it("should call next when service throws", async () => {
     const req: any = { validated: { 
-      body: { id: 9999999n },
+      params: { id: ACCOUNT_ID },
       user: mockedJwtPayload
     }};
 
-    jest.spyOn(accountService, "fetchAccountById").mockRejectedValue(serviceError);
-    await accountController.getAccount(req, res, next);
+    jest.spyOn(accountService, "deleteAccountById").mockRejectedValue(serviceError);
+    await accountController.deleteAccount(req, res, next);
 
     expect(statusMock).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalledTimes(1);

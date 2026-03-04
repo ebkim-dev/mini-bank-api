@@ -26,7 +26,7 @@ const app = createApp();
 function buildMockUserRecord(overrides = {}): User {
   const mockDate = new Date();
   const mockUserRecord: User = {
-    id: 42n,
+    id: "550e8400-e29b-41d4-a716-446655440042",
     username: "mockUser",
     password_hash: hashedMockPassword,
     role: UserRole.ADMIN,

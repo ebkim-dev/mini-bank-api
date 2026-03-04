@@ -7,18 +7,17 @@ import {
 
 import { AccountStatus, AccountType } from "../../../src/generated/enums";
 
+const UUID = "550e8400-e29b-41d4-a716-446655440000";
 describe("accountSchemas.ts", () => {
 
   describe("accountIdParamsSchema", () => {
-    test("parses numeric id string and transforms to BigInt", () => {
-      const parsed = accountIdParamsSchema.parse({ id: "123" });
-      expect(parsed.id).toBe(BigInt(123));
+    test("accepts UUID id", () => {
+      const parsed = accountIdParamsSchema.parse({ id: UUID });
+      expect(parsed.id).toBe(UUID);
     });
 
-    test("rejects non-numeric id", () => {
-      expect(() => accountIdParamsSchema.parse({ id: "12a3" })).toThrow(
-        "id must be a numeric string"
-      );
+    test("rejects invalid UUID id", () => {
+      expect(() => accountIdParamsSchema.parse({ id: "123" })).toThrow();
     });
 
     test("rejects extra fields because of strict()", () => {
@@ -29,66 +28,40 @@ describe("accountSchemas.ts", () => {
   });
 
   describe("getAccountsQuerySchema", () => {
-    test("parses customerId numeric string and transforms to BigInt", () => {
-      const parsed = getAccountsQuerySchema.parse({ customerId: "999" });
-      expect(parsed.customerId).toBe(BigInt(999));
+    test("accepts UUID customerId", () => {
+      const parsed = getAccountsQuerySchema.parse({ customer_id: UUID });
+      expect(parsed.customer_id).toBe(UUID);
     });
 
-    test("rejects non-numeric customerId", () => {
-      expect(() =>
-        getAccountsQuerySchema.parse({ customerId: "x99" })
-      ).toThrow("customerId must be a numeric string");
+    test("rejects invalid UUID customerId", () => {
+      expect(() => getAccountsQuerySchema.parse({ customer_id: "999" })).toThrow();
     });
 
     test("rejects extra fields because of strict()", () => {
       expect(() =>
-        getAccountsQuerySchema.parse({ customerId: "1", extra: true })
+        getAccountsQuerySchema.parse({ customer_id: "1", extra: true })
       ).toThrow();
     });
   });
 
   describe("createAccountBodySchema", () => {
-    test("customer_id preprocess: accepts bigint directly", () => {
+    test("accepts valid UUID customer_id", () => {
       const parsed = createAccountBodySchema.parse({
-        customer_id: BigInt(10),
+        customer_id: UUID,
         type: AccountType.CHECKING,
         currency: "usd",
       });
 
-      expect(parsed.customer_id).toBe(BigInt(10));
-      expect(parsed.currency).toBe("USD"); 
+      expect(parsed.customer_id).toBe(UUID);
+      expect(parsed.currency).toBe("USD");
       expect(parsed.status).toBe(AccountStatus.ACTIVE);
       expect(parsed.balance.toString()).toBe("0");
     });
 
-    test("customer_id preprocess: accepts integer number and converts to BigInt", () => {
-      const parsed = createAccountBodySchema.parse({
-        customer_id: 22,
-        type: AccountType.SAVINGS,
-        currency: "cad",
-        balance: "12.50",
-      });
-
-      expect(parsed.customer_id).toBe(BigInt(22));
-      expect(parsed.currency).toBe("CAD");
-      expect(parsed.balance.toNumber()).toBeCloseTo(12.5,10);
-    });
-
-    test("customer_id preprocess: accepts numeric string and converts to BigInt", () => {
-      const parsed = createAccountBodySchema.parse({
-        customer_id: "777",
-        type: AccountType.CHECKING,
-        currency: "inr",
-      });
-
-      expect(parsed.customer_id).toBe(BigInt(777));
-      expect(parsed.currency).toBe("INR");
-    });
-
-    test("customer_id preprocess: rejects non-numeric string (preprocess returns val -> z.bigint fails)", () => {
+    test("rejects invalid UUID customer_id", () => {
       expect(() =>
         createAccountBodySchema.parse({
-          customer_id: "77x",
+          customer_id: "not-a-uuid",
           type: AccountType.CHECKING,
           currency: "usd",
         })
@@ -107,14 +80,14 @@ describe("accountSchemas.ts", () => {
 
     test("nickname can be omitted, provided, or null", () => {
       const p1 = createAccountBodySchema.parse({
-        customer_id: BigInt(1),
+        customer_id: UUID,
         type: AccountType.CHECKING,
         currency: "usd",
       });
       expect(p1.nickname).toBeUndefined();
 
       const p2 = createAccountBodySchema.parse({
-        customer_id: BigInt(1),
+        customer_id: UUID,
         type: AccountType.CHECKING,
         currency: "usd",
         nickname: "My Acc",
@@ -122,7 +95,7 @@ describe("accountSchemas.ts", () => {
       expect(p2.nickname).toBe("My Acc");
 
       const p3 = createAccountBodySchema.parse({
-        customer_id: BigInt(1),
+        customer_id: UUID,
         type: AccountType.CHECKING,
         currency: "usd",
         nickname: null,
@@ -133,7 +106,7 @@ describe("accountSchemas.ts", () => {
     test("rejects extra fields because of strict()", () => {
       expect(() =>
         createAccountBodySchema.parse({
-          customer_id: BigInt(1),
+          customer_id: UUID,
           type: AccountType.CHECKING,
           currency: "usd",
           extra: "nope",

@@ -9,6 +9,8 @@ components:
       properties:
         customer_id:
           type: string
+          format: uuid
+          description: UUID of the customer
         type:
           type: string
           enum:
@@ -28,7 +30,7 @@ components:
             - ACTIVE
             - CLOSED
       example:
-        customer_id: "1"
+        customer_id: "550e8400-e29b-41d4-a716-446655440000"
         type: CHECKING
         currency: USD
         nickname: alice
@@ -53,8 +55,12 @@ components:
       properties:
         id:
           type: string
+          format: uuid
+          description: UUID of the account
         customer_id:
           type: string
+          format: uuid
+          description: UUID of the customer
         type:
           type: string
           enum:
@@ -80,8 +86,8 @@ components:
         updated_at:
           type: string
       example:
-        id: "1"
-        customer_id: "1"
+        id: "550e8400-e29b-41d4-a716-446655440001"
+        customer_id: "550e8400-e29b-41d4-a716-446655440000"
         type: CHECKING
         currency: USD
         nickname: alice

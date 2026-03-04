@@ -17,7 +17,7 @@ export const loginBodySchema = z
 
 export const jwtPayloadSchema = z
   .object({
-    sub: z.string(),
+    sub: z.uuid("sub must be a valid UUID"),
     role: z.enum(UserRole),
     iat: z.number(),
     exp: z.number()

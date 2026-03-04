@@ -8,12 +8,17 @@
     },
     {
       "key": "customerId",
-      "value": "1",
+      "value": "cd0baa26-1735-11f1-83b8-6045bdcfaba4",
       "enabled": true
     },
     {
       "key": "accountId",
-      "value": "1",
+      "value": "08f47752-4eb9-4842-b3bd-28302b00c218",
+      "enabled": true
+    },
+    {
+      "key": "authToken",
+      "value": "",
       "enabled": true
     }
   ],

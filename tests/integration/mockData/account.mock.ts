@@ -3,6 +3,11 @@ import { AccountType, AccountStatus, UserRole } from "../../../src/generated/enu
 import { Decimal } from "@prisma/client/runtime/client";
 import { Account } from "../../../src/generated/client";
 
+
+const CUSTOMER_ID = "550e8400-e29b-41d4-a716-446655440000";
+const ACCOUNT_ID = "550e8400-e29b-41d4-a716-446655440001";
+const USER_ID = "550e8400-e29b-41d4-a716-446655440099";
+
 export type AccountCreateInput = {
   customer_id: string;
   type: AccountType;
@@ -25,7 +30,7 @@ export function buildAccountCreateInput(
   overrides: Partial<AccountCreateInput> = {}
 ): AccountCreateInput {
   return {
-    customer_id: "1",
+    customer_id: CUSTOMER_ID,
     type: AccountType.SAVINGS,
     currency: "USD",
     ...overrides,
@@ -36,7 +41,7 @@ export function buildAccountCreateOutput(
   overrides: Partial<AccountCreateOutput> = {}
 ): AccountCreateOutput {
   return {
-    customer_id: "1",
+    customer_id: CUSTOMER_ID,
     type: AccountType.SAVINGS,
     currency: "USD",
     nickname: "",
@@ -52,7 +57,7 @@ export function buildToken(
 ): string {
   return jwt.sign(
     {
-      sub: "123",
+      sub: USER_ID,
       role: role,
     },
     process.env.JWT_SECRET as string,
@@ -65,8 +70,8 @@ export function buildMockAccountRecord(
 ): Account { 
   const mockDate = new Date();
   const mockAccountRecord: Account = {
-    id: 1n,
-    customer_id: 1n,
+    id: ACCOUNT_ID,
+    customer_id: CUSTOMER_ID,
     type: AccountType.SAVINGS,
     currency: "USD",
     nickname: null,

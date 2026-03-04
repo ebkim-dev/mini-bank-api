@@ -2,36 +2,23 @@ import { z } from "zod";
 import { AccountType, AccountStatus } from "../generated/enums";
 import { Decimal } from "@prisma/client/runtime/client";
 
-const zBigIntFromAny = z.preprocess((val) => {
-  if (typeof val === "bigint") return val;
-  if (typeof val === "number" && Number.isInteger(val)) return BigInt(val);
-  if (typeof val === "string" && val.trim() !== "" && /^[0-9]+$/.test(val)) return BigInt(val);
-  return val; 
-}, z.bigint());
+
 
 export const accountIdParamsSchema = z
   .object({
-    id: z
-      .string()
-      .min(1)
-      .regex(/^[0-9]+$/, "id must be a numeric string")
-      .transform((x) => BigInt(x)),
+    id: z.uuid("id must be a valid UUID"),
   })
   .strict();
 
 export const getAccountsQuerySchema = z
   .object({
-    customerId: z
-      .string()
-      .min(1)
-      .regex(/^[0-9]+$/, "customerId must be a numeric string")
-      .transform((x) => BigInt(x)),
+    customer_id: z.uuid("customerId must be a valid UUID"),
   })
   .strict();
 
 export const createAccountBodySchema = z
   .object({
-    customer_id: zBigIntFromAny,
+    customer_id: z.uuid("customerId must be a valid UUID"),
     type: z.enum(AccountType),
     currency: z
       .string()

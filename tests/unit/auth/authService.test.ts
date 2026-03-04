@@ -21,13 +21,16 @@ jest.mock('../../../src/db/prismaClient', () => ({
 }));
 import prismaClient from '../../../src/db/prismaClient';
 
+
+const CUSTOMER_ID = "550e8400-e29b-41d4-a716-446655440000";
+
 const mockRegisterInput: RegisterInput = {
   username: "mockUser",
   password: "12341234",
 };
 const mockDate = new Date();
 const mockRegisterOutput: RegisterOutput = {
-  id: 42n.toString(),
+  id: CUSTOMER_ID,
 };
 
 const mockLoginInput: LoginInput = {
@@ -40,7 +43,7 @@ const mockLoginOutput: LoginOutput = {
 };
 
 const mockUserRecord: User = {
-  id: 42n,
+  id: CUSTOMER_ID,
   username: "mockUser",
   password_hash: "hashedpw",
   role: UserRole.ADMIN,
