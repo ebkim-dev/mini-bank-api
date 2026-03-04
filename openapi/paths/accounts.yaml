@@ -31,22 +31,24 @@ paths:
         - bearerAuth: []
       parameters:
         - in: query
-          name: customerId
+          name: customer_id
           schema:
             type: string
-            format: int64
-          description: ID of the customer whose accounts are to be fetched
-          example: "1"
+            format: uuid
+          description: UUID of the customer whose accounts are to be fetched
+          example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
           description: List of accounts for the customer
           content: 
             application/json:
               schema:
-                $ref: '#/components/schemas/AccountResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccountResponse'
               example:
-                - id: "1"
-                  customer_id: "1"
+                - id: "550e8400-e29b-41d4-a716-446655440001"
+                  customer_id: "550e8400-e29b-41d4-a716-446655440000"
                   type: CHECKING
                   currency: USD
                   nickname: alice
@@ -54,9 +56,9 @@ paths:
                   balance: "0"
                   created_at: "2026-02-17T12:00:00Z"
                   updated_at: "2026-02-17T12:00:00Z"
-                - id: "2"
-                  customer_id: "1"
-                  type: SAVING
+                - id: "550e8400-e29b-41d4-a716-446655440002"
+                  customer_id: "550e8400-e29b-41d4-a716-446655440000"
+                  type: SAVINGS
                   currency: USD
                   nickname: bob
                   status: ACTIVE
@@ -78,11 +80,12 @@ paths:
       parameters:
         - name: accountId
           in: path
-          description: ID of account that needs to be fetched
+          description: UUID of the account to be fetched
           required: true
-          example: "1"
+          example: "550e8400-e29b-41d4-a716-446655440001"
           schema:
             type: string
+            format: uuid
       responses:
         '200': 
           description: Retrieved account given account ID
@@ -104,11 +107,12 @@ paths:
       parameters:
         - name: accountId
           in: path
-          description: ID of account that needs to be updated
+          description: UUID of the account to be updated
           required: true
-          example: "1"
+          example: "550e8400-e29b-41d4-a716-446655440001"
           schema:
             type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -137,11 +141,12 @@ paths:
       parameters:
         - name: accountId
           in: path
-          description: ID of account that needs to be closed
+          description: UUID of the account to be closed
           required: true
-          example: "1"
+          example: "550e8400-e29b-41d4-a716-446655440001"
           schema:
             type: string
+            format: uuid
       responses:
         '200':
           description: Closed account given account ID

@@ -9,7 +9,7 @@ datasource db {
 }
 
 model User {
-  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  id            String   @id @default(uuid()) @db.Char(36)
   username      String   @unique @db.VarChar(100)
   password_hash String   @db.VarChar(255)
   role          UserRole @default(STANDARD)
@@ -25,7 +25,7 @@ enum UserRole {
 }
 
 model Customer {
-  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  id            String   @id @default(uuid()) @db.Char(36)
   first_name    String   @db.VarChar(100)
   last_name     String   @db.VarChar(100)
   email         String   @unique @db.VarChar(150)
@@ -39,8 +39,8 @@ model Customer {
 }
 
 model Account {
-  id            BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
-  customer_id   BigInt        @db.UnsignedBigInt
+  id            String        @id @default(uuid()) @db.Char(36)
+  customer_id   String        @db.Char(36)
   customer      Customer      @relation(fields: [customer_id], references: [id])
 
   type          AccountType     

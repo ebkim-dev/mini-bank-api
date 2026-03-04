@@ -9,6 +9,12 @@ import type {
   AccountUpdateInput
 } from "../../../src/account/account";
 
+const CUSTOMER_ID = "550e8400-e29b-41d4-a716-446655440000";
+const ACCOUNT_ID_1 = "550e8400-e29b-41d4-a716-446655440001";
+const ACCOUNT_ID_2 = "550e8400-e29b-41d4-a716-446655440002";
+const MISSING_ACCOUNT_ID = "550e8400-e29b-41d4-a716-44665544ffff";
+
+
 jest.mock('../../../src/db/prismaClient', () => ({
   __esModule: true,
   default: {
@@ -23,7 +29,7 @@ jest.mock('../../../src/db/prismaClient', () => ({
 import prismaClient from '../../../src/db/prismaClient';
 
 const mockAccountCreateInput: AccountCreateInput = {
-  customer_id: 1n,
+  customer_id: CUSTOMER_ID,
   type: AccountType.SAVINGS,
   currency: "USD",
 }
@@ -42,8 +48,8 @@ const mockAuthInputStandard: AuthInput = {
 
 const date = new Date();
 const mockAccountRecord1: Account = {
-  id: 1n,
-  customer_id: 1n,
+  id: ACCOUNT_ID_1,
+  customer_id: CUSTOMER_ID,
   type: AccountType.SAVINGS,
   currency: "USD",
   nickname: "alice",
@@ -53,8 +59,8 @@ const mockAccountRecord1: Account = {
   updated_at: date,
 }
 const mockAccountRecord2: Account = {
-  id: 2n,
-  customer_id: 1n,
+  id: ACCOUNT_ID_2,
+  customer_id: CUSTOMER_ID,
   type: AccountType.CHECKING,
   currency: "USD",
   nickname: "bob",
@@ -65,7 +71,7 @@ const mockAccountRecord2: Account = {
 }
 
 const mockAccountOutput1: AccountOutput = {
-  customer_id: 1n.toString(),
+  customer_id: CUSTOMER_ID,
   type: AccountType.SAVINGS,
   currency: "USD",
   nickname: "alice",
@@ -73,7 +79,7 @@ const mockAccountOutput1: AccountOutput = {
   balance: (new Decimal(0)).toString(),
 }
 const mockAccountOutput2: AccountOutput = {
-  customer_id: 1n.toString(),
+  customer_id: CUSTOMER_ID,
   type: AccountType.CHECKING,
   currency: "USD",
   nickname: "bob",
@@ -136,7 +142,7 @@ describe("fetchAccountsByCustomerId service", () => {
     (prismaClient.account.findMany as jest.Mock)
       .mockResolvedValue([mockAccountRecord1, mockAccountRecord2]);
 
-    await expect(accountService.fetchAccountsByCustomerId(1n, mockAuthInputStandard))
+    await expect(accountService.fetchAccountsByCustomerId(CUSTOMER_ID, mockAuthInputStandard))
       .resolves.toMatchObject([mockAccountOutput1, mockAccountOutput2]);
   });
 
@@ -144,7 +150,7 @@ describe("fetchAccountsByCustomerId service", () => {
     (prismaClient.account.findMany as jest.Mock)
       .mockRejectedValue(unknownPrismaError);
 
-    await expect(accountService.fetchAccountsByCustomerId(1n, mockAuthInputStandard))
+    await expect(accountService.fetchAccountsByCustomerId(CUSTOMER_ID, mockAuthInputStandard))
       .rejects.toThrow(UNKNOWN_ERROR_MESSAGE);
   });
 });
@@ -154,7 +160,7 @@ describe("fetchAccountById service", () => {
     (prismaClient.account.findUnique as jest.Mock)
       .mockResolvedValue(mockAccountRecord1);
 
-    await expect(accountService.fetchAccountById(1n, mockAuthInputStandard))
+    await expect(accountService.fetchAccountById(ACCOUNT_ID_1, mockAuthInputStandard))
       .resolves.toMatchObject(mockAccountOutput1);
   });
 
@@ -162,7 +168,7 @@ describe("fetchAccountById service", () => {
     (prismaClient.account.findUnique as jest.Mock)
       .mockResolvedValue(null);
    
-    await expect(accountService.fetchAccountById(9999999n, mockAuthInputAdmin))
+    await expect(accountService.fetchAccountById(MISSING_ACCOUNT_ID, mockAuthInputAdmin))
       .rejects
       .toThrow(NOT_FOUND_ERROR_MESSAGE);
   });
@@ -171,7 +177,7 @@ describe("fetchAccountById service", () => {
     (prismaClient.account.findUnique as jest.Mock)
       .mockRejectedValue(unknownPrismaError);
 
-    await expect(accountService.fetchAccountById(1n, mockAuthInputAdmin))
+    await expect(accountService.fetchAccountById(ACCOUNT_ID_1, mockAuthInputAdmin))
       .rejects
       .toThrow(UNKNOWN_ERROR_MESSAGE);
   });
@@ -186,7 +192,7 @@ describe("updateAccountById service", () => {
       });
 
     await expect(accountService.updateAccountById(
-      1n, 
+      ACCOUNT_ID_1, 
       mockAccountUpdateInput,
       mockAuthInputAdmin
     )).resolves.toMatchObject({
@@ -197,7 +203,7 @@ describe("updateAccountById service", () => {
 
   it("should throw a ForbiddenError for an insufficient role", async() => {
     await expect(accountService.updateAccountById(
-      9999999n, 
+      MISSING_ACCOUNT_ID, 
       mockAccountUpdateInput, 
       mockAuthInputStandard
     )).rejects
@@ -209,7 +215,7 @@ describe("updateAccountById service", () => {
       .mockRejectedValue(notFoundPrismaError);
    
     await expect(accountService.updateAccountById(
-      9999999n, 
+      MISSING_ACCOUNT_ID, 
       mockAccountUpdateInput, 
       mockAuthInputAdmin
     )).rejects
@@ -221,7 +227,7 @@ describe("updateAccountById service", () => {
       .mockRejectedValue(unknownPrismaError);
 
     await expect(accountService.updateAccountById(
-      9999999n, 
+      MISSING_ACCOUNT_ID, 
       mockAccountUpdateInput, 
       mockAuthInputAdmin
     )).rejects
@@ -238,7 +244,7 @@ describe("deleteAccountById service", () => {
       });
 
     await expect(
-      accountService.deleteAccountById(1n, mockAuthInputAdmin)
+      accountService.deleteAccountById(ACCOUNT_ID_1, mockAuthInputAdmin)
     ).resolves.toMatchObject({
       ...mockAccountOutput1,
       status: AccountStatus.CLOSED,
@@ -246,7 +252,7 @@ describe("deleteAccountById service", () => {
   });
 
   it("should throw a ForbiddenError for an insufficient role", async() => {
-    await expect(accountService.deleteAccountById(9999999n, mockAuthInputStandard))
+    await expect(accountService.deleteAccountById(MISSING_ACCOUNT_ID, mockAuthInputStandard))
       .rejects
       .toThrow("Only admins can close accounts");
   });
@@ -255,7 +261,7 @@ describe("deleteAccountById service", () => {
     (prismaClient.account.update as jest.Mock)
       .mockRejectedValue(notFoundPrismaError);
    
-    await expect(accountService.deleteAccountById(9999999n, mockAuthInputAdmin))
+    await expect(accountService.deleteAccountById(MISSING_ACCOUNT_ID, mockAuthInputAdmin))
       .rejects
       .toThrow(NOT_FOUND_ERROR_MESSAGE);
   });
@@ -264,7 +270,7 @@ describe("deleteAccountById service", () => {
     (prismaClient.account.update as jest.Mock)
       .mockRejectedValue(unknownPrismaError);
 
-    await expect(accountService.deleteAccountById(9999999n, mockAuthInputAdmin))
+    await expect(accountService.deleteAccountById(MISSING_ACCOUNT_ID, mockAuthInputAdmin))
       .rejects
       .toThrow(UNKNOWN_ERROR_MESSAGE);
   });

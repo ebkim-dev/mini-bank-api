@@ -2,7 +2,7 @@
   "info": {
     "name": "MiniBankAPI - Epic 1",
     "_postman_id": "minibank-epic1-collection",
-    "description": "Epic 1 APIs - Health + Accounts",
+    "description": "Epic 1 APIs - Health + Auth + Accounts",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -19,7 +19,7 @@
       }
     },
     {
-      "name": "Create Account",
+      "name": "Register",
       "request": {
         "method": "POST",
         "header": [
@@ -30,7 +30,74 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"customer_id\": 1,\n  \"type\": \"SAVINGS\",\n  \"currency\": \"USD\"\n}"
+          "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "register"]
+        }
+      }
+    },
+    {
+      "name": "Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.token) {",
+              "  pm.environment.set('authToken', res.token);",
+              "  console.log('Token saved to authToken');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"super_admin\",\n  \"password\": \"admin123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "Create Account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customer_id\": \"{{customerId}}\",\n  \"type\": \"SAVINGS\",\n  \"currency\": \"USD\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/accounts",
@@ -44,13 +111,23 @@
       "request": {
         "method": "GET",
         "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authToken}}",
+              "type": "string"
+            }
+          ]
+        },
         "url": {
-          "raw": "{{baseUrl}}/accounts?customerId={{customerId}}",
+          "raw": "{{baseUrl}}/accounts?customer_id={{customerId}}",
           "host": ["{{baseUrl}}"],
           "path": ["accounts"],
           "query": [
             {
-              "key": "customerId",
+              "key": "customer_id",
               "value": "{{customerId}}"
             }
           ]
@@ -62,6 +139,16 @@
       "request": {
         "method": "GET",
         "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authToken}}",
+              "type": "string"
+            }
+          ]
+        },
         "url": {
           "raw": "{{baseUrl}}/accounts/{{accountId}}",
           "host": ["{{baseUrl}}"],
@@ -79,6 +166,16 @@
             "value": "application/json"
           }
         ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authToken}}",
+              "type": "string"
+            }
+          ]
+        },
         "body": {
           "mode": "raw",
           "raw": "{\n  \"nickname\": \"Primary Account\"\n}"
@@ -100,6 +197,16 @@
             "value": "application/json"
           }
         ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authToken}}",
+              "type": "string"
+            }
+          ]
+        },
         "body": {
           "mode": "raw",
           "raw": "{\n  \"balance\": 5000\n}"
@@ -116,6 +223,16 @@
       "request": {
         "method": "POST",
         "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authToken}}",
+              "type": "string"
+            }
+          ]
+        },
         "url": {
           "raw": "{{baseUrl}}/accounts/{{accountId}}/close",
           "host": ["{{baseUrl}}"],

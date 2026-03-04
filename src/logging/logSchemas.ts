@@ -83,8 +83,8 @@ export function mapToSingleAccountSuccessEvent(
     durationMs,
     actorId: actorData.actorId,
     actorRole: actorData.role,
-    accountId: accountRecord.id.toString(),
-    customerId: accountRecord.customer_id.toString(),
+    accountId: accountRecord.id,
+    customerId: accountRecord.customer_id,
     accountType: accountRecord.type,
     currency: accountRecord.currency,
     accountStatus: accountRecord.status,
@@ -102,8 +102,8 @@ export function mapToManyAccountSuccessEvent(
     actorId: actorData.actorId,
     actorRole: actorData.role,
     accounts: accountRecords.map((accountRecord) => ({
-      accountId: accountRecord.id.toString(),
-      customerId: accountRecord.customer_id.toString(),
+      accountId: accountRecord.id,
+      customerId: accountRecord.customer_id,
       accountType: accountRecord.type,
       currency: accountRecord.currency,
       accountStatus: accountRecord.status

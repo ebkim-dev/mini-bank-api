@@ -8,9 +8,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
-          description: Auto-incremented customer ID
+          type: string
+          format: uuid
+          description: UUID of the customer
         first_name:
           type: string
           maxLength: 100
@@ -28,4 +28,4 @@ components:
         accounts:
           type: array
           items:
-            $ref: '#/components/schemas/Account'
+            $ref: '#/components/schemas/AccountResponse'

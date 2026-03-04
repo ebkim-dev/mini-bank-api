@@ -5,7 +5,7 @@ import {
 } from "../../../src/auth/userSchemas";
 
 import { UserRole } from "../../../src/generated/enums";
-
+const UUID = "550e8400-e29b-41d4-a716-446655440000";
 describe("userSchemas.ts", () => {
 
   describe("registerBodySchema", () => {
@@ -91,13 +91,13 @@ describe("userSchemas.ts", () => {
   describe("jwtPayloadSchema", () => {
     test("parses valid JWT payload", () => {
       const parsed = jwtPayloadSchema.parse({
-        sub: "123",
+        sub: UUID,
         role: UserRole.ADMIN,
         iat: 1700000000,
         exp: 1700003600,
       });
 
-      expect(parsed.sub).toBe("123");
+      expect(parsed.sub).toBe(UUID);
       expect(parsed.role).toBe(UserRole.ADMIN);
       expect(parsed.iat).toBe(1700000000);
       expect(parsed.exp).toBe(1700003600);
@@ -106,7 +106,7 @@ describe("userSchemas.ts", () => {
     test("rejects invalid role (must be enum value)", () => {
       expect(() =>
         jwtPayloadSchema.parse({
-          sub: "123",
+          sub: UUID,
           role: "SUPER_ADMIN",
           iat: 1700000000,
           exp: 1700003600,
@@ -117,7 +117,7 @@ describe("userSchemas.ts", () => {
     test("rejects extra fields because of strict()", () => {
       expect(() =>
         jwtPayloadSchema.parse({
-          sub: "123",
+          sub: UUID,
           role: UserRole.STANDARD,
           iat: 1700000000,
           exp: 1700003600,

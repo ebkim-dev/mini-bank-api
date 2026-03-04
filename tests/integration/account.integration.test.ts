@@ -24,7 +24,9 @@ import prismaClient from "../../src/db/prismaClient";
 import { Prisma } from "../../src/generated/client";
 
 const app = createApp();
-const mockAccountId: string = "1";
+const CUSTOMER_ID = "550e8400-e29b-41d4-a716-446655440000";
+const mockAccountId: string = "550e8400-e29b-41d4-a716-446655440001";
+const MISSING_ACCOUNT_ID: string = "550e8400-e29b-41d4-a716-44665544ffff";
 let token: string;
 
 beforeAll(async () => {
@@ -35,6 +37,7 @@ const mockCreate = prismaClient.account.create as jest.Mock;
 const mockUpdate = prismaClient.account.update as jest.Mock;
 const mockFindUnique = prismaClient.account.findUnique as jest.Mock;
 const mockFindMany = prismaClient.account.findMany as jest.Mock;
+
 beforeEach(async () => {
   jest.clearAllMocks();
   mockCreate.mockResolvedValue(buildMockAccountRecord());
@@ -200,14 +203,14 @@ describe("Integration - Accounts API", () => {
     test("1+ account found for customerId => 200, array of found accounts is returned", async () => {
       mockFindMany.mockResolvedValue([
         buildMockAccountRecord(),
-        buildMockAccountRecord({ id: 2n })
+        buildMockAccountRecord({ id: "550e8400-e29b-41d4-a716-446655440002" })
       ]);
 
       const standardToken = buildToken(UserRole.STANDARD, "1h");
       const res = await request(app)
         .get("/accounts")
         .set("Authorization", `Bearer ${standardToken}`)
-        .query({ customerId: "1" });
+        .query({ customer_id: CUSTOMER_ID });
 
       expect(res.status).toBe(200);
       expect(res.headers).toHaveProperty("x-trace-id");
@@ -224,7 +227,7 @@ describe("Integration - Accounts API", () => {
       const res = await request(app)
         .get("/accounts")
         .set("Authorization", `Bearer ${token}`)
-        .query({ customerId: "1" });
+        .query({ customer_id: CUSTOMER_ID });
 
       expect(res.status).toBe(200);
       expect(res.headers).toHaveProperty("x-trace-id");
@@ -244,7 +247,7 @@ describe("Integration - Accounts API", () => {
       const res = await request(app)
         .get("/accounts")
         .set("Authorization", `Bearer ${token}`)
-        .query({ customerId: "abc" });
+        .query({ customer_id: "abc" });
 
       expect(res.status).toBe(400);
       expect(res.headers).toHaveProperty("x-trace-id");
@@ -254,7 +257,7 @@ describe("Integration - Accounts API", () => {
       const res = await request(app)
         .get("/accounts")
         .set("Authorization", `NOTBEARER ${token}`)
-        .send({ customerId: "1" });
+        .send({ customer_id: CUSTOMER_ID });
 
       expect(res.status).toBe(401);
       expect(res.headers).toHaveProperty("x-trace-id");
@@ -271,7 +274,7 @@ describe("Integration - Accounts API", () => {
       expect(res.status).toBe(200);
       expect(res.headers).toHaveProperty("x-trace-id");
 
-      expect(res.body).toHaveProperty("customer_id", "1");
+      expect(res.body).toHaveProperty("customer_id", CUSTOMER_ID);
       expect(res.body).toHaveProperty("type");
       expect(res.body).toHaveProperty("currency");
     });
@@ -289,7 +292,7 @@ describe("Integration - Accounts API", () => {
       mockFindUnique.mockResolvedValue(null);
 
       const res = await request(app)
-        .get(`/accounts/999999999`)
+        .get(`/accounts/${MISSING_ACCOUNT_ID}`)
         .set("Authorization", `Bearer ${token}`);
 
       expect(res.status).toBe(404);
@@ -325,7 +328,7 @@ describe("Integration - Accounts API", () => {
       expect(res.headers).toHaveProperty("x-trace-id");
 
       expect(res.body).toMatchObject({
-        customer_id: "1",
+        customer_id: CUSTOMER_ID,
         nickname: "newNick",
         status: AccountStatus.CLOSED,
       });
@@ -345,7 +348,7 @@ describe("Integration - Accounts API", () => {
       expect(res.headers).toHaveProperty("x-trace-id");
 
       expect(res.body).toMatchObject({
-        customer_id: "1",
+        customer_id: CUSTOMER_ID,
         nickname: "onlyNick",
       });
     });
@@ -364,7 +367,7 @@ describe("Integration - Accounts API", () => {
       expect(res.headers).toHaveProperty("x-trace-id");
 
       expect(res.body).toMatchObject({
-        customer_id: "1",
+        customer_id: CUSTOMER_ID,
         status: AccountStatus.CLOSED,
       });
     });
@@ -411,7 +414,7 @@ describe("Integration - Accounts API", () => {
       mockUpdate.mockRejectedValue(mockError);
 
       const res = await request(app)
-        .put(`/accounts/999999999`)
+        .put(`/accounts/${MISSING_ACCOUNT_ID}`)
         .set("Authorization", `Bearer ${token}`)
         .send({ nickname: "x" });
 
@@ -456,7 +459,7 @@ describe("Integration - Accounts API", () => {
       expect(res.status).toBe(200);
       expect(res.headers).toHaveProperty("x-trace-id");
       expect(res.body).toMatchObject({
-        customer_id: "1",
+        customer_id: CUSTOMER_ID,
         status: AccountStatus.CLOSED,
       });
     });
@@ -480,7 +483,7 @@ describe("Integration - Accounts API", () => {
       mockUpdate.mockRejectedValue(mockError);
 
       const res = await request(app)
-        .post(`/accounts/999999999/close`)
+        .post(`/accounts/${MISSING_ACCOUNT_ID}/close`)
         .set("Authorization", `Bearer ${token}`)
         .send({});
 

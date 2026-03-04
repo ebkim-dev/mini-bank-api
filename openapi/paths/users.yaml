@@ -26,8 +26,8 @@ paths:
     post:
       tags:
         - auth
-      summary: Fetch account by account ID
-      description: Retrieve an account given its account ID. Returns the retrieved account on success.
+      summary: Login a user
+      description: Authenticates a user with username and password. Returns a JWT access token on success.
       requestBody:
         required: true
         content:

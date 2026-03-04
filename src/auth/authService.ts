@@ -38,7 +38,7 @@ export async function registerUser(
       }
     });
 
-    const serializedId = userRecord.id.toString();
+    const serializedId = userRecord.id;
     const userOutput: RegisterOutput = { id: serializedId };
     
     const event: AuthSuccessEvent = {
@@ -100,10 +100,10 @@ export async function loginUser(
     );
   }
   
-  const serializedId = userRecord.id.toString();
+  const serializedId = userRecord.id;
   
   const payload: JwtPayload = {
-    sub: userRecord.id.toString(),
+    sub: userRecord.id,
     role: userRecord.role,
   };
 

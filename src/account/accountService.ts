@@ -34,7 +34,7 @@ export async function insertAccount(
       durationMs: getDurationMs(start),
       actorId: authInput.actorId,
       actorRole: authInput.role,
-      customerId: data.customer_id.toString(),
+      customerId: data.customer_id,
       accountType: data.type,
       currency: data.currency,
       ...(data.status !== undefined && { accountStatus: data.status }),
@@ -66,7 +66,7 @@ export async function insertAccount(
 
 
 export async function fetchAccountsByCustomerId(
-  customer_id: bigint,
+  customer_id: string,
   authInput: AuthInput
 ): Promise<AccountOutput[]> {
   const start = process.hrtime.bigint();
@@ -85,7 +85,7 @@ export async function fetchAccountsByCustomerId(
 
 
 export async function fetchAccountById(
-  id: bigint,
+  id: string,
   authInput: AuthInput
 ): Promise<AccountOutput> {
   const start = process.hrtime.bigint();
@@ -121,7 +121,7 @@ export async function fetchAccountById(
 
 
 export async function updateAccountById(
-  id: bigint, 
+  id: string, 
   data: AccountUpdateInput,
   authInput: AuthInput
 ): Promise<AccountOutput> {
@@ -184,7 +184,7 @@ export async function updateAccountById(
 
 
 export async function deleteAccountById(
-  id: bigint,
+  id: string,
   authInput: AuthInput
 ): Promise<AccountOutput> {
   const start = process.hrtime.bigint();
