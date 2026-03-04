@@ -6,6 +6,7 @@ import { Account } from "../../../src/generated/client";
 
 const CUSTOMER_ID = "550e8400-e29b-41d4-a716-446655440000";
 const ACCOUNT_ID = "550e8400-e29b-41d4-a716-446655440001";
+const USER_ID = "550e8400-e29b-41d4-a716-446655440099";
 
 export type AccountCreateInput = {
   customer_id: string;
@@ -56,7 +57,7 @@ export function buildToken(
 ): string {
   return jwt.sign(
     {
-      sub: CUSTOMER_ID,
+      sub: USER_ID,
       role: role,
     },
     process.env.JWT_SECRET as string,
