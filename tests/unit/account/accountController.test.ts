@@ -7,7 +7,8 @@ import { AccountCreateInput, AccountOutput } from "../../../src/account/account"
 import { AuthInput, JwtPayload } from "../../../src/auth/user";
 
 const CUSTOMER_ID = "550e8400-e29b-41d4-a716-446655440000";
-const ACCOUNT_ID = "550e8400-e29b-41d4-a716-446655440001";
+const ACCOUNT_ID_1 = "550e8400-e29b-41d4-a716-446655440001";
+const ACCOUNT_ID_2 = "550e8400-e29b-41d4-a716-446655440002";
 const MISSING_ACCOUNT_ID = "550e8400-e29b-41d4-a716-44665544ffff";
 const now = Date.now();
 const mockedJwtPayload: JwtPayload = {
@@ -29,6 +30,7 @@ const mockAccountCreateInput: AccountCreateInput = {
 }
 
 const mockAccountOutput1: AccountOutput = {
+  id: ACCOUNT_ID_1,
   customer_id: CUSTOMER_ID,
   type: AccountType.SAVINGS,
   currency: "USD",
@@ -38,6 +40,7 @@ const mockAccountOutput1: AccountOutput = {
 }
 
 const mockAccountOutput2: AccountOutput = {
+  id: ACCOUNT_ID_2,
   customer_id: CUSTOMER_ID,
   type: AccountType.CHECKING,
   currency: "USD",
@@ -156,7 +159,7 @@ describe("getAccountsByCustomerId controller", () => {
 describe("getAccount controller", () => {
   it("should call fetchAccountById and return 200 with serialized account", async () => {
     const req: any = { validated: { 
-      params: { id: ACCOUNT_ID },
+      params: { id: ACCOUNT_ID_1 },
       user: mockedJwtPayload
     }};
 
@@ -189,7 +192,7 @@ describe("getAccount controller", () => {
 describe("updateAccount controller", () => {
   it("should call updateAccountById and return 200 with serialized account", async () => {
     const req: any = { validated: {
-        params: { id: ACCOUNT_ID },
+        params: { id: ACCOUNT_ID_1 },
         body: { nickname: "asdf" },
         user: mockedJwtPayload
     }};
@@ -216,7 +219,7 @@ describe("updateAccount controller", () => {
 
   it("should call next when service throws", async () => {
     const req: any = { validated: { 
-      params: { id: ACCOUNT_ID },
+      params: { id: ACCOUNT_ID_1 },
       body: { nickname: "asdf" },
       user: mockedJwtPayload
     }};
@@ -254,7 +257,7 @@ describe("deleteAccount controller", () => {
 
   it("should call next when service throws", async () => {
     const req: any = { validated: { 
-      params: { id: ACCOUNT_ID },
+      params: { id: ACCOUNT_ID_1 },
       user: mockedJwtPayload
     }};
 

@@ -2,5 +2,5 @@ components:
   securitySchemes:
     sessionAuth:
       type: apiKey
-      in: cookie
+      in: header
       name: x-session-id

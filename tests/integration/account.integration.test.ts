@@ -36,6 +36,7 @@ import jwt from "jsonwebtoken";
 const app = createApp();
 const CUSTOMER_ID = "550e8400-e29b-41d4-a716-446655440000";
 const mockAccountId: string = "550e8400-e29b-41d4-a716-446655440001";
+const mockAccountId2: string = "550e8400-e29b-41d4-a716-446655440002";
 const MISSING_ACCOUNT_ID: string = "550e8400-e29b-41d4-a716-44665544ffff";
 let token: string;
 
@@ -260,7 +261,7 @@ describe("Integration - Accounts API", () => {
       mockVerify.mockReturnValue(mockedJwtPayloadStandard);
       mockFindMany.mockResolvedValue([
         buildMockAccountRecord(),
-        buildMockAccountRecord({ id: "550e8400-e29b-41d4-a716-446655440002" })
+        buildMockAccountRecord({ id: mockAccountId2 })
       ]);
 
       const res = await request(app)
@@ -276,7 +277,7 @@ describe("Integration - Accounts API", () => {
       expect(res.headers).toHaveProperty("x-trace-id");
       expect(res.body).toEqual([
         buildAccountCreateOutput(),
-        buildAccountCreateOutput(),
+        buildAccountCreateOutput({ id: mockAccountId2 }),
       ]);
     });
 

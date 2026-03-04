@@ -71,6 +71,7 @@ const mockAccountRecord2: Account = {
 }
 
 const mockAccountOutput1: AccountOutput = {
+  id: ACCOUNT_ID_1,
   customer_id: CUSTOMER_ID,
   type: AccountType.SAVINGS,
   currency: "USD",
@@ -79,6 +80,7 @@ const mockAccountOutput1: AccountOutput = {
   balance: (new Decimal(0)).toString(),
 }
 const mockAccountOutput2: AccountOutput = {
+  id: ACCOUNT_ID_2,
   customer_id: CUSTOMER_ID,
   type: AccountType.CHECKING,
   currency: "USD",

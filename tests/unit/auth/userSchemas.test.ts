@@ -107,15 +107,5 @@ describe("userSchemas.ts", () => {
         })
       ).toThrow();
     });
-
-    test("rejects extra fields because of strict()", () => {
-      expect(() =>
-        jwtPayloadSchema.parse({
-          sub: UUID,
-          role: UserRole.STANDARD,
-          extra: "nope",
-        })
-      ).toThrow();
-    });
   });
 });

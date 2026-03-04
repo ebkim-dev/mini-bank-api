@@ -18,6 +18,7 @@ export type AccountCreateInput = {
 };
 
 export type AccountCreateOutput = {
+  id: string;
   customer_id: string;
   type: AccountType;
   currency: string;
@@ -41,6 +42,7 @@ export function buildAccountCreateOutput(
   overrides: Partial<AccountCreateOutput> = {}
 ): AccountCreateOutput {
   return {
+    id: ACCOUNT_ID,
     customer_id: CUSTOMER_ID,
     type: AccountType.SAVINGS,
     currency: "USD",
