@@ -2,11 +2,16 @@ import jwt, { SignOptions } from "jsonwebtoken";
 import { AccountType, AccountStatus, UserRole } from "../../../src/generated/enums";
 import { Decimal } from "@prisma/client/runtime/client";
 import { Account } from "../../../src/generated/client";
+import { JwtPayload } from "../../../src/auth/user";
 
 
-const CUSTOMER_ID = "550e8400-e29b-41d4-a716-446655440000";
-const ACCOUNT_ID = "550e8400-e29b-41d4-a716-446655440001";
-const USER_ID = "550e8400-e29b-41d4-a716-446655440099";
+export const mockSessionId: string = "mockSessionId";
+export const mockRedisKey: string = `session:${mockSessionId}`;
+export const mockCustomerId = "550e8400-e29b-41d4-a716-446655440000";
+export const mockAccountId1 = "550e8400-e29b-41d4-a716-446655440001";
+export const mockAccountId2 = "550e8400-e29b-41d4-a716-446655440002";
+export const mockMissingAccountId = "550e8400-e29b-41d4-a716-44665544ffff";
+export const mockUserId = "550e8400-e29b-41d4-a716-446655440099";
 
 export type AccountCreateInput = {
   customer_id: string;
@@ -31,7 +36,7 @@ export function buildAccountCreateInput(
   overrides: Partial<AccountCreateInput> = {}
 ): AccountCreateInput {
   return {
-    customer_id: CUSTOMER_ID,
+    customer_id: mockCustomerId,
     type: AccountType.SAVINGS,
     currency: "USD",
     ...overrides,
@@ -42,8 +47,8 @@ export function buildAccountCreateOutput(
   overrides: Partial<AccountCreateOutput> = {}
 ): AccountCreateOutput {
   return {
-    id: ACCOUNT_ID,
-    customer_id: CUSTOMER_ID,
+    id: mockAccountId1,
+    customer_id: mockCustomerId,
     type: AccountType.SAVINGS,
     currency: "USD",
     nickname: "",
@@ -53,27 +58,13 @@ export function buildAccountCreateOutput(
   };
 }
 
-export function buildToken(
-  role: UserRole, 
-  expiresIn: NonNullable<SignOptions["expiresIn"]>
-): string {
-  return jwt.sign(
-    {
-      sub: USER_ID,
-      role: role,
-    },
-    process.env.JWT_SECRET as string,
-    { expiresIn }
-  );
-}
-
 export function buildMockAccountRecord(
   overrides: Partial<Account> = {}
 ): Account { 
   const mockDate = new Date();
   const mockAccountRecord: Account = {
-    id: ACCOUNT_ID,
-    customer_id: CUSTOMER_ID,
+    id: mockAccountId1,
+    customer_id: mockCustomerId,
     type: AccountType.SAVINGS,
     currency: "USD",
     nickname: null,
@@ -84,4 +75,28 @@ export function buildMockAccountRecord(
     ...overrides
   };
   return mockAccountRecord;
+}
+
+export function buildJwtPayload(
+  overrides: Partial<JwtPayload> = {}
+): JwtPayload {
+  return {
+    sub: mockAccountId1,
+    role: UserRole.ADMIN,
+    ...overrides,
+  };
+}
+
+export function buildToken(
+  role: UserRole, 
+  expiresIn: NonNullable<SignOptions["expiresIn"]>
+): string {
+  return jwt.sign(
+    {
+      sub: mockUserId,
+      role: role,
+    },
+    process.env.JWT_SECRET as string,
+    { expiresIn }
+  );
 }
