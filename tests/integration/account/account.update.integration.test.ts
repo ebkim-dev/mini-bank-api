@@ -4,11 +4,7 @@ import { Prisma } from "../../../src/generated/client";
 import { UserRole, AccountStatus } from "../../../src/generated/enums";
 import { 
   buildMockAccountRecord,
-  mockAccountId1,
-  mockMissingAccountId,
   buildJwtPayload,
-  mockSessionId,
-  mockRedisKey,
 } from "./account.mock.integration";
 
 jest.mock("../../../src/redis/redisClient", () => ({
@@ -24,6 +20,7 @@ import prismaClient from "../../../src/db/prismaClient";
 
 jest.mock("jsonwebtoken");
 import jwt from "jsonwebtoken";
+import { mockAccountId1, mockMissingAccountId, mockRedisKey, mockSessionId } from "../../common.mock";
 
 
 const app = createApp();
@@ -136,7 +133,10 @@ describe("PUT /accounts/:accountId", () => {
     );
     mockUpdate.mockRejectedValue(mockError);
 
-    const res = await updateAccountRequest({ nickname: "x" }, mockMissingAccountId);
+    const res = await updateAccountRequest(
+      { nickname: "x" }, 
+      mockMissingAccountId
+    );
 
     expect(res.status).toBe(404);
     expect(res.headers).toHaveProperty("x-trace-id");

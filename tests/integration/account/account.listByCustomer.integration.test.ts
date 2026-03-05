@@ -4,12 +4,7 @@ import { UserRole } from "../../../src/generated/enums";
 import { 
   buildAccountCreateOutput,
   buildMockAccountRecord,
-  mockCustomerId,
-  mockAccountId2,
   buildJwtPayload,
-  mockMissingCustomerId,
-  mockSessionId,
-  mockRedisKey,
 } from "./account.mock.integration";
 
 jest.mock("../../../src/redis/redisClient", () => ({
@@ -25,6 +20,7 @@ import prismaClient from "../../../src/db/prismaClient";
 
 jest.mock("jsonwebtoken");
 import jwt from "jsonwebtoken";
+import { mockAccountId2, mockCustomerId, mockMissingCustomerId, mockRedisKey, mockSessionId } from "../../common.mock";
 
 
 const app = createApp();

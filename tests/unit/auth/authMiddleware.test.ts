@@ -4,13 +4,12 @@ import jwt from "jsonwebtoken";
 import { EventCode } from "../../../src/types/eventCodes";
 import { UserRole } from "../../../src/generated/enums";
 import { JwtPayload } from "../../../src/auth/user";
-
+import { mockSessionId } from "../../common.mock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
-import { mockSessionId } from "../../integration/account/account.mock.integration";
 
 jest.mock("jsonwebtoken");
 
