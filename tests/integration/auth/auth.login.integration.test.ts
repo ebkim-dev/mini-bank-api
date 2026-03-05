@@ -1,10 +1,11 @@
 import request from "supertest";
 import { createApp } from "../../../src/app";
 import { LoginInput } from "../../../src/auth/user";
+import { mockUsername } from "../../commonMock";
 import { 
   buildLoginInput,
   buildUserRecord,
-} from "./auth.mock.integration";
+} from "../../authMock";
 
 jest.mock("bcrypt", () => ({
   hash: jest.fn().mockResolvedValue("hashedMockPassword"),
@@ -27,7 +28,6 @@ jest.mock("../../../src/db/prismaClient", () => ({
   default: { user: { findUnique: jest.fn() } }
 }));
 import prismaClient from "../../../src/db/prismaClient";
-import { mockUsername } from "../../common.mock";
 
 const app = createApp();
 

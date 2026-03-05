@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { EventCode } from "../../../src/types/eventCodes";
 import { UserRole } from "../../../src/generated/enums";
 import { JwtPayload } from "../../../src/auth/user";
-import { mockSessionId } from "../../common.mock";
+import { mockSessionId } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }

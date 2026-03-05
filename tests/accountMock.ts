@@ -1,28 +1,28 @@
-import jwt, { SignOptions } from "jsonwebtoken";
-import { AccountType, AccountStatus, UserRole } from "../../../src/generated/enums";
+import { AccountType, AccountStatus } from "../src/generated/enums";
 import { Decimal } from "@prisma/client/runtime/client";
-import { Account } from "../../../src/generated/client";
-import { JwtPayload } from "../../../src/auth/user";
-import { mockAccountId1, mockCustomerId, mockUserId } from "../../common.mock";
+import { Account } from "../src/generated/client";
+import { mockAccountId1, mockCustomerId } from "./commonMock";
+import { AccountCreateInput, AccountOutput } from "../src/account/account";
 
-export type AccountCreateInput = {
+export interface AccountCreateRequestBody {
   customer_id: string;
   type: AccountType;
   currency: string;
-  nickname?: string;
+  nickname?: string | null;
   status?: AccountStatus;
   balance?: string;
-};
+}
 
-export type AccountCreateOutput = {
-  id: string;
-  customer_id: string;
-  type: AccountType;
-  currency: string;
-  nickname: string | null;
-  status: AccountStatus;
-  balance: string;
-};
+export function buildAccountCreateRequestBody(
+  overrides: Partial<AccountCreateRequestBody> = {}
+) {
+  return {
+    customer_id: mockCustomerId,
+    type: AccountType.SAVINGS,
+    currency: "USD",
+    ...overrides,
+  };
+}
 
 export function buildAccountCreateInput(
   overrides: Partial<AccountCreateInput> = {}
@@ -36,8 +36,8 @@ export function buildAccountCreateInput(
 }
 
 export function buildAccountCreateOutput(
-  overrides: Partial<AccountCreateOutput> = {}
-): AccountCreateOutput {
+  overrides: Partial<AccountOutput> = {}
+): AccountOutput {
   return {
     id: mockAccountId1,
     customer_id: mockCustomerId,
@@ -69,26 +69,17 @@ export function buildMockAccountRecord(
   return mockAccountRecord;
 }
 
-export function buildJwtPayload(
-  overrides: Partial<JwtPayload> = {}
-): JwtPayload {
+export function buildAccountOutput(
+  overrides: Partial<AccountOutput> = {}
+): AccountOutput {
   return {
-    sub: mockAccountId1,
-    role: UserRole.ADMIN,
+    id: mockAccountId1,
+    customer_id: mockCustomerId,
+    type: AccountType.CHECKING,
+    currency: "USD",
+    nickname: "",
+    status: AccountStatus.ACTIVE,
+    balance: (new Decimal(0)).toString(),
     ...overrides,
   };
-}
-
-export function buildToken(
-  role: UserRole, 
-  expiresIn: NonNullable<SignOptions["expiresIn"]>
-): string {
-  return jwt.sign(
-    {
-      sub: mockUserId,
-      role: role,
-    },
-    process.env.JWT_SECRET as string,
-    { expiresIn }
-  );
 }

@@ -1,17 +1,20 @@
-import { User, UserRole } from "../../../src/generated/client";
+import jwt, { SignOptions } from "jsonwebtoken";
+import { User, UserRole } from "../src/generated/client";
 import { 
+  AuthInput,
+  JwtPayload,
   LoginInput,
   LoginOutput,
   RegisterInput,
   RegisterOutput
-} from "../../../src/auth/user";
-import { 
+} from "../src/auth/user";
+import {
   mockHashedPassword,
   mockPassword,
   mockSessionId,
   mockUserId,
   mockUsername
-} from "../../common.mock";
+} from "./commonMock";
 
 export function buildRegisterInput(
   overrides: Partial<RegisterInput> = {}
@@ -65,4 +68,37 @@ export function buildUserRecord(
     ...overrides,
   };
   return mockUserRecord;
+}
+
+export function buildJwtPayload(
+  overrides: Partial<JwtPayload> = {}
+): JwtPayload {
+  return {
+    sub: mockUserId,
+    role: UserRole.ADMIN,
+    ...overrides,
+  };
+}
+
+export function buildToken(
+  role: UserRole, 
+  expiresIn: NonNullable<SignOptions["expiresIn"]>
+): string {
+  return jwt.sign(
+    {
+      sub: mockUserId,
+      role: role,
+    },
+    process.env.JWT_SECRET as string,
+    { expiresIn }
+  );
+}
+
+export function buildAuthInput(
+  overrides: Partial<AuthInput> = {}
+): AuthInput {
+  return {
+    actorId: mockUserId,
+    role: UserRole.ADMIN
+  };
 }

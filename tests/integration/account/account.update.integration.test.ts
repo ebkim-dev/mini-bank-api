@@ -2,10 +2,14 @@ import request from "supertest";
 import { createApp } from "../../../src/app";
 import { Prisma } from "../../../src/generated/client";
 import { UserRole, AccountStatus } from "../../../src/generated/enums";
+import { buildJwtPayload } from "../../authMock";
+import { buildMockAccountRecord } from "../../accountMock";
 import { 
-  buildMockAccountRecord,
-  buildJwtPayload,
-} from "./account.mock.integration";
+  mockAccountId1,
+  mockMissingAccountId,
+  mockRedisKey,
+  mockSessionId
+} from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
@@ -20,7 +24,6 @@ import prismaClient from "../../../src/db/prismaClient";
 
 jest.mock("jsonwebtoken");
 import jwt from "jsonwebtoken";
-import { mockAccountId1, mockMissingAccountId, mockRedisKey, mockSessionId } from "../../common.mock";
 
 
 const app = createApp();

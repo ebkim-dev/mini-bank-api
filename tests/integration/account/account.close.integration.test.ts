@@ -3,9 +3,15 @@ import { createApp } from "../../../src/app";
 import { Prisma } from "../../../src/generated/client";
 import { UserRole, AccountStatus } from "../../../src/generated/enums";
 import { 
-  buildMockAccountRecord,
-  buildJwtPayload,
-} from "./account.mock.integration";
+  buildMockAccountRecord
+} from "../../accountMock";
+import { 
+  mockAccountId1,
+  mockMissingAccountId,
+  mockRedisKey,
+  mockSessionId
+} from "../../commonMock";
+import { buildJwtPayload } from "../../authMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
@@ -20,7 +26,6 @@ import prismaClient from "../../../src/db/prismaClient";
 
 jest.mock("jsonwebtoken");
 import jwt from "jsonwebtoken";
-import { mockAccountId1, mockMissingAccountId, mockRedisKey, mockSessionId } from "../../common.mock";
 
 
 const app = createApp();

@@ -3,11 +3,12 @@ import { createApp } from "../../../src/app";
 import { Decimal } from "@prisma/client/runtime/client";
 import { UserRole, AccountStatus } from "../../../src/generated/enums";
 import { 
-  buildAccountCreateInput, 
   buildAccountCreateOutput,
+  buildAccountCreateRequestBody,
   buildMockAccountRecord,
-  buildJwtPayload,
-} from "./account.mock.integration";
+} from "../../accountMock";
+import { mockRedisKey, mockSessionId } from "../../commonMock";
+import { buildJwtPayload } from "../../authMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
@@ -22,7 +23,6 @@ import prismaClient from "../../../src/db/prismaClient";
 
 jest.mock("jsonwebtoken");
 import jwt from "jsonwebtoken";
-import { mockRedisKey, mockSessionId } from "../../common.mock";
 
 
 const app = createApp();
@@ -49,7 +49,7 @@ describe("POST /accounts", () => {
   }
 
   test("Correct input => 201, new account is created and returned", async () => {
-    const mockAccountCreateInput = buildAccountCreateInput({
+    const mockAccountCreateRequestBody = buildAccountCreateRequestBody({
       nickname: "alice",
       status: AccountStatus.ACTIVE,
       balance: (new Decimal(0)).toString()
@@ -61,7 +61,7 @@ describe("POST /accounts", () => {
       nickname: "alice"
     }));
 
-    const res = await postAccountRequest(mockAccountCreateInput);
+    const res = await postAccountRequest(mockAccountCreateRequestBody);
 
     expect(res.status).toBe(201);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -73,7 +73,7 @@ describe("POST /accounts", () => {
 
   test("Optional fields missing => 201, new account is created and returned", async () => {
     mockCreate.mockResolvedValue(buildMockAccountRecord());
-    const res = await postAccountRequest(buildAccountCreateInput());
+    const res = await postAccountRequest(buildAccountCreateRequestBody());
 
     expect(res.status).toBe(201);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -84,7 +84,7 @@ describe("POST /accounts", () => {
   });
 
   test("A required field is missing => 400", async () => {
-    const { currency, ...badInput } = buildAccountCreateInput();
+    const { currency, ...badInput } = buildAccountCreateRequestBody();
     const res = await postAccountRequest(badInput);
 
     expect(res.status).toBe(400);
@@ -165,7 +165,7 @@ describe("POST /accounts", () => {
   });
 
   it('should return 401 given missing header', async () => {
-    const res = await postAccountRequest(buildAccountCreateInput(), "");
+    const res = await postAccountRequest(buildAccountCreateRequestBody(), "");
 
     expect(res.status).toBe(401);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -174,7 +174,7 @@ describe("POST /accounts", () => {
 
   it('should return 403 given STANDARD role', async() => {
     mockVerify.mockReturnValue(mockedJwtPayloadStandard);
-    const res = await postAccountRequest(buildAccountCreateInput());
+    const res = await postAccountRequest(buildAccountCreateRequestBody());
 
     expect(res.status).toBe(403);
     expect(res.headers).toHaveProperty("x-trace-id");

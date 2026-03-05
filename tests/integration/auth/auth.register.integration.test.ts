@@ -6,7 +6,7 @@ import {
   buildRegisterInput, 
   buildRegisterOutput,
   buildUserRecord, 
-} from "./auth.mock.integration";
+} from "../../authMock";
 
 jest.mock("bcrypt", () => ({
   hash: jest.fn().mockResolvedValue("hashedPassword"),
