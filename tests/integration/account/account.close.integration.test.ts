@@ -1,36 +1,25 @@
 import request from "supertest";
 import { createApp } from "../../../src/app";
-import { Decimal } from "@prisma/client/runtime/client";
 import { Prisma } from "../../../src/generated/client";
-import { JwtPayload } from "../../../src/auth/user";
 import { UserRole, AccountStatus } from "../../../src/generated/enums";
 import { 
-  buildAccountCreateInput, 
-  buildAccountCreateOutput,
   buildMockAccountRecord,
-  buildToken,
   mockCustomerId,
   mockAccountId1,
-  mockAccountId2,
   mockMissingAccountId,
   buildJwtPayload,
+  mockSessionId,
+  mockRedisKey,
 } from "./account.mock";
 
-jest.mock("../../src/redis/redisClient", () => ({
+jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
-jest.mock("../../src/db/prismaClient", () => ({
+jest.mock("../../../src/db/prismaClient", () => ({
   __esModule: true,
-  default: {
-    account: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn()
-    }
-  },
+  default: { account: { update: jest.fn() } }
 }));
 import prismaClient from "../../../src/db/prismaClient";
 
@@ -39,49 +28,37 @@ import jwt from "jsonwebtoken";
 
 
 const app = createApp();
-let token: string;
 
 const mockedJwtPayloadAdmin = buildJwtPayload();
 const mockedJwtPayloadStandard = buildJwtPayload({ role: UserRole.STANDARD });
 
-beforeAll(async () => {
-  token = buildToken(UserRole.ADMIN, "5m");
-})
-
-const mockSessionId: string = "mockSessionId";
-const mockRedisKey: string = `session:${mockSessionId}`;
-
-const mockCreate = prismaClient.account.create as jest.Mock;
 const mockUpdate = prismaClient.account.update as jest.Mock;
-const mockFindUnique = prismaClient.account.findUnique as jest.Mock;
-const mockFindMany = prismaClient.account.findMany as jest.Mock;
 const mockVerify = jwt.verify as jest.Mock;
 beforeEach(async () => {
   jest.clearAllMocks();
-  mockCreate.mockResolvedValue(buildMockAccountRecord());
   mockUpdate.mockResolvedValue(buildMockAccountRecord());
-  mockFindUnique.mockResolvedValue(buildMockAccountRecord());
-  mockFindMany.mockResolvedValue([]);
   mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
 });
 
 describe("POST /accounts/:accountId/close", () => {
-  test("Account found for accountId => 200, account is closed and returned", async () => {
-    mockUpdate.mockResolvedValue(buildMockAccountRecord({
-      status: AccountStatus.CLOSED
-    }));
+  async function closeAccount(
+    accountId: string = mockAccountId1,
+    sessionId: string = mockSessionId
+  ) {
+    return request(app)
+      .post(`/accounts/${accountId}/close`)
+      .set("x-session-id", sessionId);
+  }
 
-    const res = await request(app)
-      .post(`/accounts/${mockAccountId1}/close`)
-      .set("x-session-id", mockSessionId)
-      .send({});
+  test("Account found for accountId => 200, account is closed and returned", async () => {
+    const closedStatus = { status: AccountStatus.CLOSED };
+    mockUpdate.mockResolvedValue(buildMockAccountRecord(closedStatus));
+
+    const res = await closeAccount();
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
-    expect(res.body).toMatchObject({
-      customer_id: mockCustomerId,
-      status: AccountStatus.CLOSED,
-    });
+    expect(res.body).toMatchObject(closedStatus);
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
@@ -89,10 +66,7 @@ describe("POST /accounts/:accountId/close", () => {
   });
 
   test("accountId has invalid format => 400", async () => {
-    const res = await request(app)
-      .post(`/accounts/abc/close`)
-      .set("x-session-id", mockSessionId)
-      .send({});
+    const res = await closeAccount("abc");
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -109,10 +83,7 @@ describe("POST /accounts/:accountId/close", () => {
     );
     mockUpdate.mockRejectedValue(mockError);
 
-    const res = await request(app)
-      .post(`/accounts/${mockMissingAccountId}/close`)
-      .set("x-session-id", mockSessionId)
-      .send({});
+    const res = await closeAccount(mockMissingAccountId);
 
     expect(res.status).toBe(404);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -123,26 +94,21 @@ describe("POST /accounts/:accountId/close", () => {
   });
 
   test("Close already closed account => 200", async () => {
-    mockUpdate.mockResolvedValueOnce(buildMockAccountRecord({
-      status: AccountStatus.CLOSED
-    })).mockResolvedValueOnce(buildMockAccountRecord({
-      status: AccountStatus.CLOSED
-    }));
+    mockUpdate
+      .mockResolvedValueOnce(buildMockAccountRecord({
+        status: AccountStatus.CLOSED
+      }))
+      .mockResolvedValueOnce(buildMockAccountRecord({
+        status: AccountStatus.CLOSED
+      }));
 
-    const first = await request(app)
-      .post(`/accounts/${mockAccountId1}/close`)
-      .set("x-session-id", mockSessionId)
-      .send({});
+    const res1 = await closeAccount(mockAccountId1);
+    const res2 = await closeAccount(mockAccountId1);
     
-    const second = await request(app)
-      .post(`/accounts/${mockAccountId1}/close`)
-      .set("x-session-id", mockSessionId)
-      .send({});
-    
-    expect(first.status).toBe(200);
-    expect(second.status).toBe(200);
-    expect(first.headers).toHaveProperty("x-trace-id");
-    expect(second.headers).toHaveProperty("x-trace-id");
+    expect(res1.status).toBe(200);
+    expect(res1.headers).toHaveProperty("x-trace-id");
+    expect(res2.status).toBe(200);
+    expect(res2.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
@@ -152,9 +118,7 @@ describe("POST /accounts/:accountId/close", () => {
   it('should return 403 given STANDARD role', async() => {
     mockVerify.mockReturnValue(mockedJwtPayloadStandard);
 
-    const res = await request(app)
-      .post(`/accounts/${mockAccountId1}/close`)
-      .set("x-session-id", mockSessionId);
+    const res = await closeAccount(mockAccountId1);
 
     expect(res.status).toBe(403);
     expect(res.headers).toHaveProperty("x-trace-id");

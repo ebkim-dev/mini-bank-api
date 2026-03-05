@@ -10,6 +10,7 @@ jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
+import { mockSessionId } from "../../integration/account/account.mock";
 
 jest.mock("jsonwebtoken");
 
@@ -32,7 +33,7 @@ afterEach(() => {
 
 describe("requireAuth middleware", () => {
   it("should not throw any errors given valid sessionId", async () => {
-    const req: any = { headers: { "x-session-id": "mockSessionId" } };
+    const req: any = { headers: { "x-session-id": mockSessionId } };
 
     const middleware = authMiddleware.requireAuth();
     await middleware(req, res, next);

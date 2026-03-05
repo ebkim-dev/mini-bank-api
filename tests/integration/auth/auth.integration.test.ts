@@ -1,14 +1,14 @@
 import request from "supertest";
 import * as crypto from "crypto";
-import { createApp } from "../../src/app";
-import { UserRole } from "../../src/generated/enums";
-import { Prisma, User } from "../../src/generated/client";
+import { createApp } from "../../../src/app";
+import { UserRole } from "../../../src/generated/enums";
+import { Prisma, User } from "../../../src/generated/client";
 import { 
   buildRegisterInput, 
   buildRegisterOutput, 
   buildLoginInput, 
   buildLoginOutput
-} from "./mockData/auth.mock";
+} from "./auth.mock";
 
 jest.mock("bcrypt", () => ({
   hash: jest.fn().mockResolvedValue("hashedPassword"),
@@ -21,12 +21,12 @@ jest.mock("bcrypt", () => ({
 }));
 import bcrypt from "bcrypt";
 
-jest.mock("../../src/redis/redisClient", () => ({
+jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { set: jest.fn() }
 }));
-import { redisClient } from "../../src/redis/redisClient";
+import { redisClient } from "../../../src/redis/redisClient";
 
-jest.mock("../../src/db/prismaClient", () => ({
+jest.mock("../../../src/db/prismaClient", () => ({
   __esModule: true,
   default: {
     user: {
@@ -35,7 +35,7 @@ jest.mock("../../src/db/prismaClient", () => ({
     }
   },
 }));
-import prismaClient from "../../src/db/prismaClient";
+import prismaClient from "../../../src/db/prismaClient";
 
 const app = createApp();
 
