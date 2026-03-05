@@ -36,13 +36,12 @@ const mockFindMany = prismaClient.account.findMany as jest.Mock;
 const mockVerify = jwt.verify as jest.Mock;
 beforeEach(async () => {
   jest.clearAllMocks();
-  mockFindMany.mockResolvedValue([]);
   mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
 });
 
 describe("GET /accounts?customerId=...", () => {
   async function getAccounts(
-    query: any, 
+    query: { customer_id?: string }, 
     sessionId: string = mockSessionId
   ) {
     return request(app)
@@ -60,16 +59,16 @@ describe("GET /accounts?customerId=...", () => {
 
     const res = await getAccounts({ customer_id: mockCustomerId });
 
-    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
-    expect(mockFindMany).toHaveBeenCalledTimes(1);
-
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(res.body).toEqual([
       buildAccountCreateOutput(),
       buildAccountCreateOutput({ id: mockAccountId2 }),
     ]);
+
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+    expect(mockVerify).toHaveBeenCalled();
+    expect(mockFindMany).toHaveBeenCalledTimes(1);
   });
 
   test("No account found for customerId => 200, empty array is returned", async () => {
@@ -88,12 +87,12 @@ describe("GET /accounts?customerId=...", () => {
 
   test("customerId is missing => 400", async () => {
     const res = await getAccounts({});
-      
-    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
+      
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+    expect(mockVerify).toHaveBeenCalled();
   });
 
   test("customerId has invalid format => 400", async () => {

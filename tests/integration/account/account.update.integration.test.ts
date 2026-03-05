@@ -1,36 +1,24 @@
 import request from "supertest";
 import { createApp } from "../../../src/app";
-import { Decimal } from "@prisma/client/runtime/client";
 import { Prisma } from "../../../src/generated/client";
-import { JwtPayload } from "../../../src/auth/user";
 import { UserRole, AccountStatus } from "../../../src/generated/enums";
 import { 
-  buildAccountCreateInput, 
-  buildAccountCreateOutput,
   buildMockAccountRecord,
-  buildToken,
-  mockCustomerId,
   mockAccountId1,
-  mockAccountId2,
   mockMissingAccountId,
   buildJwtPayload,
+  mockSessionId,
+  mockRedisKey,
 } from "./account.mock";
 
-jest.mock("../../src/redis/redisClient", () => ({
+jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
-jest.mock("../../src/db/prismaClient", () => ({
+jest.mock("../../../src/db/prismaClient", () => ({
   __esModule: true,
-  default: {
-    account: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn()
-    }
-  },
+  default: { account: { update: jest.fn() } }
 }));
 import prismaClient from "../../../src/db/prismaClient";
 
@@ -39,54 +27,40 @@ import jwt from "jsonwebtoken";
 
 
 const app = createApp();
-let token: string;
 
 const mockedJwtPayloadAdmin = buildJwtPayload();
 const mockedJwtPayloadStandard = buildJwtPayload({ role: UserRole.STANDARD });
 
-beforeAll(async () => {
-  token = buildToken(UserRole.ADMIN, "5m");
-})
-
-const mockSessionId: string = "mockSessionId";
-const mockRedisKey: string = `session:${mockSessionId}`;
-
-const mockCreate = prismaClient.account.create as jest.Mock;
 const mockUpdate = prismaClient.account.update as jest.Mock;
-const mockFindUnique = prismaClient.account.findUnique as jest.Mock;
-const mockFindMany = prismaClient.account.findMany as jest.Mock;
 const mockVerify = jwt.verify as jest.Mock;
 beforeEach(async () => {
   jest.clearAllMocks();
-  mockCreate.mockResolvedValue(buildMockAccountRecord());
   mockUpdate.mockResolvedValue(buildMockAccountRecord());
-  mockFindUnique.mockResolvedValue(buildMockAccountRecord());
-  mockFindMany.mockResolvedValue([]);
   mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
 });
 
 describe("PUT /accounts/:accountId", () => {
-  test("nickname and status are both given => 200, account is updated and returned", async () => {
-    mockUpdate.mockResolvedValue(buildMockAccountRecord({
-      nickname: "newNick", 
-      status: AccountStatus.CLOSED
-    }));
+  async function updateAccount(
+    body: any,
+    accountId: string = mockAccountId1,
+    sessionId: string = mockSessionId
+  ) {
+    return request(app)
+      .put(`/accounts/${accountId}`)
+      .set("x-session-id", sessionId)
+      .send(body);
+  }
 
-    const res = await request(app)
-      .put(`/accounts/${mockAccountId1}`)
-      .set("x-session-id", mockSessionId)
-      .send({ 
-        nickname: "newNick", 
-        status: AccountStatus.CLOSED
-      });
+  test("nickname and status are both given => 200, account is updated and returned", async () => {
+    const toUpdate = { nickname: "newNick", status: AccountStatus.CLOSED };
+
+    mockUpdate.mockResolvedValue(buildMockAccountRecord(toUpdate));
+
+    const res = await updateAccount(toUpdate);
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
-    expect(res.body).toMatchObject({
-      customer_id: mockCustomerId,
-      nickname: "newNick",
-      status: AccountStatus.CLOSED,
-    });
+    expect(res.body).toMatchObject(toUpdate);
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
@@ -94,21 +68,14 @@ describe("PUT /accounts/:accountId", () => {
   });
 
   test("nickname only is given => 200, account is updated and returned", async () => {
-    mockUpdate.mockResolvedValue(buildMockAccountRecord({
-      nickname: "onlyNick",
-    }));
+    const toUpdate = { nickname: "onlyNick" };
+    mockUpdate.mockResolvedValue(buildMockAccountRecord(toUpdate));
 
-    const res = await request(app)
-      .put(`/accounts/${mockAccountId1}`)
-      .set("x-session-id", mockSessionId)
-      .send({ nickname: "onlyNick" });
+    const res = await updateAccount(toUpdate);
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
-    expect(res.body).toMatchObject({
-      customer_id: mockCustomerId,
-      nickname: "onlyNick",
-    });
+    expect(res.body).toMatchObject(toUpdate);
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
@@ -116,21 +83,14 @@ describe("PUT /accounts/:accountId", () => {
   });
 
   test("status only is given => 200, account is updated and returned", async () => {
-    mockUpdate.mockResolvedValue(buildMockAccountRecord({
-      status: AccountStatus.CLOSED
-    }));
+    const toUpdate = { status: AccountStatus.CLOSED };
+    mockUpdate.mockResolvedValue(buildMockAccountRecord(toUpdate));
 
-    const res = await request(app)
-      .put(`/accounts/${mockAccountId1}`)
-      .set("x-session-id", mockSessionId)
-      .send({ status: AccountStatus.CLOSED });
+    const res = await updateAccount(toUpdate);
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
-    expect(res.body).toMatchObject({
-      customer_id: mockCustomerId,
-      status: AccountStatus.CLOSED,
-    });
+    expect(res.body).toMatchObject(toUpdate);
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
@@ -138,10 +98,7 @@ describe("PUT /accounts/:accountId", () => {
   });
 
   test("Empty body is given => 400, atleast one field required", async () => {
-    const res = await request(app)
-      .put(`/accounts/${mockAccountId1}`)
-      .set("x-session-id", mockSessionId)
-      .send({});
+    const res = await updateAccount({});
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -151,10 +108,7 @@ describe("PUT /accounts/:accountId", () => {
   });
 
   test("accountId has invalid format => 400", async () => {
-    const res = await request(app)
-      .put(`/accounts/abc`)
-      .set("x-session-id", mockSessionId)
-      .send({ nickname: "x" });
+    const res = await updateAccount({ nickname: "x" }, "abc");
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -165,11 +119,7 @@ describe("PUT /accounts/:accountId", () => {
 
   test("Large input string is given (longer than maxLength) => 400", async () => {
     const longNickname = "a".repeat(500);
-
-    const res = await request(app)
-      .put(`/accounts/${mockAccountId1}`)
-      .set("x-session-id", mockSessionId)
-      .send({ nickname: longNickname });
+    const res = await updateAccount({ nickname: longNickname });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -186,10 +136,7 @@ describe("PUT /accounts/:accountId", () => {
     );
     mockUpdate.mockRejectedValue(mockError);
 
-    const res = await request(app)
-      .put(`/accounts/${mockMissingAccountId}`)
-      .set("x-session-id", mockSessionId)
-      .send({ nickname: "x" });
+    const res = await updateAccount({ nickname: "x" }, mockMissingAccountId);
 
     expect(res.status).toBe(404);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -200,10 +147,11 @@ describe("PUT /accounts/:accountId", () => {
   });
 
   it('should return 401 given invalid token', async () => {
-    const res = await request(app)
-      .put(`/accounts/${mockAccountId1}`)
-      .set("Authorization", "Bearer wrongToken")
-      .send({ nickname: "newName" });
+    const res = await updateAccount(
+      { nickname: "newName" },
+      mockAccountId1,
+      "WRONG_SESSION_ID"
+    );
 
     expect(res.status).toBe(401);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -211,11 +159,7 @@ describe("PUT /accounts/:accountId", () => {
 
   it('should return 403 given STANDARD role', async() => {
     mockVerify.mockReturnValue(mockedJwtPayloadStandard);
-
-    const res = await request(app)
-      .put(`/accounts/${mockAccountId1}`)
-      .set("x-session-id", mockSessionId)
-      .send({ nickname: "newName" });
+    const res = await updateAccount({ nickname: "newName" });
 
     expect(res.status).toBe(403);
     expect(res.headers).toHaveProperty("x-trace-id");
