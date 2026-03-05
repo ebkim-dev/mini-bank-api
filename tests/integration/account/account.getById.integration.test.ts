@@ -41,11 +41,8 @@ import jwt from "jsonwebtoken";
 const app = createApp();
 let token: string;
 
-const mockedJwtPayloadAdmin: JwtPayload = buildJwtPayload({ 
-  role: UserRole.ADMIN
-});
-
-const mockedJwtPayloadStandard: JwtPayload = buildJwtPayload();
+const mockedJwtPayloadAdmin = buildJwtPayload();
+const mockedJwtPayloadStandard = buildJwtPayload({ role: UserRole.STANDARD });
 
 beforeAll(async () => {
   token = buildToken(UserRole.ADMIN, "5m");

@@ -1,7 +1,6 @@
 import request from "supertest";
 import { createApp } from "../../../src/app";
 import { Decimal } from "@prisma/client/runtime/client";
-import { JwtPayload } from "../../../src/auth/user";
 import { UserRole, AccountStatus } from "../../../src/generated/enums";
 import { 
   buildAccountCreateInput, 
@@ -26,15 +25,15 @@ import prismaClient from "../../../src/db/prismaClient";
 jest.mock("jsonwebtoken");
 import jwt from "jsonwebtoken";
 
+
 const app = createApp();
-const mockedJwtPayloadAdmin: JwtPayload = buildJwtPayload();
-const mockedJwtPayloadStandard: JwtPayload = buildJwtPayload({ 
-  role: UserRole.STANDARD
-});
+
+const mockedJwtPayloadAdmin = buildJwtPayload();
+const mockedJwtPayloadStandard = buildJwtPayload({ role: UserRole.STANDARD });
 
 const mockCreate = prismaClient.account.create as jest.Mock;
 const mockVerify = jwt.verify as jest.Mock;
-beforeEach(async () => {
+beforeEach(() => {
   jest.clearAllMocks();
   mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
 });
@@ -49,7 +48,7 @@ describe("POST /accounts", () => {
       .set("x-session-id", sessionId)
       .send(body);
   }
-  
+
   test("Correct input => 201, new account is created and returned", async () => {
     const mockAccountCreateInput = buildAccountCreateInput({
       nickname: "alice",
@@ -68,23 +67,18 @@ describe("POST /accounts", () => {
     expect(res.status).toBe(201);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(res.body).toMatchObject(mockAccountCreateOutput);
-
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
     expect(mockCreate).toHaveBeenCalledTimes(1);
   });
 
   test("Optional fields missing => 201, new account is created and returned", async () => {
-    const mockAccountCreateInput = buildAccountCreateInput();
-    const mockAccountCreateOutput = buildAccountCreateOutput();
     mockCreate.mockResolvedValue(buildMockAccountRecord());
-
-    const res = await postAccount(mockAccountCreateInput);
+    const res = await postAccount(buildAccountCreateInput());
 
     expect(res.status).toBe(201);
     expect(res.headers).toHaveProperty("x-trace-id");
-    expect(res.body).toMatchObject(mockAccountCreateOutput);
-
+    expect(res.body).toMatchObject(buildAccountCreateOutput());
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
     expect(mockCreate).toHaveBeenCalledTimes(1);
@@ -92,14 +86,13 @@ describe("POST /accounts", () => {
 
   test("A required field is missing => 400", async () => {
     const { currency, ...badInput } = buildAccountCreateInput();
-
     const res = await postAccount(badInput);
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
-
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
   test("Empty body is given => 400", async () => {
@@ -107,9 +100,9 @@ describe("POST /accounts", () => {
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
-
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
   test('Wrong field type is given (e.g. passing "abc" to customer_id) => 400', async () => {
@@ -117,21 +110,19 @@ describe("POST /accounts", () => {
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
-
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
   test("Large input string is given (longer than maxLength) => 400", async () => {
-    const longNickname = "a".repeat(500);
-
-    const res = await postAccount({ nickname: longNickname });
+    const res = await postAccount({ nickname: "a".repeat(500) });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
-
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
   test('Invalid enum value - type = "SAVINGSS" => 400', async () => {
@@ -139,9 +130,9 @@ describe("POST /accounts", () => {
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
-
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
   test('Invalid enum value - status = "OPEN" => 400', async () => {
@@ -149,9 +140,9 @@ describe("POST /accounts", () => {
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
-
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
   test('Invalid currency format - currency="US" => 400', async () => {
@@ -159,9 +150,9 @@ describe("POST /accounts", () => {
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
-
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
   test('Invalid currency format - currency="USDD" => 400', async () => {
@@ -169,30 +160,27 @@ describe("POST /accounts", () => {
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
-
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
   it('should return 401 given missing header', async () => {
-    const mockAccountCreateInput = buildAccountCreateInput();
-
-    const res = await postAccount(mockAccountCreateInput, "");
+    const res = await postAccount(buildAccountCreateInput(), "");
 
     expect(res.status).toBe(401);
     expect(res.headers).toHaveProperty("x-trace-id");
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
   it('should return 403 given STANDARD role', async() => {
-    const mockAccountCreateInput = buildAccountCreateInput();
     mockVerify.mockReturnValue(mockedJwtPayloadStandard);
-
-    const res = await postAccount(mockAccountCreateInput);
+    const res = await postAccount(buildAccountCreateInput());
 
     expect(res.status).toBe(403);
     expect(res.headers).toHaveProperty("x-trace-id");
-
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 });
