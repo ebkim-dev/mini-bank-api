@@ -9,7 +9,7 @@ import {
   buildJwtPayload,
   mockSessionId,
   mockRedisKey
-} from "./account.mock";
+} from "./account.mock.integration";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
@@ -39,7 +39,7 @@ beforeEach(() => {
 });
 
 describe("POST /accounts", () => {
-  async function postAccount(
+  async function postAccountRequest(
     body: any, 
     sessionId = mockSessionId
   ) {
@@ -62,7 +62,7 @@ describe("POST /accounts", () => {
       nickname: "alice"
     }));
 
-    const res = await postAccount(mockAccountCreateInput);
+    const res = await postAccountRequest(mockAccountCreateInput);
 
     expect(res.status).toBe(201);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -74,7 +74,7 @@ describe("POST /accounts", () => {
 
   test("Optional fields missing => 201, new account is created and returned", async () => {
     mockCreate.mockResolvedValue(buildMockAccountRecord());
-    const res = await postAccount(buildAccountCreateInput());
+    const res = await postAccountRequest(buildAccountCreateInput());
 
     expect(res.status).toBe(201);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -86,7 +86,7 @@ describe("POST /accounts", () => {
 
   test("A required field is missing => 400", async () => {
     const { currency, ...badInput } = buildAccountCreateInput();
-    const res = await postAccount(badInput);
+    const res = await postAccountRequest(badInput);
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -96,7 +96,7 @@ describe("POST /accounts", () => {
   });
 
   test("Empty body is given => 400", async () => {
-    const res = await postAccount({});
+    const res = await postAccountRequest({});
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -106,7 +106,7 @@ describe("POST /accounts", () => {
   });
 
   test('Wrong field type is given (e.g. passing "abc" to customer_id) => 400', async () => {
-    const res = await postAccount({ customer_id: "abc" });
+    const res = await postAccountRequest({ customer_id: "abc" });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -116,7 +116,7 @@ describe("POST /accounts", () => {
   });
 
   test("Large input string is given (longer than maxLength) => 400", async () => {
-    const res = await postAccount({ nickname: "a".repeat(500) });
+    const res = await postAccountRequest({ nickname: "a".repeat(500) });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -126,7 +126,7 @@ describe("POST /accounts", () => {
   });
 
   test('Invalid enum value - type = "SAVINGSS" => 400', async () => {
-    const res = await postAccount({ type: "SAVINGSS" as any });
+    const res = await postAccountRequest({ type: "SAVINGSS" as any });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -136,7 +136,7 @@ describe("POST /accounts", () => {
   });
 
   test('Invalid enum value - status = "OPEN" => 400', async () => {
-    const res = await postAccount({ status: "OPEN" as any });
+    const res = await postAccountRequest({ status: "OPEN" as any });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -146,7 +146,7 @@ describe("POST /accounts", () => {
   });
 
   test('Invalid currency format - currency="US" => 400', async () => {
-    const res = await postAccount({ currency: "US" });
+    const res = await postAccountRequest({ currency: "US" });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -156,7 +156,7 @@ describe("POST /accounts", () => {
   });
 
   test('Invalid currency format - currency="USDD" => 400', async () => {
-    const res = await postAccount({ currency: "USDD" });
+    const res = await postAccountRequest({ currency: "USDD" });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -166,7 +166,7 @@ describe("POST /accounts", () => {
   });
 
   it('should return 401 given missing header', async () => {
-    const res = await postAccount(buildAccountCreateInput(), "");
+    const res = await postAccountRequest(buildAccountCreateInput(), "");
 
     expect(res.status).toBe(401);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -175,7 +175,7 @@ describe("POST /accounts", () => {
 
   it('should return 403 given STANDARD role', async() => {
     mockVerify.mockReturnValue(mockedJwtPayloadStandard);
-    const res = await postAccount(buildAccountCreateInput());
+    const res = await postAccountRequest(buildAccountCreateInput());
 
     expect(res.status).toBe(403);
     expect(res.headers).toHaveProperty("x-trace-id");

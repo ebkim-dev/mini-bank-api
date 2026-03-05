@@ -10,7 +10,7 @@ import {
   mockMissingCustomerId,
   mockSessionId,
   mockRedisKey,
-} from "./account.mock";
+} from "./account.mock.integration";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
@@ -40,7 +40,7 @@ beforeEach(async () => {
 });
 
 describe("GET /accounts?customerId=...", () => {
-  async function getAccounts(
+  async function getAccountsRequest(
     query: { customer_id?: string }, 
     sessionId: string = mockSessionId
   ) {
@@ -57,7 +57,7 @@ describe("GET /accounts?customerId=...", () => {
       buildMockAccountRecord({ id: mockAccountId2 })
     ]);
 
-    const res = await getAccounts({ customer_id: mockCustomerId });
+    const res = await getAccountsRequest({ customer_id: mockCustomerId });
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -74,7 +74,7 @@ describe("GET /accounts?customerId=...", () => {
   test("No account found for customerId => 200, empty array is returned", async () => {
     mockFindMany.mockResolvedValue([]);
 
-    const res = await getAccounts({ customer_id: mockMissingCustomerId });
+    const res = await getAccountsRequest({ customer_id: mockMissingCustomerId });
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -86,7 +86,7 @@ describe("GET /accounts?customerId=...", () => {
   });
 
   test("customerId is missing => 400", async () => {
-    const res = await getAccounts({});
+    const res = await getAccountsRequest({});
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -96,7 +96,7 @@ describe("GET /accounts?customerId=...", () => {
   });
 
   test("customerId has invalid format => 400", async () => {
-    const res = await getAccounts({ customer_id: "abc" });
+    const res = await getAccountsRequest({ customer_id: "abc" });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -106,7 +106,7 @@ describe("GET /accounts?customerId=...", () => {
   });
 
   it('should return 401 given invalid header', async () => {
-    const res = await getAccounts(
+    const res = await getAccountsRequest(
       { customer_id: mockCustomerId }, 
       "asdnflsvbsabsl"
     );

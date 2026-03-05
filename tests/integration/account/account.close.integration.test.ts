@@ -4,13 +4,12 @@ import { Prisma } from "../../../src/generated/client";
 import { UserRole, AccountStatus } from "../../../src/generated/enums";
 import { 
   buildMockAccountRecord,
-  mockCustomerId,
   mockAccountId1,
   mockMissingAccountId,
   buildJwtPayload,
   mockSessionId,
   mockRedisKey,
-} from "./account.mock";
+} from "./account.mock.integration";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
@@ -36,12 +35,11 @@ const mockUpdate = prismaClient.account.update as jest.Mock;
 const mockVerify = jwt.verify as jest.Mock;
 beforeEach(async () => {
   jest.clearAllMocks();
-  mockUpdate.mockResolvedValue(buildMockAccountRecord());
   mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
 });
 
 describe("POST /accounts/:accountId/close", () => {
-  async function closeAccount(
+  async function closeAccountRequest(
     accountId: string = mockAccountId1,
     sessionId: string = mockSessionId
   ) {
@@ -54,7 +52,7 @@ describe("POST /accounts/:accountId/close", () => {
     const closedStatus = { status: AccountStatus.CLOSED };
     mockUpdate.mockResolvedValue(buildMockAccountRecord(closedStatus));
 
-    const res = await closeAccount();
+    const res = await closeAccountRequest();
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -66,13 +64,14 @@ describe("POST /accounts/:accountId/close", () => {
   });
 
   test("accountId has invalid format => 400", async () => {
-    const res = await closeAccount("abc");
+    const res = await closeAccountRequest("abc");
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 
   test("Account not found for accountId => 404", async () => {
@@ -83,7 +82,7 @@ describe("POST /accounts/:accountId/close", () => {
     );
     mockUpdate.mockRejectedValue(mockError);
 
-    const res = await closeAccount(mockMissingAccountId);
+    const res = await closeAccountRequest(mockMissingAccountId);
 
     expect(res.status).toBe(404);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -102,8 +101,8 @@ describe("POST /accounts/:accountId/close", () => {
         status: AccountStatus.CLOSED
       }));
 
-    const res1 = await closeAccount(mockAccountId1);
-    const res2 = await closeAccount(mockAccountId1);
+    const res1 = await closeAccountRequest(mockAccountId1);
+    const res2 = await closeAccountRequest(mockAccountId1);
     
     expect(res1.status).toBe(200);
     expect(res1.headers).toHaveProperty("x-trace-id");
@@ -118,12 +117,13 @@ describe("POST /accounts/:accountId/close", () => {
   it('should return 403 given STANDARD role', async() => {
     mockVerify.mockReturnValue(mockedJwtPayloadStandard);
 
-    const res = await closeAccount(mockAccountId1);
+    const res = await closeAccountRequest(mockAccountId1);
 
     expect(res.status).toBe(403);
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockVerify).toHaveBeenCalled();
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 });

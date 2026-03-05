@@ -9,7 +9,7 @@ import {
   buildJwtPayload,
   mockSessionId,
   mockRedisKey,
-} from "./account.mock";
+} from "./account.mock.integration";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
@@ -39,7 +39,7 @@ beforeEach(async () => {
 });
 
 describe("GET /accounts/:accountId", () => {
-  async function getAccount(accountId: string) {
+  async function getAccountRequest(accountId: string) {
     return request(app)
       .get(`/accounts/${accountId}`)
       .set("x-session-id", mockSessionId);
@@ -49,7 +49,7 @@ describe("GET /accounts/:accountId", () => {
     mockVerify.mockReturnValue(mockedJwtPayloadStandard);
     mockFindUnique.mockResolvedValue(buildMockAccountRecord());
 
-    const res = await getAccount(mockAccountId1);
+    const res = await getAccountRequest(mockAccountId1);
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -61,7 +61,7 @@ describe("GET /accounts/:accountId", () => {
   });
 
   test("accountId has invalid format => 400", async () => {
-    const res = await getAccount("abc");
+    const res = await getAccountRequest("abc");
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -73,7 +73,7 @@ describe("GET /accounts/:accountId", () => {
   test("Account not found for accountId => 404", async () => {
     mockFindUnique.mockResolvedValue(null);
 
-    const res = await getAccount(mockMissingAccountId);
+    const res = await getAccountRequest(mockMissingAccountId);
 
     expect(res.status).toBe(404);
     expect(res.headers).toHaveProperty("x-trace-id");

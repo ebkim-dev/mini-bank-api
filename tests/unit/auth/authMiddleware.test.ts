@@ -10,7 +10,7 @@ jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
-import { mockSessionId } from "../../integration/account/account.mock";
+import { mockSessionId } from "../../integration/account/account.mock.integration";
 
 jest.mock("jsonwebtoken");
 

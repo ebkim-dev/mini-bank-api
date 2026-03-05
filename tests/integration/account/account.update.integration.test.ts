@@ -9,7 +9,7 @@ import {
   buildJwtPayload,
   mockSessionId,
   mockRedisKey,
-} from "./account.mock";
+} from "./account.mock.integration";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
@@ -40,7 +40,7 @@ beforeEach(async () => {
 });
 
 describe("PUT /accounts/:accountId", () => {
-  async function updateAccount(
+  async function updateAccountRequest(
     body: any,
     accountId: string = mockAccountId1,
     sessionId: string = mockSessionId
@@ -56,7 +56,7 @@ describe("PUT /accounts/:accountId", () => {
 
     mockUpdate.mockResolvedValue(buildMockAccountRecord(toUpdate));
 
-    const res = await updateAccount(toUpdate);
+    const res = await updateAccountRequest(toUpdate);
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -71,7 +71,7 @@ describe("PUT /accounts/:accountId", () => {
     const toUpdate = { nickname: "onlyNick" };
     mockUpdate.mockResolvedValue(buildMockAccountRecord(toUpdate));
 
-    const res = await updateAccount(toUpdate);
+    const res = await updateAccountRequest(toUpdate);
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -86,7 +86,7 @@ describe("PUT /accounts/:accountId", () => {
     const toUpdate = { status: AccountStatus.CLOSED };
     mockUpdate.mockResolvedValue(buildMockAccountRecord(toUpdate));
 
-    const res = await updateAccount(toUpdate);
+    const res = await updateAccountRequest(toUpdate);
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -98,7 +98,7 @@ describe("PUT /accounts/:accountId", () => {
   });
 
   test("Empty body is given => 400, atleast one field required", async () => {
-    const res = await updateAccount({});
+    const res = await updateAccountRequest({});
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -108,7 +108,7 @@ describe("PUT /accounts/:accountId", () => {
   });
 
   test("accountId has invalid format => 400", async () => {
-    const res = await updateAccount({ nickname: "x" }, "abc");
+    const res = await updateAccountRequest({ nickname: "x" }, "abc");
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -119,7 +119,7 @@ describe("PUT /accounts/:accountId", () => {
 
   test("Large input string is given (longer than maxLength) => 400", async () => {
     const longNickname = "a".repeat(500);
-    const res = await updateAccount({ nickname: longNickname });
+    const res = await updateAccountRequest({ nickname: longNickname });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -136,7 +136,7 @@ describe("PUT /accounts/:accountId", () => {
     );
     mockUpdate.mockRejectedValue(mockError);
 
-    const res = await updateAccount({ nickname: "x" }, mockMissingAccountId);
+    const res = await updateAccountRequest({ nickname: "x" }, mockMissingAccountId);
 
     expect(res.status).toBe(404);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -147,7 +147,7 @@ describe("PUT /accounts/:accountId", () => {
   });
 
   it('should return 401 given invalid token', async () => {
-    const res = await updateAccount(
+    const res = await updateAccountRequest(
       { nickname: "newName" },
       mockAccountId1,
       "WRONG_SESSION_ID"
@@ -159,7 +159,7 @@ describe("PUT /accounts/:accountId", () => {
 
   it('should return 403 given STANDARD role', async() => {
     mockVerify.mockReturnValue(mockedJwtPayloadStandard);
-    const res = await updateAccount({ nickname: "newName" });
+    const res = await updateAccountRequest({ nickname: "newName" });
 
     expect(res.status).toBe(403);
     expect(res.headers).toHaveProperty("x-trace-id");
