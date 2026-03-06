@@ -2,6 +2,7 @@ import type {
   AccountCreateInput,
   AccountOutput,
   AccountUpdateInput,
+  AccountSummaryOutput
 } from './account';
 import type { Account } from '../generated/client';
 import type { AuthInput } from '../auth/user';
@@ -16,6 +17,7 @@ import {
   buildManyAccountSuccessEvent,
   buildSingleAccountSuccessEvent
 } from '../logging/eventFactories';
+
 
 
 export async function insertAccount(
@@ -155,6 +157,7 @@ export async function deleteAccountById(
     );
     throw ForbiddenError(EventCode.FORBIDDEN, forbiddenErrorMessage);
   }
+<<<<<<< HEAD
 
   const closedAccount: Account = await prismaClient.account.update({
     where: { id }, data: { status: AccountStatus.CLOSED }
@@ -165,4 +168,73 @@ export async function deleteAccountById(
   ));
 
   return serializeAccount(closedAccount);
+=======
+}
+
+
+
+export async function fetchAccountSummary(
+  id: string,
+  authInput: AuthInput
+): Promise<AccountSummaryOutput> {
+  const start = process.hrtime.bigint();
+
+  const account = await prismaClient.account.findUnique({
+    where: { id },
+  });
+
+  if (!account) {
+    const event: AccountFailByAccountEvent = {
+      executionStatus: ExecutionStatus.FAILURE,
+      durationMs: getDurationMs(start),
+      actorId: authInput.actorId,
+      actorRole: authInput.role,
+      accountId: id,
+      errorCode: EventCode.ACCOUNT_NOT_FOUND,
+    };
+    logEvent(EventCode.ACCOUNT_NOT_FOUND, event);
+    throw NotFoundError(EventCode.ACCOUNT_NOT_FOUND, "Account not found", {
+      id,
+    });
+  }
+
+  const recentTransactions = await prismaClient.transaction.findMany({
+    where: { account_id: id },
+    orderBy: { created_at: "desc" },
+    take: 10,
+  });
+
+  const counts = await prismaClient.transaction.groupBy({
+    by: ["type"],
+    where: { account_id: id },
+    _count: { type: true },
+  });
+
+  const totalCredits =
+    counts.find((c) => c.type === "CREDIT")?._count.type ?? 0;
+  const totalDebits =
+    counts.find((c) => c.type === "DEBIT")?._count.type ?? 0;
+
+  logEvent(EventCode.ACCOUNT_FETCHED, mapToSingleAccountSuccessEvent(
+    getDurationMs(start),
+    authInput,
+    account
+  ));
+
+  return {
+    account_id: account.id,
+    balance: account.balance.toString(),
+    currency: account.currency,
+    status: account.status,
+    total_credits: totalCredits,
+    total_debits: totalDebits,
+    recent_transactions: recentTransactions.map((t) => ({
+      id: t.id,
+      type: t.type,
+      amount: t.amount.toString(),
+      description: t.description ?? "",
+      created_at: t.created_at,
+    })),
+  };
+>>>>>>> f8ac299 (Implemented EPIC-2 (transactions). Also updated swagger and postman documentation.)
 }

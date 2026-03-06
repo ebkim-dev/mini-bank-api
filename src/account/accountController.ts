@@ -96,3 +96,18 @@ export async function deleteAccount(
     next(err);
   }
 }
+
+export async function getAccountSummary(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { id } = (req as any).validated.params;
+    const authInput: AuthInput = req.user;
+    const summary = await accountService.fetchAccountSummary(id, authInput);
+    res.status(200).json(summary);
+  } catch (err) {
+    next(err);
+  }
+}

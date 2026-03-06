@@ -4,3 +4,4 @@ components:
       type: apiKey
       in: header
       name: x-session-id
+      description: Session ID returned from /auth/login
