@@ -152,7 +152,7 @@ Client
 transactionRouter.ts
   │  requireAuth()          → Validates session via Redis
   │  validate(schema)       → Zod validates body/query/params
-  │  validate(jwtPayload)   → Validates decoded JWT shape
+  │  
   │
   ▼
 transactionController.ts
