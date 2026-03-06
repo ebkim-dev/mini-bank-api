@@ -5,7 +5,7 @@ import { UserRole, AccountStatus } from "../../../src/generated/enums";
 import { 
   buildAccountCreateOutput,
   buildAccountCreateRequestBody,
-  buildMockAccountRecord,
+  buildAccountRecord,
 } from "../../accountMock";
 import { mockRedisKey, mockSessionId } from "../../commonMock";
 import { buildJwtPayload } from "../../authMock";
@@ -57,7 +57,7 @@ describe("POST /accounts", () => {
     const mockAccountCreateOutput = buildAccountCreateOutput({
       nickname: "alice"
     });
-    mockCreate.mockResolvedValue(buildMockAccountRecord({
+    mockCreate.mockResolvedValue(buildAccountRecord({
       nickname: "alice"
     }));
 
@@ -72,7 +72,7 @@ describe("POST /accounts", () => {
   });
 
   test("Optional fields missing => 201, new account is created and returned", async () => {
-    mockCreate.mockResolvedValue(buildMockAccountRecord());
+    mockCreate.mockResolvedValue(buildAccountRecord());
     const res = await postAccountRequest(buildAccountCreateRequestBody());
 
     expect(res.status).toBe(201);

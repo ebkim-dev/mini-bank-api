@@ -99,6 +99,7 @@ export function buildAuthInput(
 ): AuthInput {
   return {
     actorId: mockUserId,
-    role: UserRole.ADMIN
+    role: UserRole.ADMIN,
+    ...overrides,
   };
 }

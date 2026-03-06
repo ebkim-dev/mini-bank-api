@@ -3,11 +3,10 @@ import {
   loginBodySchema,
   jwtPayloadSchema,
 } from "../../../src/auth/userSchemas";
-
 import { UserRole } from "../../../src/generated/enums";
-const UUID = "550e8400-e29b-41d4-a716-446655440000";
-describe("userSchemas.ts", () => {
+import { mockUserId } from "../../commonMock";
 
+describe("userSchemas.ts", () => {
   describe("registerBodySchema", () => {
     test("parses valid register body", () => {
       const parsed = registerBodySchema.parse({
@@ -91,18 +90,18 @@ describe("userSchemas.ts", () => {
   describe("jwtPayloadSchema", () => {
     test("parses valid JWT payload", () => {
       const parsed = jwtPayloadSchema.parse({
-        sub: UUID,
+        sub: mockUserId,
         role: UserRole.ADMIN,
       });
 
-      expect(parsed.sub).toBe(UUID);
+      expect(parsed.sub).toBe(mockUserId);
       expect(parsed.role).toBe(UserRole.ADMIN);
     });
 
     test("rejects invalid role (must be enum value)", () => {
       expect(() =>
         jwtPayloadSchema.parse({
-          sub: UUID,
+          sub: mockUserId,
           role: "SUPER_ADMIN",
         })
       ).toThrow();

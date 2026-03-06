@@ -2,7 +2,7 @@ import { AccountType, AccountStatus } from "../src/generated/enums";
 import { Decimal } from "@prisma/client/runtime/client";
 import { Account } from "../src/generated/client";
 import { mockAccountId1, mockCustomerId } from "./commonMock";
-import { AccountCreateInput, AccountOutput } from "../src/account/account";
+import { AccountCreateInput, AccountOutput, AccountUpdateInput } from "../src/account/account";
 
 export interface AccountCreateRequestBody {
   customer_id: string;
@@ -50,7 +50,17 @@ export function buildAccountCreateOutput(
   };
 }
 
-export function buildMockAccountRecord(
+export function buildAccountUpdateInput(
+  overrides: Partial<AccountUpdateInput> = {}
+): AccountUpdateInput {
+  return {
+    nickname: "mockUpdateNickname",
+    status: AccountStatus.ACTIVE,
+    ...overrides,
+  };
+}
+
+export function buildAccountRecord(
   overrides: Partial<Account> = {}
 ): Account { 
   const mockDate = new Date();
@@ -75,7 +85,7 @@ export function buildAccountOutput(
   return {
     id: mockAccountId1,
     customer_id: mockCustomerId,
-    type: AccountType.CHECKING,
+    type: AccountType.SAVINGS,
     currency: "USD",
     nickname: "",
     status: AccountStatus.ACTIVE,

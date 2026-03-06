@@ -3,7 +3,7 @@ import { createApp } from "../../../src/app";
 import { Prisma } from "../../../src/generated/client";
 import { UserRole, AccountStatus } from "../../../src/generated/enums";
 import { 
-  buildMockAccountRecord
+  buildAccountRecord
 } from "../../accountMock";
 import { 
   mockAccountId1,
@@ -52,7 +52,7 @@ describe("POST /accounts/:accountId/close", () => {
 
   test("Account found for accountId => 200, account is closed and returned", async () => {
     const closedStatus = { status: AccountStatus.CLOSED };
-    mockUpdate.mockResolvedValue(buildMockAccountRecord(closedStatus));
+    mockUpdate.mockResolvedValue(buildAccountRecord(closedStatus));
 
     const res = await closeAccountRequest();
 
@@ -96,10 +96,10 @@ describe("POST /accounts/:accountId/close", () => {
 
   test("Close already closed account => 200", async () => {
     mockUpdate
-      .mockResolvedValueOnce(buildMockAccountRecord({
+      .mockResolvedValueOnce(buildAccountRecord({
         status: AccountStatus.CLOSED
       }))
-      .mockResolvedValueOnce(buildMockAccountRecord({
+      .mockResolvedValueOnce(buildAccountRecord({
         status: AccountStatus.CLOSED
       }));
 

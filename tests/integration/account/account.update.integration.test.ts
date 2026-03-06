@@ -3,7 +3,7 @@ import { createApp } from "../../../src/app";
 import { Prisma } from "../../../src/generated/client";
 import { UserRole, AccountStatus } from "../../../src/generated/enums";
 import { buildJwtPayload } from "../../authMock";
-import { buildMockAccountRecord } from "../../accountMock";
+import { buildAccountRecord } from "../../accountMock";
 import { 
   mockAccountId1,
   mockMissingAccountId,
@@ -33,9 +33,9 @@ const mockedJwtPayloadStandard = buildJwtPayload({ role: UserRole.STANDARD });
 
 const mockUpdate = prismaClient.account.update as jest.Mock;
 const mockVerify = jwt.verify as jest.Mock;
-beforeEach(async () => {
+beforeEach(() => {
   jest.clearAllMocks();
-  mockUpdate.mockResolvedValue(buildMockAccountRecord());
+  mockUpdate.mockResolvedValue(buildAccountRecord());
   mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
 });
 
@@ -54,7 +54,7 @@ describe("PUT /accounts/:accountId", () => {
   test("nickname and status are both given => 200, account is updated and returned", async () => {
     const toUpdate = { nickname: "newNick", status: AccountStatus.CLOSED };
 
-    mockUpdate.mockResolvedValue(buildMockAccountRecord(toUpdate));
+    mockUpdate.mockResolvedValue(buildAccountRecord(toUpdate));
 
     const res = await updateAccountRequest(toUpdate);
 
@@ -69,7 +69,7 @@ describe("PUT /accounts/:accountId", () => {
 
   test("nickname only is given => 200, account is updated and returned", async () => {
     const toUpdate = { nickname: "onlyNick" };
-    mockUpdate.mockResolvedValue(buildMockAccountRecord(toUpdate));
+    mockUpdate.mockResolvedValue(buildAccountRecord(toUpdate));
 
     const res = await updateAccountRequest(toUpdate);
 
@@ -84,7 +84,7 @@ describe("PUT /accounts/:accountId", () => {
 
   test("status only is given => 200, account is updated and returned", async () => {
     const toUpdate = { status: AccountStatus.CLOSED };
-    mockUpdate.mockResolvedValue(buildMockAccountRecord(toUpdate));
+    mockUpdate.mockResolvedValue(buildAccountRecord(toUpdate));
 
     const res = await updateAccountRequest(toUpdate);
 

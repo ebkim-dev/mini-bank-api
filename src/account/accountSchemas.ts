@@ -2,8 +2,6 @@ import { z } from "zod";
 import { AccountType, AccountStatus } from "../generated/enums";
 import { Decimal } from "@prisma/client/runtime/client";
 
-
-
 export const accountIdParamsSchema = z
   .object({
     id: z.uuid("id must be a valid UUID"),

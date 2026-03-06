@@ -4,7 +4,7 @@ import { UserRole } from "../../../src/generated/enums";
 import { buildJwtPayload } from "../../authMock";
 import { 
   buildAccountCreateOutput,
-  buildMockAccountRecord,
+  buildAccountRecord,
 } from "../../accountMock";
 import { 
   mockAccountId1, 
@@ -49,7 +49,7 @@ describe("GET /accounts/:accountId", () => {
 
   test("Account found for accountId => 200, account is returned", async () => {
     mockVerify.mockReturnValue(mockedJwtPayloadStandard);
-    mockFindUnique.mockResolvedValue(buildMockAccountRecord());
+    mockFindUnique.mockResolvedValue(buildAccountRecord());
 
     const res = await getAccountRequest(mockAccountId1);
 
