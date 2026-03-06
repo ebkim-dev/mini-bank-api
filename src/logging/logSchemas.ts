@@ -1,6 +1,6 @@
 import { AuthInput } from "../auth/user";
-import { Account } from "../generated/client";
-import type { AccountStatus, AccountType, UserRole } from "../generated/enums";
+import { Account, Transaction } from "../generated/client";
+import type { AccountStatus, AccountType, TransactionType, UserRole } from "../generated/enums";
 import { EventCode } from "../types/eventCodes";
 import { logger } from "./logger";
 
@@ -69,6 +69,22 @@ export interface AccountFailByAccountEvent extends AccountFailureBaseEvent {
   accountStatus?: AccountStatus;
 }
 
+// ==== Transaction (Success) ====
+export interface TransactionSuccessEvent extends AccountBaseEvent {
+  transactionId?: string;
+  accountId: string;
+  transactionType?: TransactionType;
+  amount?: string;
+  count?: number;
+}
+
+// ==== Transaction (Failure) ====
+export interface TransactionFailureEvent extends AccountBaseEvent {
+  transactionId?: string;
+  accountId?: string;
+  errorCode: string;
+}
+
 export function logEvent(message: EventCode, event: BaseEvent) {
   logger.info(message, event);
 }
@@ -108,5 +124,56 @@ export function mapToManyAccountSuccessEvent(
       currency: accountRecord.currency,
       accountStatus: accountRecord.status
     }))
+  };
+}
+
+export function mapToTransactionSuccessEvent(
+  durationMs: number,
+  actorData: AuthInput,
+  transactionRecord: Transaction
+): TransactionSuccessEvent {
+  return {
+    executionStatus: ExecutionStatus.SUCCESS,
+    durationMs,
+    actorId: actorData.actorId,
+    actorRole: actorData.role,
+    transactionId: transactionRecord.id,
+    accountId: transactionRecord.account_id,
+    transactionType: transactionRecord.type,
+    amount: transactionRecord.amount.toString(),
+  };
+}
+
+export function mapToManyTransactionSuccessEvent(
+  durationMs: number,
+  actorData: AuthInput,
+  accountId: string,
+  count: number
+): TransactionSuccessEvent {
+  return {
+    executionStatus: ExecutionStatus.SUCCESS,
+    durationMs,
+    actorId: actorData.actorId,
+    actorRole: actorData.role,
+    accountId,
+    count,
+  };
+}
+
+export function mapToTransactionFailureEvent(
+  durationMs: number,
+  actorData: AuthInput,
+  errorCode: string,
+  transactionId?: string,
+  accountId?: string
+): TransactionFailureEvent {
+  return {
+    executionStatus: ExecutionStatus.FAILURE,
+    durationMs,
+    actorId: actorData.actorId,
+    actorRole: actorData.role,
+    errorCode,
+    ...(transactionId && { transactionId }),
+    ...(accountId && { accountId }),
   };
 }

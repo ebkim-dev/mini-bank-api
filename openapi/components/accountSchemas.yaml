@@ -71,20 +71,19 @@ components:
           maxLength: 3
         nickname:
           type: string
-          maxLength: 100
-          nullable: true
         status:
           type: string
           enum:
             - ACTIVE
             - CLOSED
         balance:
-          type: number
-          format: double
+          type: string
         created_at:
           type: string
+          format: date-time
         updated_at:
           type: string
+          format: date-time
       example:
         id: "550e8400-e29b-41d4-a716-446655440001"
         customer_id: "550e8400-e29b-41d4-a716-446655440000"

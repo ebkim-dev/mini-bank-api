@@ -5,6 +5,7 @@ import {
   getAccount,
   updateAccount,
   deleteAccount,
+  getAccountSummary
 } from "./accountController";
 
 import { validate } from "../middleware/validationMiddleware";
@@ -43,6 +44,14 @@ router.get(
   validate(accountIdParamsSchema, "params"),
   validate(jwtPayloadSchema, "user"),
   getAccount
+);
+
+router.get(
+  "/:id/summary",
+  requireAuth(),
+  validate(accountIdParamsSchema, "params"),
+  validate(jwtPayloadSchema, "user"),
+  getAccountSummary
 );
 
 router.put(

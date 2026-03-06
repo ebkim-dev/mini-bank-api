@@ -1,0 +1,306 @@
+{
+  "info": {
+    "name": "MiniBankAPI - Epic 2",
+    "_postman_id": "minibank-epic2-collection",
+    "description": "Epic 2 APIs - Transactions + Account Summary",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.sessionId) {",
+              "  pm.environment.set('sessionId', res.sessionId);",
+              "  console.log('Session ID saved');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"super_admin\",\n  \"password\": \"admin123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "Create Transaction (CREDIT)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.id) {",
+              "  pm.environment.set('transactionId', res.id);",
+              "  console.log('Transaction ID saved');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"account_id\": \"{{accountId}}\",\n  \"type\": \"CREDIT\",\n  \"amount\": \"500.00\",\n  \"description\": \"Initial deposit\",\n  \"category\": \"DEPOSIT\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions",
+          "host": ["{{baseUrl}}"],
+          "path": ["transactions"]
+        }
+      }
+    },
+    {
+        "name": "Create Transaction (DEBIT)",
+        "event": [
+            {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                "const res = pm.response.json();",
+                "if (res.id) {",
+                "  pm.environment.set('transactionId', res.id);",
+                "  console.log('Transaction ID saved');",
+                "}"
+                ]
+            }
+            }
+        ],
+        "request": {
+            "method": "POST",
+            "header": [
+            {
+                "key": "Content-Type",
+                "value": "application/json"
+            },
+            {
+                "key": "x-session-id",
+                "value": "{{sessionId}}"
+            }
+            ],
+            "body": {
+            "mode": "raw",
+            "raw": "{\n  \"account_id\": \"{{accountId}}\",\n  \"type\": \"DEBIT\",\n  \"amount\": \"50.00\",\n  \"description\": \"ATM withdrawal\",\n  \"category\": \"CASH\"\n}"
+            },
+            "url": {
+            "raw": "{{baseUrl}}/transactions",
+            "host": ["{{baseUrl}}"],
+            "path": ["transactions"]
+            }
+        }
+    },
+    {
+      "name": "Create Transaction (Overdraft - Should Fail 409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"account_id\": \"{{accountId}}\",\n  \"type\": \"DEBIT\",\n  \"amount\": \"999999.00\",\n  \"description\": \"Should fail - overdraft\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions",
+          "host": ["{{baseUrl}}"],
+          "path": ["transactions"]
+        }
+      }
+    },
+    {
+      "name": "Create Transaction (Invalid Amount - Should Fail 400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"account_id\": \"{{accountId}}\",\n  \"type\": \"CREDIT\",\n  \"amount\": \"-100.00\",\n  \"description\": \"Should fail - negative amount\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions",
+          "host": ["{{baseUrl}}"],
+          "path": ["transactions"]
+        }
+      }
+    },
+    {
+      "name": "Create Transaction (No Auth - Should Fail 401)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"account_id\": \"{{accountId}}\",\n  \"type\": \"CREDIT\",\n  \"amount\": \"100.00\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transactions",
+          "host": ["{{baseUrl}}"],
+          "path": ["transactions"]
+        }
+      }
+    },
+    {
+      "name": "Get Transactions by Account",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/transactions?account_id={{accountId}}&limit=10&offset=0",
+          "host": ["{{baseUrl}}"],
+          "path": ["transactions"],
+          "query": [
+            {
+              "key": "account_id",
+              "value": "{{accountId}}"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            },
+            {
+              "key": "offset",
+              "value": "0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Transactions (Filter by Type)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/transactions?account_id={{accountId}}&type=CREDIT",
+          "host": ["{{baseUrl}}"],
+          "path": ["transactions"],
+          "query": [
+            {
+              "key": "account_id",
+              "value": "{{accountId}}"
+            },
+            {
+              "key": "type",
+              "value": "CREDIT"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Transaction by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/transactions/{{transactionId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["transactions", "{{transactionId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Transaction (Not Found - Should Fail 404)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/transactions/550e8400-e29b-41d4-a716-44665544ffff",
+          "host": ["{{baseUrl}}"],
+          "path": ["transactions", "550e8400-e29b-41d4-a716-44665544ffff"]
+        }
+      }
+    },
+    {
+      "name": "Get Account Summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId}}/summary",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId}}", "summary"]
+        }
+      }
+    }
+  ]
+}

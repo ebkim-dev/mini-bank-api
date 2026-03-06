@@ -113,3 +113,21 @@ export async function deleteAccount(
     next(err);
   }
 }
+
+export async function getAccountSummary(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { id } = (req as any).validated.params;
+    const jwtPayload: JwtPayload = (req as any).validated.user;
+    const summary = await accountService.fetchAccountSummary(id, {
+      actorId: jwtPayload.sub,
+      role: jwtPayload.role,
+    });
+    res.status(200).json(summary);
+  } catch (err) {
+    next(err);
+  }
+}
