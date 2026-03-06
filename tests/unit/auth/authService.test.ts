@@ -30,9 +30,15 @@ import {
   buildRegisterOutput,
   buildUserRecord
 } from "../../authMock";
+import { 
+  buildPrismaError,
+  CONFLICT_ERROR_CODE,
+  CONFLICT_ERROR_MESSAGE,
+  UNKNOWN_ERROR_MESSAGE,
+} from "../../errorMock";
+
 import * as authService from "../../../src/auth/authService";
 import jwt from "jsonwebtoken";
-import { Prisma } from "../../../src/generated/client";
 import { REDIS_SESSION_TTL_SEC } from "../../../src/auth/authService";
 import { mockHashedPassword, mockSessionId } from "../../commonMock";
 
@@ -58,16 +64,23 @@ describe("registerUser service", () => {
   });
 
   it("should throw an error for a duplicate username", async () => {
-    const prismaError = new Prisma.PrismaClientKnownRequestError(
-      "Unique constraint failed",
-      { code: "P2002", clientVersion: "test" }
+    mockCreate.mockRejectedValue(
+      buildPrismaError(CONFLICT_ERROR_MESSAGE, CONFLICT_ERROR_CODE)
     );
-
-    mockCreate.mockRejectedValue(prismaError);
    
     await expect(
       authService.registerUser(buildRegisterInput())
     ).rejects.toThrow("Username already exists");
+  });
+    
+  it("should rethrow for an unknown error", async () => {
+    const unknownError = new Error(UNKNOWN_ERROR_MESSAGE);
+
+    mockCreate.mockRejectedValue(unknownError);
+   
+    await expect(
+      authService.registerUser(buildRegisterInput())
+    ).rejects.toThrow(unknownError);
   });
 });
 

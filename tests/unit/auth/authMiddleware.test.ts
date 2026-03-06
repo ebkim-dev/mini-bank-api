@@ -13,10 +13,12 @@ import { buildJwtPayload } from "../../authMock";
 
 const res: any = {};
 const mockedVerify = jwt.verify as jest.Mock;
+const mockedRedisGet = redisClient.get as jest.Mock;
 const next: jest.Mock = jest.fn();
 beforeEach(() => {
-  jest.clearAllMocks();
+  jest.resetAllMocks();
   mockedVerify.mockReturnValue(buildJwtPayload());
+  mockedRedisGet.mockResolvedValue("mock_jwt_token");
 })
 
 
@@ -34,9 +36,23 @@ describe("requireAuth middleware", () => {
       process.env.JWT_SECRET
     );
   });
+
+  it("should not throw any errors given multiple sessionIds", async () => {
+    const req: any = { headers: { "x-session-id": [ mockSessionId, "foo" ] }};
+
+    await authMiddleware.requireAuth()(req, res, next);
+
+    expect(req.user).toEqual(buildJwtPayload());
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(next).toHaveBeenCalledWith();
+    expect(mockedVerify).toHaveBeenCalledWith(
+      "mock_jwt_token",
+      process.env.JWT_SECRET
+    );
+  });
   
-  it("should throw 401 given missing header", async () => {
-    const req: any = { headers: { authorization: undefined } };
+  it("should throw 401 given missing sessionId", async () => {
+    const req: any = { headers: { "x-session-id": undefined } };
 
     await authMiddleware.requireAuth()(req, res, next);
 
@@ -46,7 +62,7 @@ describe("requireAuth middleware", () => {
   });
   
   it("should throw 401 given invalid header", async () => {
-    const req: any = { headers: { authorization: "NOTBEARER blahblah" } };
+    const req: any = { headers: { "x-session-id": "not_uuid" } };
 
     await authMiddleware.requireAuth()(req, res, next);
 
@@ -55,8 +71,9 @@ describe("requireAuth middleware", () => {
     expect(next.mock.calls[0][0].code).toBe(EventCode.INVALID_TOKEN);
   });
   
-  it("should throw 401 given missing token", async () => {
-    const req: any = { headers: { authorization: "Bearer" } };
+  it("should throw 401 if redis GET fails to retrieve token", async () => {
+    (redisClient.get as jest.Mock).mockResolvedValue(null);
+    const req: any = { headers: { "x-session-id": mockSessionId } };
 
     await authMiddleware.requireAuth()(req, res, next);
 
@@ -72,7 +89,7 @@ describe("requireAuth middleware", () => {
       throw err;
     });
 
-    const req: any = { headers: { authorization: "Bearer blahblah" } };
+    const req: any = { headers: { "x-session-id": mockSessionId } };
 
     await authMiddleware.requireAuth()(req, res, next);
 

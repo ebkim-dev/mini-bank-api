@@ -29,17 +29,7 @@ import * as accountService from "../../../src/account/accountService";
 import prismaClient from '../../../src/db/prismaClient';
 import { Prisma } from "../../../src/generated/client";
 import { buildAuthInput } from '../../authMock';
-
-const UNKNOWN_ERROR_MESSAGE = "Unknown error";
-const unknownPrismaError = new Prisma.PrismaClientKnownRequestError(
-  UNKNOWN_ERROR_MESSAGE, 
-  { code: "P9999999", clientVersion: "test" }
-);
-const NOT_FOUND_ERROR_MESSAGE = "Account not found";
-const notFoundPrismaError = new Prisma.PrismaClientKnownRequestError(
-  "Record not found", 
-  { code: "P2025", clientVersion: "test" }
-);
+import { buildPrismaError, NOT_FOUND_ERROR_CODE, NOT_FOUND_ERROR_MESSAGE, UNKNOWN_ERROR_CODE, UNKNOWN_ERROR_MESSAGE } from "../../errorMock";
 
 const mockCreate = prismaClient.account.create as jest.Mock;
 const mockFindMany = prismaClient.account.findMany as jest.Mock;
@@ -62,10 +52,18 @@ describe("insertAccount service", () => {
       buildAccountCreateInput(), 
       buildAuthInput({ role: UserRole.STANDARD })
     )).rejects.toThrow("Only admins can create accounts");
+
+    // This second call is made for branch coverage
+    await expect(accountService.insertAccount(
+      buildAccountCreateInput({ status: AccountStatus.ACTIVE }), 
+      buildAuthInput({ role: UserRole.STANDARD })
+    )).rejects.toThrow("Only admins can create accounts");
   });
   
   it("should rethrow when prisma throws", async () => {
-    mockCreate.mockRejectedValue(unknownPrismaError);
+    mockCreate.mockRejectedValue(
+      buildPrismaError(UNKNOWN_ERROR_MESSAGE, UNKNOWN_ERROR_CODE)
+    );
 
     await expect(accountService.insertAccount(
       buildAccountCreateInput(), 
@@ -91,7 +89,9 @@ describe("fetchAccountsByCustomerId service", () => {
   });
 
   it("should rethrow when prisma throws", async () => {
-    mockFindMany.mockRejectedValue(unknownPrismaError);
+    mockFindMany.mockRejectedValue(
+      buildPrismaError(UNKNOWN_ERROR_MESSAGE, UNKNOWN_ERROR_CODE)
+    );
 
     await expect(accountService.fetchAccountsByCustomerId(
       mockCustomerId, 
@@ -120,7 +120,9 @@ describe("fetchAccountById service", () => {
   });
 
   it("should rethrow when prisma throws", async () => {
-    mockFindUnique.mockRejectedValue(unknownPrismaError);
+    mockFindUnique.mockRejectedValue(
+      buildPrismaError(UNKNOWN_ERROR_MESSAGE, UNKNOWN_ERROR_CODE)
+    );
 
     await expect(accountService.fetchAccountById(
       mockAccountId1, 
@@ -156,7 +158,9 @@ describe("updateAccountById service", () => {
   });
 
   it("should throw a NotFoundError for a nonexistent account ID", async () => {
-    mockUpdate.mockRejectedValue(notFoundPrismaError);
+    mockUpdate.mockRejectedValue(
+      buildPrismaError(NOT_FOUND_ERROR_MESSAGE, NOT_FOUND_ERROR_CODE)
+    );
    
     await expect(accountService.updateAccountById(
       mockMissingAccountId, 
@@ -166,7 +170,9 @@ describe("updateAccountById service", () => {
   });
     
   it("should rethrow when prisma throws", async () => {
-    mockUpdate.mockRejectedValue(unknownPrismaError);
+    mockUpdate.mockRejectedValue(
+      buildPrismaError(UNKNOWN_ERROR_MESSAGE, UNKNOWN_ERROR_CODE)
+    );
 
     await expect(accountService.updateAccountById(
       mockMissingAccountId, 
@@ -200,7 +206,9 @@ describe("deleteAccountById service", () => {
   });
 
   it("should throw a NotFoundError for a nonexistent account ID", async () => {
-    mockUpdate.mockRejectedValue(notFoundPrismaError);
+    mockUpdate.mockRejectedValue(
+      buildPrismaError(NOT_FOUND_ERROR_MESSAGE, NOT_FOUND_ERROR_CODE)
+    );
    
     await expect(accountService.deleteAccountById(
       mockMissingAccountId,
@@ -209,7 +217,9 @@ describe("deleteAccountById service", () => {
   });
     
   it("should rethrow when prisma throws", async () => {
-    mockUpdate.mockRejectedValue(unknownPrismaError);
+    mockUpdate.mockRejectedValue(
+      buildPrismaError(UNKNOWN_ERROR_MESSAGE, UNKNOWN_ERROR_CODE)
+    );
 
     await expect(accountService.deleteAccountById(
       mockMissingAccountId,
