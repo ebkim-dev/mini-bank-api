@@ -9,5 +9,7 @@ module.exports = {
     "src/**/*.ts",
     "!src/config/**",
     "!src/generated/**",
+    "!src/start.ts",
+    "!src/redis/redisDemoScript.ts",
   ]
 };

@@ -6,7 +6,7 @@ paths:
       tags:
         - accounts
       security:
-        - bearerAuth: []
+        - sessionAuth: []
       requestBody:
         required: true
         content:
@@ -28,7 +28,7 @@ paths:
       tags:
         - accounts
       security:
-        - bearerAuth: []
+        - sessionAuth: []
       parameters:
         - in: query
           name: customer_id
@@ -76,7 +76,7 @@ paths:
       tags:
         - accounts
       security:
-        - bearerAuth: []
+        - sessionAuth: []
       parameters:
         - name: accountId
           in: path
@@ -103,7 +103,7 @@ paths:
       tags:
         - accounts
       security:
-        - bearerAuth: []
+        - sessionAuth: []
       parameters:
         - name: accountId
           in: path
@@ -137,7 +137,7 @@ paths:
       tags:
         - accounts
       security:
-        - bearerAuth: []
+        - sessionAuth: []
       parameters:
         - name: accountId
           in: path

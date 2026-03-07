@@ -1,9 +1,8 @@
-import { traceIdMiddleware } from "../../../src/middleware/traceIdMiddleware";
-
 jest.mock("crypto", () => ({
   randomUUID: jest.fn(),
 }));
 import { randomUUID } from "crypto";
+import { traceIdMiddleware } from "../../../src/middleware/traceIdMiddleware";
 
 const req: any = {};
 const setHeader = jest.fn();
@@ -11,16 +10,13 @@ let res: any;
 let next: jest.Mock;
 
 beforeEach(() => {
+  jest.resetAllMocks();
   next = jest.fn();
   res = { 
     locals: {},
     setHeader
   };
 })
-
-afterEach(() => {
-  jest.resetAllMocks();
-});
 
 describe("traceIdMiddleware", () => {
   it("should generate a traceId using randomUUID when available", async () => {

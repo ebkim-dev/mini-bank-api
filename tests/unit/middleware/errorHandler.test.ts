@@ -1,13 +1,11 @@
-
-import * as errorHandlers from "../../../src/middleware/errorHandler";
-import { EventCode } from "../../../src/types/eventCodes";
-import { AppError } from "../../../src/error/error";
-
 jest.mock("../../../src/logging/logger", () => ({
   logger: { error: jest.fn() }
 }));
 import { logger } from "../../../src/logging/logger";
 
+import * as errorHandlers from "../../../src/middleware/errorHandler";
+import { EventCode } from "../../../src/types/eventCodes";
+import { AppError } from "../../../src/error/error";
 
 let req: any;
 let res: any;
@@ -16,6 +14,8 @@ let statusMock: jest.Mock;
 let next: jest.Mock;
 
 beforeEach(() => {
+  jest.resetAllMocks();
+  
   req = { 
     method: "mockGET", 
     originalUrl: "/mockUnitTest" 
@@ -24,15 +24,12 @@ beforeEach(() => {
   next = jest.fn();
   jsonMock = jest.fn();
   statusMock = jest.fn(() => ({ json: jsonMock }));
+  
   res = { 
     status: statusMock,
     locals: { traceId: "mock-trace-id" },
   };
 })
-
-afterEach(() => {
-  jest.resetAllMocks();
-});
 
 describe("notFoundHandler", () => {
   it("should call next and pass a NotFoundError", async () => {

@@ -5,14 +5,21 @@ import { ForbiddenError, UnauthorizedError } from "../error/error";
 import { EventCode } from "../types/eventCodes";
 import { UserRole } from "../generated/enums";
 import { redisClient } from "../redis/redisClient";
+import z from "zod";
 
 export function requireAuth(): RequestHandler {
   return async (req: Request, _res: Response, next: NextFunction) => {
     const sessionHeader = req.headers["x-session-id"];
     const sessionId = 
       Array.isArray(sessionHeader) ? sessionHeader[0] : sessionHeader;
-
     if (!sessionId) {
+      return next(
+        UnauthorizedError(EventCode.INVALID_TOKEN, "Authentication failed")
+      );
+    }
+
+    const parsed = z.uuid().safeParse(sessionId);
+    if (!parsed.success) {
       return next(
         UnauthorizedError(EventCode.INVALID_TOKEN, "Authentication failed")
       );

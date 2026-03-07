@@ -1,11 +1,8 @@
-
-import { requestLoggerMiddleware } from "../../../src/middleware/requestLoggerMiddleware";
-
 jest.mock("../../../src/logging/logger", () => ({
   logger: { info: jest.fn() }
 }));
 import { logger } from "../../../src/logging/logger";
-
+import { requestLoggerMiddleware } from "../../../src/middleware/requestLoggerMiddleware";
 
 let req: any;
 let res: any;
@@ -13,21 +10,20 @@ let next: jest.Mock;
 let finishCallback: Function;
 
 beforeEach(() => {
+  jest.resetAllMocks();
+
   req = { 
     method: "mockGET", 
     originalUrl: "/mockRequestLoggerTest" 
   };
 
   next = jest.fn();
+  
   res = { 
     statusCode: 200,
     locals: { traceId: "mock-trace-id" },
     on: jest.fn((_event, callback) => finishCallback = callback),
   };
-})
-
-afterEach(() => {
-  jest.resetAllMocks();
 });
 
 describe("requestLoggerMiddleware", () => {

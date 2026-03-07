@@ -1,93 +1,85 @@
-
-import * as authMiddleware from "../../../src/auth/authMiddleware";
-import jwt from "jsonwebtoken";
-import { EventCode } from "../../../src/types/eventCodes";
-import { UserRole } from "../../../src/generated/enums";
-import { JwtPayload } from "../../../src/auth/user";
-
-
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
-
 jest.mock("jsonwebtoken");
+import jwt from "jsonwebtoken";
 
-const mockedJwtPayload: JwtPayload = {
-  sub: "123",
-  role: UserRole.ADMIN
-};
+import * as authMiddleware from "../../../src/auth/authMiddleware";
+import { EventCode } from "../../../src/types/eventCodes";
+import { UserRole } from "../../../src/generated/enums";
+import { mockSessionId } from "../../commonMock";
+import { buildJwtPayload } from "../../authMock";
 
 const res: any = {};
 const mockedVerify = jwt.verify as jest.Mock;
-let next: jest.Mock;
+const mockedRedisGet = redisClient.get as jest.Mock;
+const next: jest.Mock = jest.fn();
 beforeEach(() => {
-  next = jest.fn();
-  mockedVerify.mockReturnValue(mockedJwtPayload);
+  jest.resetAllMocks();
+  mockedVerify.mockReturnValue(buildJwtPayload());
+  mockedRedisGet.mockResolvedValue("mock_jwt_token");
 })
 
-afterEach(() => {
-  jest.resetAllMocks();
-});
 
 describe("requireAuth middleware", () => {
   it("should not throw any errors given valid sessionId", async () => {
-    const req: any = { headers: { "x-session-id": "mockSessionId" } };
+    const req: any = { headers: { "x-session-id": mockSessionId } };
 
-    const middleware = authMiddleware.requireAuth();
-    await middleware(req, res, next);
+    await authMiddleware.requireAuth()(req, res, next);
 
-    expect(req.user).toEqual(mockedJwtPayload);
+    expect(req.user).toEqual(buildJwtPayload());
     expect(next).toHaveBeenCalledTimes(1);
+    expect(next).toHaveBeenCalledWith();
+    expect(mockedVerify).toHaveBeenCalledWith(
+      "mock_jwt_token",
+      process.env.JWT_SECRET
+    );
+  });
+
+  it("should not throw any errors given multiple sessionIds", async () => {
+    const req: any = { headers: { "x-session-id": [ mockSessionId, "foo" ] }};
+
+    await authMiddleware.requireAuth()(req, res, next);
+
+    expect(req.user).toEqual(buildJwtPayload());
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(next).toHaveBeenCalledWith();
     expect(mockedVerify).toHaveBeenCalledWith(
       "mock_jwt_token",
       process.env.JWT_SECRET
     );
   });
   
-  it("should throw 401 given missing header", async () => {
-    const req: any = { headers: {
-      authorization: undefined
-    }};
+  it("should throw 401 given missing sessionId", async () => {
+    const req: any = { headers: { "x-session-id": undefined } };
 
-    const middleware = authMiddleware.requireAuth();
-    await middleware(req, res, next);
+    await authMiddleware.requireAuth()(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-
-    const calledWith = next.mock.calls[0][0];
-    expect(calledWith).toBeInstanceOf(Error);
-    expect(calledWith.code).toBe(EventCode.INVALID_TOKEN);
+    expect(next.mock.calls[0][0]).toBeInstanceOf(Error);
+    expect(next.mock.calls[0][0].code).toBe(EventCode.INVALID_TOKEN);
   });
   
   it("should throw 401 given invalid header", async () => {
-    const req: any = { headers: {
-      authorization: "NOTBEARER my_token_blahblahblahblah"
-    }};
+    const req: any = { headers: { "x-session-id": "not_uuid" } };
 
-    const middleware = authMiddleware.requireAuth();
-    await middleware(req, res, next);
+    await authMiddleware.requireAuth()(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-
-    const calledWith = next.mock.calls[0][0];
-    expect(calledWith).toBeInstanceOf(Error);
-    expect(calledWith.code).toBe(EventCode.INVALID_TOKEN);
+    expect(next.mock.calls[0][0]).toBeInstanceOf(Error);
+    expect(next.mock.calls[0][0].code).toBe(EventCode.INVALID_TOKEN);
   });
   
-  it("should throw 401 given missing token", async () => {
-    const req: any = { headers: {
-      authorization: "Bearer"
-    }};
+  it("should throw 401 if redis GET fails to retrieve token", async () => {
+    (redisClient.get as jest.Mock).mockResolvedValue(null);
+    const req: any = { headers: { "x-session-id": mockSessionId } };
 
-    const middleware = authMiddleware.requireAuth();
-    await middleware(req, res, next);
+    await authMiddleware.requireAuth()(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-
-    const calledWith = next.mock.calls[0][0];
-    expect(calledWith).toBeInstanceOf(Error);
-    expect(calledWith.code).toBe(EventCode.INVALID_TOKEN);
+    expect(next.mock.calls[0][0]).toBeInstanceOf(Error);
+    expect(next.mock.calls[0][0].code).toBe(EventCode.INVALID_TOKEN);
   });
   
   it("should throw 401 given expired token", async () => {
@@ -97,18 +89,13 @@ describe("requireAuth middleware", () => {
       throw err;
     });
 
-    const req: any = { headers: { 
-      authorization: "Bearer my_token_blahblahblahblah"
-    }};
+    const req: any = { headers: { "x-session-id": mockSessionId } };
 
-    const middleware = authMiddleware.requireAuth();
-    await middleware(req, res, next);
+    await authMiddleware.requireAuth()(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-
-    const calledWith = next.mock.calls[0][0];
-    expect(calledWith).toBeInstanceOf(Error);
-    expect(calledWith.code).toBe(EventCode.INVALID_TOKEN);
+    expect(next.mock.calls[0][0]).toBeInstanceOf(Error);
+    expect(next.mock.calls[0][0].code).toBe(EventCode.INVALID_TOKEN);
   });
 });
 
@@ -117,23 +104,19 @@ describe("requireRole middleware", () => {
     const minimumRole: UserRole = UserRole.ADMIN;
     const req: any = { user: { role: UserRole.ADMIN } };
 
-    const middleware = authMiddleware.requireRole(minimumRole);
-    await middleware(req, res, next);
+    await authMiddleware.requireRole(minimumRole)(req, res, next);
 
-    expect(req.user.role).toEqual(minimumRole);
     expect(next).toHaveBeenCalledTimes(1);
+    expect(next).toHaveBeenCalledWith();
   });
   it("should throw a ForbiddenError given insufficient role", async () => {
     const minimumRole: UserRole = UserRole.ADMIN;
     const req: any = { user: { role: UserRole.STANDARD } };
 
-    const middleware = authMiddleware.requireRole(minimumRole);
-    await middleware(req, res, next);
+    await authMiddleware.requireRole(minimumRole)(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-
-    const calledWith = next.mock.calls[0][0];
-    expect(calledWith).toBeInstanceOf(Error);
-    expect(calledWith.code).toBe(EventCode.FORBIDDEN);
+    expect(next.mock.calls[0][0]).toBeInstanceOf(Error);
+    expect(next.mock.calls[0][0].code).toBe(EventCode.FORBIDDEN);
   });
 });
