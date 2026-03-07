@@ -1,3 +1,17 @@
+jest.mock("../../../src/redis/redisClient", () => ({
+  redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
+}));
+import { redisClient } from "../../../src/redis/redisClient";
+
+jest.mock("../../../src/db/prismaClient", () => ({
+  __esModule: true,
+  default: { account: { findUnique: jest.fn() } }
+}));
+import prismaClient from "../../../src/db/prismaClient";
+
+jest.mock("jsonwebtoken");
+import jwt from "jsonwebtoken";
+
 import request from "supertest";
 import { createApp } from "../../../src/app";
 import { UserRole } from "../../../src/generated/enums";
@@ -13,20 +27,6 @@ import {
   mockSessionId
 } from "../../commonMock";
 
-jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
-}));
-import { redisClient } from "../../../src/redis/redisClient";
-
-jest.mock("../../../src/db/prismaClient", () => ({
-  __esModule: true,
-  default: { account: { findUnique: jest.fn() } }
-}));
-import prismaClient from "../../../src/db/prismaClient";
-
-jest.mock("jsonwebtoken");
-import jwt from "jsonwebtoken";
-
 
 const app = createApp();
 
@@ -36,7 +36,7 @@ const mockedJwtPayloadStandard = buildJwtPayload({ role: UserRole.STANDARD });
 const mockFindUnique = prismaClient.account.findUnique as jest.Mock;
 const mockVerify = jwt.verify as jest.Mock;
 beforeEach(async () => {
-  jest.clearAllMocks();
+  jest.resetAllMocks();
   mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
 });
 

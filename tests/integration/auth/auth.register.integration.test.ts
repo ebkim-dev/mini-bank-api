@@ -1,13 +1,3 @@
-import request from "supertest";
-import { createApp } from "../../../src/app";
-import { Prisma } from "../../../src/generated/client";
-import { RegisterInput } from "../../../src/auth/user";
-import { 
-  buildRegisterInput, 
-  buildRegisterOutput,
-  buildUserRecord, 
-} from "../../authMock";
-
 jest.mock("bcrypt", () => ({
   hash: jest.fn().mockResolvedValue("hashedPassword"),
   compare: jest.fn((plain: string, _hash: string) => {
@@ -24,6 +14,16 @@ jest.mock("../../../src/db/prismaClient", () => ({
   default: { user: { create: jest.fn() } }
 }));
 import prismaClient from "../../../src/db/prismaClient";
+
+import request from "supertest";
+import { createApp } from "../../../src/app";
+import { Prisma } from "../../../src/generated/client";
+import { RegisterInput } from "../../../src/auth/user";
+import { 
+  buildRegisterInput, 
+  buildRegisterOutput,
+  buildUserRecord, 
+} from "../../authMock";
 
 const app = createApp();
 

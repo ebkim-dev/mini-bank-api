@@ -1,4 +1,3 @@
-
 import * as accountService from "../../../src/account/accountService";
 import * as accountController from "../../../src/account/accountController";
 import { AccountStatus } from "../../../src/generated/enums";
@@ -17,14 +16,11 @@ let statusMock: jest.Mock;
 let res: any;
 
 beforeEach(() => {
+  jest.resetAllMocks();
   next = jest.fn();
   jsonMock = jest.fn();
   statusMock = jest.fn(() => ({ json: jsonMock }));
   res = { status: statusMock };
-});
-
-afterEach(() => {
-  jest.resetAllMocks();
 });
 
 function buildReq(

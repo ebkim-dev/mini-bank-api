@@ -1,15 +1,3 @@
-import request from "supertest";
-import { createApp } from "../../../src/app";
-import { Decimal } from "@prisma/client/runtime/client";
-import { UserRole, AccountStatus } from "../../../src/generated/enums";
-import { 
-  buildAccountCreateOutput,
-  buildAccountCreateRequestBody,
-  buildAccountRecord,
-} from "../../accountMock";
-import { mockRedisKey, mockSessionId } from "../../commonMock";
-import { buildJwtPayload } from "../../authMock";
-
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
 }));
@@ -24,6 +12,18 @@ import prismaClient from "../../../src/db/prismaClient";
 jest.mock("jsonwebtoken");
 import jwt from "jsonwebtoken";
 
+import request from "supertest";
+import { createApp } from "../../../src/app";
+import { Decimal } from "@prisma/client/runtime/client";
+import { UserRole, AccountStatus } from "../../../src/generated/enums";
+import { mockRedisKey, mockSessionId } from "../../commonMock";
+import { buildJwtPayload } from "../../authMock";
+import { 
+  buildAccountCreateOutput,
+  buildAccountCreateRequestBody,
+  buildAccountRecord,
+} from "../../accountMock";
+
 
 const app = createApp();
 
@@ -33,7 +33,7 @@ const mockedJwtPayloadStandard = buildJwtPayload({ role: UserRole.STANDARD });
 const mockCreate = prismaClient.account.create as jest.Mock;
 const mockVerify = jwt.verify as jest.Mock;
 beforeEach(() => {
-  jest.clearAllMocks();
+  jest.resetAllMocks();
   mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
 });
 

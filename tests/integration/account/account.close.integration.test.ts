@@ -1,18 +1,3 @@
-import request from "supertest";
-import { createApp } from "../../../src/app";
-import { Prisma } from "../../../src/generated/client";
-import { UserRole, AccountStatus } from "../../../src/generated/enums";
-import { 
-  buildAccountRecord
-} from "../../accountMock";
-import { 
-  mockAccountId1,
-  mockMissingAccountId,
-  mockRedisKey,
-  mockSessionId
-} from "../../commonMock";
-import { buildJwtPayload } from "../../authMock";
-
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
 }));
@@ -27,6 +12,21 @@ import prismaClient from "../../../src/db/prismaClient";
 jest.mock("jsonwebtoken");
 import jwt from "jsonwebtoken";
 
+import request from "supertest";
+import { createApp } from "../../../src/app";
+import { Prisma } from "../../../src/generated/client";
+import { buildJwtPayload } from "../../authMock";
+import { UserRole, AccountStatus } from "../../../src/generated/enums";
+import { 
+  buildAccountRecord
+} from "../../accountMock";
+import { 
+  mockAccountId1,
+  mockMissingAccountId,
+  mockRedisKey,
+  mockSessionId
+} from "../../commonMock";
+
 
 const app = createApp();
 
@@ -36,7 +36,7 @@ const mockedJwtPayloadStandard = buildJwtPayload({ role: UserRole.STANDARD });
 const mockUpdate = prismaClient.account.update as jest.Mock;
 const mockVerify = jwt.verify as jest.Mock;
 beforeEach(async () => {
-  jest.clearAllMocks();
+  jest.resetAllMocks();
   mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
 });
 
