@@ -27,10 +27,7 @@ describe("setupProcessHandlers", () => {
       handlers[event] = handler;
       return process;
     });
-
-    // jest.spyOn(process, "exit").mockImplementation(((code?: number) => {
-    //   throw new Error(`process.exit:${code}`);
-    // }) as any);
+    
     jest.spyOn(process, "exit").mockImplementation(jest.fn() as any);
 
     server = {
