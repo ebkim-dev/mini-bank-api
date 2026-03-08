@@ -17,6 +17,7 @@ export type AccountUpdateInput = {
 };
 
 export type AccountOutput = {
+  id: string;
   customer_id: string;
   type: AccountType;
   currency: string;

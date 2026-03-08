@@ -6,12 +6,8 @@ export function setupProcessHandlers(server: Server) {
   async function gracefulShutdown(code: number) {
     logger.info("Gracefully shutting down...");
 
-    server.close(async () => {
-      try {
-        await redisClient.quit();
-      } finally {
-        process.exit(code);
-      }
+    server.close(() => {
+      redisClient.quit().finally(() => process.exit(code));
     });
   }
 
