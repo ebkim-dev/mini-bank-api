@@ -9,7 +9,7 @@ export const createTransactionBodySchema = z
       .string()
       .refine((val) => {
         const num = Number(val);
-        return !isNaN(num) && num > 0;
+        return !Number.isNaN(num) && num > 0;
       }, { message: "amount must be a positive number" }),
     description: z.string().max(255).optional(),
     category: z.string().max(100).optional(),
@@ -18,12 +18,11 @@ export const createTransactionBodySchema = z
 
 export const getTransactionsQuerySchema = z
   .object({
-    account_id: z.uuid("account_id must be a valid UUID"),
     limit: z
       .string()
       .optional()
       .default("20")
-      .transform((val) => parseInt(val, 10))
+      .transform((val) => Number.parseInt(val, 10))
       .refine((val) => val >= 1 && val <= 100, {
         message: "limit must be between 1 and 100",
       }),
@@ -31,7 +30,7 @@ export const getTransactionsQuerySchema = z
       .string()
       .optional()
       .default("0")
-      .transform((val) => parseInt(val, 10))
+      .transform((val) => Number.parseInt(val, 10))
       .refine((val) => val >= 0, {
         message: "offset must be 0 or greater",
       }),

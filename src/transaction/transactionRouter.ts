@@ -1,13 +1,11 @@
 import { Router } from "express";
 import {
   createTransaction,
-  getTransactions,
   getTransactionById,
 } from "./transactionController";
 import { validate } from "../middleware/validationMiddleware";
 import {
   createTransactionBodySchema,
-  getTransactionsQuerySchema,
   transactionIdParamsSchema,
 } from "./transactionSchemas";
 import { requireAuth } from "../auth/authMiddleware";
@@ -19,13 +17,6 @@ router.post(
   requireAuth(),
   validate(createTransactionBodySchema, "body"),
   createTransaction
-);
-
-router.get(
-  "/",
-  requireAuth(),
-  validate(getTransactionsQuerySchema, "query"),
-  getTransactions
 );
 
 router.get(

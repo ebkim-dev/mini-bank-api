@@ -29,10 +29,17 @@ export async function getTransactions(
   next: NextFunction
 ): Promise<void> {
   try {
-    const query: TransactionQueryInput = (req as any).validated.query;
+    const { id } = (req as any).validated.params;
+    const query = (req as any).validated.query;
     const authInput: AuthInput = req.user;
+
+    const transactionQuery: TransactionQueryInput = {
+      account_id: id,
+      ...query,
+    };
+
     const transactions: TransactionOutput[] =
-      await transactionService.fetchTransactions(query, authInput);
+      await transactionService.fetchTransactions(transactionQuery,authInput);
     res.status(200).json(transactions);
   } catch (err) {
     next(err);

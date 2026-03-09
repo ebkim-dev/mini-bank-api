@@ -32,6 +32,16 @@ export async function insertTransaction(
     });
 
     if (!account) {
+      logEvent(
+        EventCode.ACCOUNT_NOT_FOUND,
+        mapToTransactionFailureEvent(
+          getDurationMs(start),
+          authInput,
+          EventCode.ACCOUNT_NOT_FOUND,
+          undefined,
+          data.account_id
+        )
+      );
       throw NotFoundError(
         EventCode.ACCOUNT_NOT_FOUND,
         "Account not found",
@@ -40,6 +50,16 @@ export async function insertTransaction(
     }
 
     if (account.status !== AccountStatus.ACTIVE) {
+      logEvent(
+        EventCode.ACCOUNT_NOT_ACTIVE,
+        mapToTransactionFailureEvent(
+          getDurationMs(start),
+          authInput,
+          EventCode.ACCOUNT_NOT_ACTIVE,
+          undefined,
+          data.account_id
+        )
+      );
       throw ConflictError(
         EventCode.ACCOUNT_NOT_ACTIVE,
         "Account is not active",
@@ -54,6 +74,16 @@ export async function insertTransaction(
     if (data.type === TransactionType.DEBIT) {
       newBalance = account.balance.minus(amount);
       if (newBalance.lessThan(0)) {
+        logEvent(
+          EventCode.INSUFFICIENT_FUNDS,
+          mapToTransactionFailureEvent(
+            getDurationMs(start),
+            authInput,
+            EventCode.INSUFFICIENT_FUNDS,
+            undefined,
+            data.account_id
+          )
+        );
         throw ConflictError(
           EventCode.INSUFFICIENT_FUNDS,
           "Insufficient funds",
@@ -171,7 +201,6 @@ export async function fetchTransactionById(
     EventCode.TRANSACTION_FETCHED,
     mapToTransactionSuccessEvent(getDurationMs(start), authInput, record)
   );
-
 
   return serializeTransaction(record);
 }

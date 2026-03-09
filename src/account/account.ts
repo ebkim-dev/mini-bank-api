@@ -21,6 +21,8 @@ export type AccountOutput = {
   nickname?: string;
   status: AccountStatus;
   balance: string;
+  created_at: Date;
+  updated_at: Date;
 };
 
 export type AccountSummaryOutput = {

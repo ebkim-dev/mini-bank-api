@@ -204,14 +204,10 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/transactions?account_id={{accountId}}&limit=10&offset=0",
+          "raw": "{{baseUrl}}/accounts/{{accountId}}/transactions?limit=10&offset=0",
           "host": ["{{baseUrl}}"],
-          "path": ["transactions"],
+          "path": ["accounts", "{{accountId}}", "transactions"],
           "query": [
-            {
-              "key": "account_id",
-              "value": "{{accountId}}"
-            },
             {
               "key": "limit",
               "value": "10"
@@ -235,14 +231,10 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/transactions?account_id={{accountId}}&type=CREDIT",
+          "raw": "{{baseUrl}}/accounts/{{accountId}}/transactions?type=CREDIT",
           "host": ["{{baseUrl}}"],
-          "path": ["transactions"],
+          "path": ["accounts", "{{accountId}}", "transactions"],
           "query": [
-            {
-              "key": "account_id",
-              "value": "{{accountId}}"
-            },
             {
               "key": "type",
               "value": "CREDIT"
