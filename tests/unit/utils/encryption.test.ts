@@ -1,9 +1,5 @@
 import { decrypt, encrypt } from "../../../src/utils/encryption";
 
-// beforeEach(() => {
-//   jest.resetAllMocks();
-// })
-
 describe("encryption module", () => {
   it("should encrypt and decrypt correctly", () => {
     const text = "hello world";
