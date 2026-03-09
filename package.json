@@ -4,9 +4,9 @@
   "description": "To make it easy for you to get started with GitLab, here's a list of recommended next steps.",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/start.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/start.js",
     "test:int": "dotenv -e .env.test -- jest tests/integration"
   },
   "repository": {

@@ -19,7 +19,7 @@ jest.mock("../../src/lifecycle", () => ({
 
 import * as appModule from "../../src/app";
 import * as lifecycle from "../../src/lifecycle";
-import { bootstrap } from "../../src/server";
+import { bootstrap } from "../../src/bootstrap";
 
 
 describe("bootstrap", () => {
