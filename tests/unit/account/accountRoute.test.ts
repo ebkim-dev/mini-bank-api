@@ -5,14 +5,12 @@ describe("accountRouter.ts (pure unit)", () => {
   let getMock: jest.Mock;
   let putMock: jest.Mock;
 
-  
   let mockCreateAccount: jest.Mock;
   let mockGetAccountsByCustomerId: jest.Mock;
   let mockGetAccount: jest.Mock;
   let mockUpdateAccount: jest.Mock;
   let mockDeleteAccount: jest.Mock;
 
-  
   let requireAuthMock: jest.Mock;
   let requireRoleMock: jest.Mock;
   let validateMock: jest.Mock;
@@ -85,71 +83,59 @@ describe("accountRouter.ts (pure unit)", () => {
   };
 
   test("registers POST / with correct middlewares and handler (createAccount)", () => {
-    
     const { UserRole } = require("../../../src/generated/enums");
     const { createAccountBodySchema } = require("../../../src/account/accountSchemas");
-    const { jwtPayloadSchema } = require("../../../src/auth/userSchemas");
 
     expect(validateMock).toHaveBeenCalledWith(createAccountBodySchema, "body");
-    expect(validateMock).toHaveBeenCalledWith(jwtPayloadSchema, "user");
-
     expect(requireAuthMock).toHaveBeenCalledTimes(5);
     expect(requireRoleMock).toHaveBeenCalledWith(UserRole.ADMIN);
 
     const call = findCall(postMock, "/");
     expect(call).toBeDefined();
 
-    const [path, mw1, mw2, mw3, mw4, handler] = call as any[];
-
-    expect(path).toBe("/");
-    expect(typeof mw1).toBe("function");
-    expect(typeof mw2).toBe("function");
-    expect(typeof mw3).toBe("function");
-    expect(typeof mw4).toBe("function");
-    expect(handler).toBe(mockCreateAccount);
-
-    expect(mw1).toBe(requireAuthMock.mock.results[0]!.value);
-    expect(mw2).toBe(requireRoleMock.mock.results[0]!.value);
-    expect(mw3).toBe(validateMock.mock.results[0]!.value); // first validate() call: create body
-    expect(mw4).toBe(validateMock.mock.results[1]!.value); // second validate() call: jwt payload
-  });
-
-  test("registers GET / with correct middlewares and handler (getAccountsByCustomerId)", () => {
-    const { getAccountsQuerySchema } = require("../../../src/account/accountSchemas");
-    const { jwtPayloadSchema } = require("../../../src/auth/userSchemas");
-
-    expect(validateMock).toHaveBeenCalledWith(getAccountsQuerySchema, "query");
-    expect(validateMock).toHaveBeenCalledWith(jwtPayloadSchema, "user");
-
-    const call = findCall(getMock, "/");
-    expect(call).toBeDefined();
-
     const [path, mw1, mw2, mw3, handler] = call as any[];
 
     expect(path).toBe("/");
     expect(typeof mw1).toBe("function");
     expect(typeof mw2).toBe("function");
     expect(typeof mw3).toBe("function");
+    expect(handler).toBe(mockCreateAccount);
+
+    expect(mw1).toBe(requireAuthMock.mock.results[0]!.value);
+    expect(mw2).toBe(requireRoleMock.mock.results[0]!.value);
+    expect(mw3).toBe(validateMock.mock.results[0]!.value); // first validate() call: create body
+  });
+
+  test("registers GET / with correct middlewares and handler (getAccountsByCustomerId)", () => {
+    const { getAccountsQuerySchema } = require("../../../src/account/accountSchemas");
+
+    expect(validateMock).toHaveBeenCalledWith(getAccountsQuerySchema, "query");
+
+    const call = findCall(getMock, "/");
+    expect(call).toBeDefined();
+
+    const [path, mw1, mw2, handler] = call as any[];
+
+    expect(path).toBe("/");
+    expect(typeof mw1).toBe("function");
+    expect(typeof mw2).toBe("function");
     expect(handler).toBe(mockGetAccountsByCustomerId);
   });
 
   test("registers GET /:id with correct middlewares and handler (getAccount)", () => {
 
     const { accountIdParamsSchema } = require("../../../src/account/accountSchemas");
-    const { jwtPayloadSchema } = require("../../../src/auth/userSchemas");
 
     expect(validateMock).toHaveBeenCalledWith(accountIdParamsSchema, "params");
-    expect(validateMock).toHaveBeenCalledWith(jwtPayloadSchema, "user");
 
     const call = findCall(getMock, "/:id");
     expect(call).toBeDefined();
 
-    const [path, mw1, mw2, mw3, handler] = call as any[];
+    const [path, mw1, mw2, handler] = call as any[];
 
     expect(path).toBe("/:id");
     expect(typeof mw1).toBe("function");
     expect(typeof mw2).toBe("function");
-    expect(typeof mw3).toBe("function");
     expect(handler).toBe(mockGetAccount);
   });
 
@@ -157,47 +143,40 @@ describe("accountRouter.ts (pure unit)", () => {
     
     const { UserRole } = require("../../../src/generated/enums");
     const { accountIdParamsSchema, updateAccountBodySchema } = require("../../../src/account/accountSchemas");
-    const { jwtPayloadSchema } = require("../../../src/auth/userSchemas");
 
     expect(requireRoleMock).toHaveBeenCalledWith(UserRole.ADMIN);
     expect(validateMock).toHaveBeenCalledWith(accountIdParamsSchema, "params");
     expect(validateMock).toHaveBeenCalledWith(updateAccountBodySchema, "body");
-    expect(validateMock).toHaveBeenCalledWith(jwtPayloadSchema, "user");
 
     const call = findCall(putMock, "/:id");
     expect(call).toBeDefined();
 
-    const [path, mw1, mw2, mw3, mw4, mw5, handler] = call as any[];
+    const [path, mw1, mw2, mw3, mw4, handler] = call as any[];
 
     expect(path).toBe("/:id");
     expect(typeof mw1).toBe("function");
     expect(typeof mw2).toBe("function");
     expect(typeof mw3).toBe("function");
     expect(typeof mw4).toBe("function");
-    expect(typeof mw5).toBe("function");
     expect(handler).toBe(mockUpdateAccount);
   });
 
   test("registers POST /:id/close with correct middlewares and handler (deleteAccount)", () => {
-    
     const { UserRole } = require("../../../src/generated/enums");
     const { accountIdParamsSchema } = require("../../../src/account/accountSchemas");
-    const { jwtPayloadSchema } = require("../../../src/auth/userSchemas");
 
     expect(requireRoleMock).toHaveBeenCalledWith(UserRole.ADMIN);
     expect(validateMock).toHaveBeenCalledWith(accountIdParamsSchema, "params");
-    expect(validateMock).toHaveBeenCalledWith(jwtPayloadSchema, "user");
 
     const call = findCall(postMock, "/:id/close");
     expect(call).toBeDefined();
 
-    const [path, mw1, mw2, mw3, mw4, handler] = call as any[];
+    const [path, mw1, mw2, mw3, handler] = call as any[];
 
     expect(path).toBe("/:id/close");
     expect(typeof mw1).toBe("function");
     expect(typeof mw2).toBe("function");
     expect(typeof mw3).toBe("function");
-    expect(typeof mw4).toBe("function");
     expect(handler).toBe(mockDeleteAccount);
   });
 

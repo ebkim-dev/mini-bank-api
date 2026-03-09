@@ -37,3 +37,8 @@ OK
 127.0.0.1:6379> GET hello
 "world"
 ```
+
+To see Redis commands being run in real time:
+```
+docker exec -it redis-dev redis-cli MONITOR
+```

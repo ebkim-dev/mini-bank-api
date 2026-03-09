@@ -1,9 +1,9 @@
 import request from "supertest";
 import { createApp } from "../../../src/app";
 import { Prisma } from "../../../src/generated/client";
-import { UserRole, AccountStatus } from "../../../src/generated/enums";
-import { buildJwtPayload } from "../../authMock";
+import { AccountStatus, UserRole } from "../../../src/generated/enums";
 import { buildAccountRecord } from "../../accountMock";
+import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
 import { 
   mockAccountId1,
   mockMissingAccountId,
@@ -11,8 +11,13 @@ import {
   mockSessionId
 } from "../../commonMock";
 
+jest.mock("../../../src/utils/encryption", () => ({
+  decrypt: jest.fn()
+}));
+import { decrypt } from "../../../src/utils/encryption";
+
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
+  redisClient: { get: jest.fn() }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -22,21 +27,16 @@ jest.mock("../../../src/db/prismaClient", () => ({
 }));
 import prismaClient from "../../../src/db/prismaClient";
 
-jest.mock("jsonwebtoken");
-import jwt from "jsonwebtoken";
-
-
 const app = createApp();
 
-const mockedJwtPayloadAdmin = buildJwtPayload();
-const mockedJwtPayloadStandard = buildJwtPayload({ role: UserRole.STANDARD });
-
 const mockUpdate = prismaClient.account.update as jest.Mock;
-const mockVerify = jwt.verify as jest.Mock;
+const mockRedisGet = redisClient.get as jest.Mock;
+const mockDecrypt = decrypt as jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
   mockUpdate.mockResolvedValue(buildAccountRecord());
-  mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
+  mockRedisGet.mockResolvedValue(mockEncryptedRedisPayload);
+  mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
 describe("PUT /accounts/:accountId", () => {
@@ -63,7 +63,6 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.body).toMatchObject(toUpdate);
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 
@@ -78,7 +77,6 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.body).toMatchObject(toUpdate);
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 
@@ -93,7 +91,6 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.body).toMatchObject(toUpdate);
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 
@@ -104,7 +101,6 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
   });
 
   test("accountId has invalid format => 400", async () => {
@@ -114,7 +110,6 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
   });
 
   test("Large input string is given (longer than maxLength) => 400", async () => {
@@ -125,7 +120,6 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
   });
 
   test("Account not found for accountId => 404", async () => {
@@ -145,7 +139,6 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 
@@ -161,13 +154,14 @@ describe("PUT /accounts/:accountId", () => {
   });
 
   it('should return 403 given STANDARD role', async() => {
-    mockVerify.mockReturnValue(mockedJwtPayloadStandard);
+    mockDecrypt.mockReturnValue(JSON.stringify(
+      buildAuthInput({ role: UserRole.STANDARD })
+    ));
     const res = await updateAccountRequest({ nickname: "newName" });
 
     expect(res.status).toBe(403);
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
   });
 });

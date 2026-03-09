@@ -104,11 +104,11 @@ describe("app.ts - createApp", () => {
     process.env = ORIGINAL_ENV;
   });
 
-  test("throws if JWT_SECRET env variable is missing", () => {
-    delete process.env.JWT_SECRET;
+  test("throws if ENCRYPTION_KEY env variable is missing", () => {
+    delete process.env.ENCRYPTION_KEY;
     const { createApp } = require("../../src/app");
 
-    expect(() => createApp()).toThrow("Missing JWT_SECRET environment variable");
+    expect(() => createApp()).toThrow("ENCRYPTION_KEY is not defined");
     expect(expressDefaultMock).not.toHaveBeenCalled();
   });
 

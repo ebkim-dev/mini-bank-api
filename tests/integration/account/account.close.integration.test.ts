@@ -1,8 +1,10 @@
 import request from "supertest";
 import { createApp } from "../../../src/app";
 import { Prisma } from "../../../src/generated/client";
-import { UserRole, AccountStatus } from "../../../src/generated/enums";
+import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
+import { AccountStatus, UserRole } from "../../../src/generated/enums";
 import { 
+  buildAccountOutput,
   buildAccountRecord
 } from "../../accountMock";
 import { 
@@ -11,10 +13,9 @@ import {
   mockRedisKey,
   mockSessionId
 } from "../../commonMock";
-import { buildJwtPayload } from "../../authMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
+  redisClient: { get: jest.fn() }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -24,20 +25,20 @@ jest.mock("../../../src/db/prismaClient", () => ({
 }));
 import prismaClient from "../../../src/db/prismaClient";
 
-jest.mock("jsonwebtoken");
-import jwt from "jsonwebtoken";
-
+jest.mock("../../../src/utils/encryption", () => ({
+  decrypt: jest.fn()
+}));
+import { decrypt } from "../../../src/utils/encryption";
 
 const app = createApp();
 
-const mockedJwtPayloadAdmin = buildJwtPayload();
-const mockedJwtPayloadStandard = buildJwtPayload({ role: UserRole.STANDARD });
-
 const mockUpdate = prismaClient.account.update as jest.Mock;
-const mockVerify = jwt.verify as jest.Mock;
+const mockRedisGet = redisClient.get as jest.Mock;
+const mockDecrypt = decrypt as jest.Mock;
 beforeEach(async () => {
   jest.clearAllMocks();
-  mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
+  mockRedisGet.mockResolvedValue(mockEncryptedRedisPayload);
+  mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
 describe("POST /accounts/:accountId/close", () => {
@@ -51,17 +52,19 @@ describe("POST /accounts/:accountId/close", () => {
   }
 
   test("Account found for accountId => 200, account is closed and returned", async () => {
-    const closedStatus = { status: AccountStatus.CLOSED };
-    mockUpdate.mockResolvedValue(buildAccountRecord(closedStatus));
+    mockUpdate.mockResolvedValue(buildAccountRecord({ 
+      status: AccountStatus.CLOSED 
+    }));
 
     const res = await closeAccountRequest();
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
-    expect(res.body).toMatchObject(closedStatus);
+    expect(res.body).toMatchObject(buildAccountOutput({
+      status: AccountStatus.CLOSED 
+    }));
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 
@@ -72,7 +75,6 @@ describe("POST /accounts/:accountId/close", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -90,7 +92,6 @@ describe("POST /accounts/:accountId/close", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 
@@ -112,12 +113,13 @@ describe("POST /accounts/:accountId/close", () => {
     expect(res2.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockUpdate).toHaveBeenCalledTimes(2);
   });
 
   it('should return 403 given STANDARD role', async() => {
-    mockVerify.mockReturnValue(mockedJwtPayloadStandard);
+    mockDecrypt.mockReturnValue(JSON.stringify(
+      buildAuthInput({ role: UserRole.STANDARD })
+    ));
 
     const res = await closeAccountRequest(mockAccountId1);
 
@@ -125,7 +127,6 @@ describe("POST /accounts/:accountId/close", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 });

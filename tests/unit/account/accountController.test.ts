@@ -1,10 +1,9 @@
-
 import * as accountService from "../../../src/account/accountService";
 import * as accountController from "../../../src/account/accountController";
 import { AccountStatus } from "../../../src/generated/enums";
 import { AccountOutput } from "../../../src/account/account";
 import { mockAccountId1, mockCustomerId, mockMissingAccountId } from "../../commonMock";
-import { buildAuthInput, buildJwtPayload } from "../../authMock";
+import { buildAuthInput } from "../../authMock";
 import { buildAccountCreateInput, buildAccountOutput } from "../../accountMock";
 
 const mockAccountOutput1 = buildAccountOutput({ nickname: "alice" });
@@ -30,13 +29,14 @@ afterEach(() => {
 function buildReq(
   overrides: Partial<{ body: any; query: any; params: any; user: any }> = {}
 ) {
-  return { validated: { ...overrides } };
+  const { user, ...rest } = overrides;
+  return { validated: { ...rest }, user };
 }
 
 describe("createAccount controller", () => {
   const req: any = buildReq({ 
     body: buildAccountCreateInput(), 
-    user: buildJwtPayload()
+    user: buildAuthInput()
   });
 
   it("should call insertAccount and return 201 with serialized account", async () => {
@@ -66,7 +66,7 @@ describe("createAccount controller", () => {
 describe("getAccountsByCustomerId controller", () => {
   const req: any = buildReq({ 
     query: { customer_id: mockCustomerId },
-    user: buildJwtPayload()
+    user: buildAuthInput()
   });
 
   it("should call fetchAccountsByCustomerId and return 200 with empty array if no accounts are found", async () => {
@@ -112,7 +112,7 @@ describe("getAccount controller", () => {
   it("should call fetchAccountById and return 200 with serialized account", async () => {
     const req: any = buildReq({ 
       params: { id: mockAccountId1 },
-      user: buildJwtPayload()
+      user: buildAuthInput()
     });
 
     jest.spyOn(accountService, "fetchAccountById").mockResolvedValue(mockAccountOutput1);
@@ -130,7 +130,7 @@ describe("getAccount controller", () => {
   it("should call next when service throws", async () => {
     const req: any = buildReq({ 
       params: { id: mockMissingAccountId },
-      user: buildJwtPayload()
+      user: buildAuthInput()
     });
 
     jest.spyOn(accountService, "fetchAccountById").mockRejectedValue(serviceError);
@@ -145,7 +145,7 @@ describe("updateAccount controller", () => {
   const req: any = buildReq({ 
     params: { id: mockAccountId1 },
     body: { nickname: "asdf" },
-    user: buildJwtPayload()
+    user: buildAuthInput()
   });
 
   it("should call updateAccountById and return 200 with serialized account", async () => {
@@ -182,7 +182,7 @@ describe("deleteAccount controller", () => {
   it("should call deleteAccountById and return 200 with serialized account", async () => {
     const req: any = buildReq({ 
       params: { id: 1n },
-      user: buildJwtPayload()
+      user: buildAuthInput()
     });
     const closedAccountOutput: AccountOutput = {
       ...mockAccountOutput1,
@@ -204,7 +204,7 @@ describe("deleteAccount controller", () => {
   it("should call next when service throws", async () => {
     const req: any = buildReq({ 
       params: { id: mockAccountId1 },
-      user: buildJwtPayload()
+      user: buildAuthInput()
     });
 
     jest.spyOn(accountService, "deleteAccountById").mockRejectedValue(serviceError);

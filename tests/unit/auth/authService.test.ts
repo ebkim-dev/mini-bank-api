@@ -1,7 +1,13 @@
+jest.mock("../../../src/utils/encryption", () => ({
+  encrypt: jest.fn(() => mockEncryptedRedisPayload)
+}));
+import { encrypt } from "../../../src/utils/encryption";
+
 jest.mock("crypto", () => ({
   randomUUID: jest.fn(),
+  randomBytes: jest.fn(),
 }));
-import { randomUUID } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { set: jest.fn() }
@@ -24,11 +30,13 @@ jest.mock('../../../src/db/prismaClient', () => ({
 import prismaClient from '../../../src/db/prismaClient';
 
 import { 
+  buildAuthInput,
   buildLoginInput,
   buildLoginOutput,
   buildRegisterInput,
   buildRegisterOutput,
-  buildUserRecord
+  buildUserRecord,
+  mockEncryptedRedisPayload
 } from "../../authMock";
 import { 
   buildPrismaError,
@@ -38,17 +46,17 @@ import {
 } from "../../errorMock";
 
 import * as authService from "../../../src/auth/authService";
-import jwt from "jsonwebtoken";
 import { REDIS_SESSION_TTL_SEC } from "../../../src/auth/authService";
-import { mockHashedPassword, mockSessionId } from "../../commonMock";
+import { mockHashedPassword, mockRedisKey, mockSessionId } from "../../commonMock";
+import { LoginOutput } from "../../../src/auth/user";
 
 const mockCreate = prismaClient.user.create as jest.Mock;
 const mockFindUnique = prismaClient.user.findUnique as jest.Mock;
-const mockedRandomUUID = randomUUID as jest.Mock;
+const mockRandomUUID = randomUUID as jest.Mock;
 const mockRedisSet = redisClient.set as jest.Mock;
+const mockEncrypt = encrypt as jest.Mock;
 const mockHash = bcrypt.hash as jest.Mock;
 const mockCompare = bcrypt.compare as jest.Mock;
-
 beforeEach(() => {
   jest.resetAllMocks();
   mockHash.mockResolvedValue(mockHashedPassword);
@@ -85,20 +93,22 @@ describe("registerUser service", () => {
 });
 
 describe("loginUser service", () => {
-  it("should return jwt given valid input", async() => {
+  it("should return sessionId given valid input", async() => {
     mockFindUnique.mockResolvedValue(buildUserRecord());
     mockCompare.mockResolvedValue(true);
-    jest.spyOn(jwt, "sign").mockReturnValue("my_json_web_token" as never);
     mockRedisSet.mockResolvedValue("OK");
-    mockedRandomUUID.mockReturnValue(mockSessionId);
+    mockRandomUUID.mockReturnValue(mockSessionId);
+    mockEncrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 
-    const result = await authService.loginUser(buildLoginInput());
+    const result: LoginOutput = await authService.loginUser(
+      buildLoginInput()
+    );
 
     expect(result).toMatchObject(buildLoginOutput());
     expect(mockRedisSet).toHaveBeenCalledWith(
-      expect.stringMatching(/^session:/),
-      "my_json_web_token",
-      { EX: REDIS_SESSION_TTL_SEC }
+      mockRedisKey,
+      JSON.stringify(buildAuthInput()),
+      { expiration: { type: "EX", value: REDIS_SESSION_TTL_SEC } }
     );
   });
 

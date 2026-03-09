@@ -1,11 +1,3 @@
-import type {
-  RegisterInput,
-  LoginInput,
-  RegisterOutput,
-  LoginOutput,
-  JwtPayload,
-} from './user';
-import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import prismaClient from '../db/prismaClient';
 import { UserRole } from "../generated/enums";
@@ -15,15 +7,21 @@ import { getDurationMs } from '../utils/calculateDuration';
 import { ConflictError, UnauthorizedError } from "../error/error";
 import { redisClient } from '../redis/redisClient';
 import { randomUUID } from "crypto";
+import { encrypt } from "../utils/encryption";
 import { 
   ExecutionStatus, 
   AuthSuccessEvent, 
   logEvent, 
   AuthFailureEvent
 } from '../logging/logSchemas';
+import type {
+  RegisterInput,
+  LoginInput,
+  RegisterOutput,
+  LoginOutput,
+  AuthInput,
+} from './user';
 
-const JWT_SECRET = process.env.JWT_SECRET!;
-export const JWT_EXPIRES_IN = 900;
 export const REDIS_SESSION_TTL_SEC = 900; // 15min
 
 export async function registerUser(
@@ -103,21 +101,17 @@ export async function loginUser(
     );
   }
   
-  const payload: JwtPayload = {
-    sub: userRecord.id,
+  const payload: AuthInput = {
+    actorId: userRecord.id,
     role: userRecord.role,
   };
-
-  const token = jwt.sign(
-    payload,
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
-  );
   
   const sessionId = randomUUID();
-  await redisClient.set(`session:${sessionId}`, token, {
-    EX: REDIS_SESSION_TTL_SEC,
-  });
+  await redisClient.set(
+    `session:${sessionId}`,
+    encrypt(JSON.stringify(payload)),
+    { expiration: { type: "EX", value: REDIS_SESSION_TTL_SEC } }
+  );
     
   const event: AuthSuccessEvent = {
     executionStatus: ExecutionStatus.SUCCESS,

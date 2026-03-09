@@ -1,8 +1,6 @@
-import jwt, { SignOptions } from "jsonwebtoken";
 import { User, UserRole } from "../src/generated/client";
 import { 
   AuthInput,
-  JwtPayload,
   LoginInput,
   LoginOutput,
   RegisterInput,
@@ -15,6 +13,8 @@ import {
   mockUserId,
   mockUsername
 } from "./commonMock";
+
+export const mockEncryptedRedisPayload = "encrypted-session";
 
 export function buildRegisterInput(
   overrides: Partial<RegisterInput> = {}
@@ -68,30 +68,6 @@ export function buildUserRecord(
     ...overrides,
   };
   return mockUserRecord;
-}
-
-export function buildJwtPayload(
-  overrides: Partial<JwtPayload> = {}
-): JwtPayload {
-  return {
-    sub: mockUserId,
-    role: UserRole.ADMIN,
-    ...overrides,
-  };
-}
-
-export function buildToken(
-  role: UserRole, 
-  expiresIn: NonNullable<SignOptions["expiresIn"]>
-): string {
-  return jwt.sign(
-    {
-      sub: mockUserId,
-      role: role,
-    },
-    process.env.JWT_SECRET as string,
-    { expiresIn }
-  );
 }
 
 export function buildAuthInput(

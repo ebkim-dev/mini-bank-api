@@ -1,5 +1,5 @@
 import { logger } from "./logging/logger";
-import { bootstrap } from "./server";
+import { bootstrap } from "./bootstrap";
 
 
 if (require.main === module) {

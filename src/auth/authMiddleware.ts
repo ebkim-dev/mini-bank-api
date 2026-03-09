@@ -1,11 +1,16 @@
-
-import type { Request, Response, NextFunction, RequestHandler } from "express";
-import jwt from "jsonwebtoken";
 import { ForbiddenError, UnauthorizedError } from "../error/error";
 import { EventCode } from "../types/eventCodes";
 import { UserRole } from "../generated/enums";
 import { redisClient } from "../redis/redisClient";
+import { AuthInput } from "./user";
+import { decrypt } from "../utils/encryption";
 import z from "zod";
+import type { 
+  Request,
+  Response,
+  NextFunction,
+  RequestHandler
+ } from "express";
 
 export function requireAuth(): RequestHandler {
   return async (req: Request, _res: Response, next: NextFunction) => {
@@ -26,19 +31,14 @@ export function requireAuth(): RequestHandler {
     }
 
     try {
-      const token = await redisClient.get(`session:${sessionId}`);
-      if (!token) {
+      const raw = await redisClient.get(`session:${sessionId}`);
+      if (!raw) {
         return next(
           UnauthorizedError(EventCode.INVALID_TOKEN, "Authentication failed")
         );
       }
-
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET as string
-      );
-
-      req.user = decoded;
+      const session: AuthInput = JSON.parse(decrypt(raw));
+      req.user = session;
 
       return next();
     } catch (err) {
@@ -51,7 +51,7 @@ export function requireAuth(): RequestHandler {
 
 export function requireRole(role: UserRole): RequestHandler {
   return (req: Request, _res: Response, next: NextFunction) => {
-    if (req.user.role !== role) {
+    if (!req.user || req.user.role !== role) {
       return next(
         ForbiddenError(EventCode.FORBIDDEN, "Insufficient permissions")
       );
