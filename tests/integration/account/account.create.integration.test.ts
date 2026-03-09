@@ -8,10 +8,9 @@ import {
   buildAccountRecord,
 } from "../../accountMock";
 import { mockRedisKey, mockSessionId } from "../../commonMock";
-import { buildJwtPayload } from "../../authMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
+  redisClient: { get: jest.fn() }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -20,21 +19,18 @@ jest.mock("../../../src/db/prismaClient", () => ({
   default: { account: { create: jest.fn() } }
 }));
 import prismaClient from "../../../src/db/prismaClient";
-
-jest.mock("jsonwebtoken");
-import jwt from "jsonwebtoken";
+import { buildAuthInput } from "../../authMock";
 
 
 const app = createApp();
 
-const mockedJwtPayloadAdmin = buildJwtPayload();
-const mockedJwtPayloadStandard = buildJwtPayload({ role: UserRole.STANDARD });
-
 const mockCreate = prismaClient.account.create as jest.Mock;
-const mockVerify = jwt.verify as jest.Mock;
+const mockRedisGet = redisClient.get as jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
-  mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
+  mockRedisGet.mockResolvedValue(
+    JSON.stringify(buildAuthInput())
+  );
 });
 
 describe("POST /accounts", () => {
@@ -67,7 +63,6 @@ describe("POST /accounts", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(res.body).toMatchObject(mockAccountCreateOutput);
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockCreate).toHaveBeenCalledTimes(1);
   });
 
@@ -79,7 +74,6 @@ describe("POST /accounts", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(res.body).toMatchObject(buildAccountCreateOutput());
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockCreate).toHaveBeenCalledTimes(1);
   });
 
@@ -90,7 +84,6 @@ describe("POST /accounts", () => {
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -100,7 +93,6 @@ describe("POST /accounts", () => {
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -110,7 +102,6 @@ describe("POST /accounts", () => {
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -120,7 +111,6 @@ describe("POST /accounts", () => {
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -130,7 +120,6 @@ describe("POST /accounts", () => {
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -140,7 +129,6 @@ describe("POST /accounts", () => {
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -150,7 +138,6 @@ describe("POST /accounts", () => {
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -160,7 +147,6 @@ describe("POST /accounts", () => {
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -173,13 +159,14 @@ describe("POST /accounts", () => {
   });
 
   it('should return 403 given STANDARD role', async() => {
-    mockVerify.mockReturnValue(mockedJwtPayloadStandard);
+    mockRedisGet.mockResolvedValue(JSON.stringify(
+      buildAuthInput({ role: UserRole.STANDARD })
+    ));
     const res = await postAccountRequest(buildAccountCreateRequestBody());
 
     expect(res.status).toBe(403);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
 });

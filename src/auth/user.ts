@@ -1,11 +1,6 @@
 
 import { UserRole } from "../generated/enums"
 
-export interface JwtPayload {
-  sub: string;
-  role: UserRole;
-};
-
 export type RegisterInput = {
   username: string;
   password: string;

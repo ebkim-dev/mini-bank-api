@@ -1,7 +1,6 @@
 import request from "supertest";
 import { createApp } from "../../../src/app";
-import { UserRole } from "../../../src/generated/enums";
-import { buildJwtPayload } from "../../authMock";
+import { buildAuthInput } from "../../authMock";
 import { 
   buildAccountCreateOutput,
   buildAccountRecord,
@@ -15,7 +14,7 @@ import {
 } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
+  redisClient: { get: jest.fn() }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -25,20 +24,15 @@ jest.mock("../../../src/db/prismaClient", () => ({
 }));
 import prismaClient from "../../../src/db/prismaClient";
 
-jest.mock("jsonwebtoken");
-import jwt from "jsonwebtoken";
-
-
 const app = createApp();
 
-const mockedJwtPayloadAdmin = buildJwtPayload();
-const mockedJwtPayloadStandard = buildJwtPayload({ role: UserRole.STANDARD });
-
 const mockFindMany = prismaClient.account.findMany as jest.Mock;
-const mockVerify = jwt.verify as jest.Mock;
+const mockRedisGet = redisClient.get as jest.Mock;
 beforeEach(async () => {
   jest.clearAllMocks();
-  mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
+  mockRedisGet.mockResolvedValue(
+    JSON.stringify(buildAuthInput())
+  );
 });
 
 describe("GET /accounts?customerId=...", () => {
@@ -53,7 +47,6 @@ describe("GET /accounts?customerId=...", () => {
   }
 
   test("1+ account found for customerId => 200, array of found accounts is returned", async () => {
-    mockVerify.mockReturnValue(mockedJwtPayloadStandard);
     mockFindMany.mockResolvedValue([
       buildAccountRecord(),
       buildAccountRecord({ id: mockAccountId2 })
@@ -69,7 +62,6 @@ describe("GET /accounts?customerId=...", () => {
     ]);
 
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockFindMany).toHaveBeenCalledTimes(1);
   });
 
@@ -83,7 +75,6 @@ describe("GET /accounts?customerId=...", () => {
     expect(res.body).toEqual([]);
 
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockFindMany).toHaveBeenCalledTimes(1);
   });
 
@@ -94,7 +85,6 @@ describe("GET /accounts?customerId=...", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
   });
 
   test("customerId has invalid format => 400", async () => {
@@ -104,7 +94,6 @@ describe("GET /accounts?customerId=...", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
   });
 
   it('should return 401 given invalid header', async () => {

@@ -1,7 +1,5 @@
 import request from "supertest";
 import { createApp } from "../../../src/app";
-import { UserRole } from "../../../src/generated/enums";
-import { buildJwtPayload } from "../../authMock";
 import { 
   buildAccountCreateOutput,
   buildAccountRecord,
@@ -14,7 +12,7 @@ import {
 } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
+  redisClient: { get: jest.fn() }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -23,21 +21,17 @@ jest.mock("../../../src/db/prismaClient", () => ({
   default: { account: { findUnique: jest.fn() } }
 }));
 import prismaClient from "../../../src/db/prismaClient";
-
-jest.mock("jsonwebtoken");
-import jwt from "jsonwebtoken";
-
+import { buildAuthInput } from "../../authMock";
 
 const app = createApp();
 
-const mockedJwtPayloadAdmin = buildJwtPayload();
-const mockedJwtPayloadStandard = buildJwtPayload({ role: UserRole.STANDARD });
-
 const mockFindUnique = prismaClient.account.findUnique as jest.Mock;
-const mockVerify = jwt.verify as jest.Mock;
+const mockRedisGet = redisClient.get as jest.Mock;
 beforeEach(async () => {
   jest.clearAllMocks();
-  mockVerify.mockReturnValue(mockedJwtPayloadAdmin);
+  mockRedisGet.mockResolvedValue(
+    JSON.stringify(buildAuthInput())
+  );
 });
 
 describe("GET /accounts/:accountId", () => {
@@ -48,7 +42,6 @@ describe("GET /accounts/:accountId", () => {
   }
 
   test("Account found for accountId => 200, account is returned", async () => {
-    mockVerify.mockReturnValue(mockedJwtPayloadStandard);
     mockFindUnique.mockResolvedValue(buildAccountRecord());
 
     const res = await getAccountRequest(mockAccountId1);
@@ -58,7 +51,6 @@ describe("GET /accounts/:accountId", () => {
     expect(res.body).toMatchObject(buildAccountCreateOutput());
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
   });
 
@@ -69,7 +61,6 @@ describe("GET /accounts/:accountId", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
   });
 
   test("Account not found for accountId => 404", async () => {
@@ -81,7 +72,6 @@ describe("GET /accounts/:accountId", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockVerify).toHaveBeenCalled();
   });
 
   it('should return 401 given missing token', async () => {

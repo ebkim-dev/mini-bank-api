@@ -1,26 +1,23 @@
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: { get: jest.fn().mockResolvedValue("mock_jwt_token") }
+  redisClient: { get: jest.fn() }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
-jest.mock("jsonwebtoken");
-import jwt from "jsonwebtoken";
 
 import * as authMiddleware from "../../../src/auth/authMiddleware";
 import { EventCode } from "../../../src/types/eventCodes";
 import { UserRole } from "../../../src/generated/enums";
-import { mockSessionId } from "../../commonMock";
-import { buildJwtPayload } from "../../authMock";
+import { mockRedisKey, mockSessionId } from "../../commonMock";
+import { buildAuthInput } from "../../authMock";
 
 const res: any = {};
-const mockedVerify = jwt.verify as jest.Mock;
 const mockedRedisGet = redisClient.get as jest.Mock;
 const next: jest.Mock = jest.fn();
 beforeEach(() => {
   jest.resetAllMocks();
-  mockedVerify.mockReturnValue(buildJwtPayload());
-  mockedRedisGet.mockResolvedValue("mock_jwt_token");
+  mockedRedisGet.mockResolvedValue(
+    JSON.stringify(buildAuthInput())
+  );
 })
-
 
 describe("requireAuth middleware", () => {
   it("should not throw any errors given valid sessionId", async () => {
@@ -28,13 +25,10 @@ describe("requireAuth middleware", () => {
 
     await authMiddleware.requireAuth()(req, res, next);
 
-    expect(req.user).toEqual(buildJwtPayload());
+    expect(req.user).toEqual(buildAuthInput());
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(next).toHaveBeenCalledTimes(1);
     expect(next).toHaveBeenCalledWith();
-    expect(mockedVerify).toHaveBeenCalledWith(
-      "mock_jwt_token",
-      process.env.JWT_SECRET
-    );
   });
 
   it("should not throw any errors given multiple sessionIds", async () => {
@@ -42,13 +36,9 @@ describe("requireAuth middleware", () => {
 
     await authMiddleware.requireAuth()(req, res, next);
 
-    expect(req.user).toEqual(buildJwtPayload());
+    expect(req.user).toEqual(buildAuthInput());
     expect(next).toHaveBeenCalledTimes(1);
     expect(next).toHaveBeenCalledWith();
-    expect(mockedVerify).toHaveBeenCalledWith(
-      "mock_jwt_token",
-      process.env.JWT_SECRET
-    );
   });
   
   it("should throw 401 given missing sessionId", async () => {
@@ -81,21 +71,21 @@ describe("requireAuth middleware", () => {
     expect(next.mock.calls[0][0]).toBeInstanceOf(Error);
     expect(next.mock.calls[0][0].code).toBe(EventCode.INVALID_TOKEN);
   });
-  
-  it("should throw 401 given expired token", async () => {
-    mockedVerify.mockImplementation(() => {
-      const err: any = new Error("Some invalid token error");
-      err.name = "jwtError";
-      throw err;
-    });
 
+  it("should call next with UnauthorizedError if JSON.parse throws", async () => {
     const req: any = { headers: { "x-session-id": mockSessionId } };
+
+    const spy = jest.spyOn(JSON, "parse").mockImplementation(() => {
+      throw new Error("invalid JSON");
+    });
 
     await authMiddleware.requireAuth()(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
     expect(next.mock.calls[0][0]).toBeInstanceOf(Error);
     expect(next.mock.calls[0][0].code).toBe(EventCode.INVALID_TOKEN);
+
+    spy.mockRestore();
   });
 });
 

@@ -24,6 +24,7 @@ jest.mock('../../../src/db/prismaClient', () => ({
 import prismaClient from '../../../src/db/prismaClient';
 
 import { 
+  buildAuthInput,
   buildLoginInput,
   buildLoginOutput,
   buildRegisterInput,
@@ -38,9 +39,8 @@ import {
 } from "../../errorMock";
 
 import * as authService from "../../../src/auth/authService";
-import jwt from "jsonwebtoken";
 import { REDIS_SESSION_TTL_SEC } from "../../../src/auth/authService";
-import { mockHashedPassword, mockSessionId } from "../../commonMock";
+import { mockHashedPassword, mockRedisKey, mockSessionId } from "../../commonMock";
 
 const mockCreate = prismaClient.user.create as jest.Mock;
 const mockFindUnique = prismaClient.user.findUnique as jest.Mock;
@@ -85,10 +85,9 @@ describe("registerUser service", () => {
 });
 
 describe("loginUser service", () => {
-  it("should return jwt given valid input", async() => {
+  it("should return sessionId given valid input", async() => {
     mockFindUnique.mockResolvedValue(buildUserRecord());
     mockCompare.mockResolvedValue(true);
-    jest.spyOn(jwt, "sign").mockReturnValue("my_json_web_token" as never);
     mockRedisSet.mockResolvedValue("OK");
     mockedRandomUUID.mockReturnValue(mockSessionId);
 
@@ -96,9 +95,9 @@ describe("loginUser service", () => {
 
     expect(result).toMatchObject(buildLoginOutput());
     expect(mockRedisSet).toHaveBeenCalledWith(
-      expect.stringMatching(/^session:/),
-      "my_json_web_token",
-      { EX: REDIS_SESSION_TTL_SEC }
+      mockRedisKey,
+      JSON.stringify(buildAuthInput()),
+      { expiration: { type: "EX", value: REDIS_SESSION_TTL_SEC } }
     );
   });
 

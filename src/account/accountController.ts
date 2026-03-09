@@ -5,7 +5,7 @@ import type {
   AccountOutput,
 } from "./account";
 import * as accountService from "./accountService";
-import type { JwtPayload } from '../auth/user';
+import type { AuthInput } from '../auth/user';
 
 export async function createAccount(
   req: Request,
@@ -14,13 +14,10 @@ export async function createAccount(
 ): Promise<void> {
   try {
     const body: AccountCreateInput = (req as any).validated.body;
-    const jwtPayload: JwtPayload = (req as any).validated.user;
+    const authInput: AuthInput = req.user;
     const newAccount: AccountOutput = await accountService.insertAccount(
       body, 
-      { 
-        actorId: jwtPayload.sub,
-        role: jwtPayload.role
-      }
+      authInput
     );
     res.status(201).json(newAccount);
   } catch (err) {
@@ -35,13 +32,10 @@ export async function getAccountsByCustomerId(
 ): Promise<void> {
   try {
     const { customer_id } = (req as any).validated.query;
-    const jwtPayload: JwtPayload = (req as any).validated.user;
+    const authInput: AuthInput = req.user;
     const accounts: AccountOutput[] = await accountService.fetchAccountsByCustomerId(
       customer_id,
-      { 
-        actorId: jwtPayload.sub,
-        role: jwtPayload.role
-      }
+      authInput
     );
     res.status(200).json(accounts);
   } catch (err) {
@@ -56,13 +50,10 @@ export async function getAccount(
 ): Promise<void> {
   try {
     const { id } = (req as any).validated.params;
-    const jwtPayload: JwtPayload = (req as any).validated.user;
+    const authInput: AuthInput = req.user;
     const account: AccountOutput = await accountService.fetchAccountById(
       id,
-      { 
-        actorId: jwtPayload.sub,
-        role: jwtPayload.role
-      }
+      authInput
     );
     res.status(200).json(account);
   } catch (err) {
@@ -78,14 +69,11 @@ export async function updateAccount(
   try {
     const { id } = (req as any).validated.params;
     const body: AccountUpdateInput = (req as any).validated.body;
-    const jwtPayload: JwtPayload = (req as any).validated.user;
+    const authInput: AuthInput = req.user;
     const updated: AccountOutput = await accountService.updateAccountById(
       id,
       body,
-      { 
-        actorId: jwtPayload.sub,
-        role: jwtPayload.role
-      }
+      authInput
     );
     res.status(200).json(updated);
   } catch (err) {
@@ -100,13 +88,10 @@ export async function deleteAccount(
 ): Promise<void> {
   try {
     const { id } = (req as any).validated.params;
-    const jwtPayload: JwtPayload = (req as any).validated.user;
+    const authInput: AuthInput = req.user;
     const closed: AccountOutput = await accountService.deleteAccountById(
       id,
-      { 
-        actorId: jwtPayload.sub,
-        role: jwtPayload.role
-      }
+      authInput
     );
     res.status(200).json(closed);
   } catch (err) {

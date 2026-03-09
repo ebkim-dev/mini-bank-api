@@ -15,12 +15,6 @@ export const loginBodySchema = z
   })
   .strict();
 
-export const jwtPayloadSchema = z
-  .object({
-    sub: z.uuid("sub must be a valid UUID"),
-    role: z.enum(UserRole),
-  });
-
 export const sessionIdSchema = z
   .object({
     "x-session-id": z.uuid(),

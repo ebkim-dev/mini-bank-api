@@ -1,7 +1,6 @@
 import {
   registerBodySchema,
   loginBodySchema,
-  jwtPayloadSchema,
 } from "../../../src/auth/userSchemas";
 import { UserRole } from "../../../src/generated/enums";
 import { mockUserId } from "../../commonMock";
@@ -82,27 +81,6 @@ describe("userSchemas.ts", () => {
           username: "user001",
           password: "password123",
           test: true,
-        })
-      ).toThrow();
-    });
-  });
-
-  describe("jwtPayloadSchema", () => {
-    test("parses valid JWT payload", () => {
-      const parsed = jwtPayloadSchema.parse({
-        sub: mockUserId,
-        role: UserRole.ADMIN,
-      });
-
-      expect(parsed.sub).toBe(mockUserId);
-      expect(parsed.role).toBe(UserRole.ADMIN);
-    });
-
-    test("rejects invalid role (must be enum value)", () => {
-      expect(() =>
-        jwtPayloadSchema.parse({
-          sub: mockUserId,
-          role: "SUPER_ADMIN",
         })
       ).toThrow();
     });

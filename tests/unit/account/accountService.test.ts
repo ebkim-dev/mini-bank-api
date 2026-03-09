@@ -27,7 +27,6 @@ import {
 } from '../../accountMock';
 import * as accountService from "../../../src/account/accountService";
 import prismaClient from '../../../src/db/prismaClient';
-import { Prisma } from "../../../src/generated/client";
 import { buildAuthInput } from '../../authMock';
 import { buildPrismaError, NOT_FOUND_ERROR_CODE, NOT_FOUND_ERROR_MESSAGE, UNKNOWN_ERROR_CODE, UNKNOWN_ERROR_MESSAGE } from "../../errorMock";
 

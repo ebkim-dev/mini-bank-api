@@ -2,7 +2,6 @@ import jwt, { SignOptions } from "jsonwebtoken";
 import { User, UserRole } from "../src/generated/client";
 import { 
   AuthInput,
-  JwtPayload,
   LoginInput,
   LoginOutput,
   RegisterInput,
@@ -68,16 +67,6 @@ export function buildUserRecord(
     ...overrides,
   };
   return mockUserRecord;
-}
-
-export function buildJwtPayload(
-  overrides: Partial<JwtPayload> = {}
-): JwtPayload {
-  return {
-    sub: mockUserId,
-    role: UserRole.ADMIN,
-    ...overrides,
-  };
 }
 
 export function buildToken(
