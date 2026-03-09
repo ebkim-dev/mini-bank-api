@@ -5,9 +5,8 @@ import { encrypt } from "../../../src/utils/encryption";
 
 jest.mock("crypto", () => ({
   randomUUID: jest.fn(),
-  randomBytes: jest.fn(),
 }));
-import { randomBytes, randomUUID } from "crypto";
+import { randomUUID } from "crypto";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { set: jest.fn() }

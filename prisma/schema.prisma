@@ -10,6 +10,8 @@ datasource db {
 
 model User {
   id            String   @id @default(uuid()) @db.Char(36)
+  customer_id   String   @unique @db.Char(36)
+  customer      Customer @relation(fields: [customer_id], references: [id])
   username      String   @unique @db.VarChar(100)
   password_hash String   @db.VarChar(255)
   role          UserRole @default(STANDARD)
@@ -30,6 +32,7 @@ model Customer {
   last_name     String   @db.VarChar(100)
   email         String   @unique @db.VarChar(150)
   phone         String?  @db.VarChar(30)
+  user          User? 
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt @default(now())
   
