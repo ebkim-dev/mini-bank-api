@@ -1,29 +1,47 @@
 import crypto from "crypto";
 
-const ENCRYPTION_KEY = Buffer.from(
-  process.env.ENCRYPTION_KEY!, // validated in app.ts
-  "hex"
-);
 const IV_LENGTH = 16;
 const TAG_LENGTH = 16;
+const UFT8_FORMAT = "utf8";
+const BASE64_FORMAT = "base64";
+const AES_256_GCM = "aes-256-gcm";
+
+function getKey() {
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key) {
+    throw new Error("Missing ENCRYPTION_KEY");
+  }
+  return Buffer.from(key, "hex");
+}
 
 export function encrypt(text: string): string {
   const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
+  const cipher = crypto.createCipheriv(
+    AES_256_GCM,
+    getKey(),
+    iv
+  );
 
-  const encrypted = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
+  const encrypted = Buffer.concat([
+    cipher.update(text, UFT8_FORMAT),
+    cipher.final()
+  ]);
   const tag = cipher.getAuthTag();
 
-  return Buffer.concat([iv, tag, encrypted]).toString("base64");
+  return Buffer.concat([iv, tag, encrypted]).toString(BASE64_FORMAT);
 }
 
 export function decrypt(encryptedText: string): string {
-  const data = Buffer.from(encryptedText, "base64");
+  const data = Buffer.from(encryptedText, BASE64_FORMAT);
   const iv = data.subarray(0, IV_LENGTH);
   const tag = data.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH);
   const text = data.subarray(IV_LENGTH + TAG_LENGTH);
 
-  const decipher = crypto.createDecipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
+  const decipher = crypto.createDecipheriv(
+    AES_256_GCM, 
+    getKey(), 
+    iv
+  );
   decipher.setAuthTag(tag);
 
   const decrypted = Buffer.concat([
@@ -31,5 +49,5 @@ export function decrypt(encryptedText: string): string {
     decipher.final()
   ]);
 
-  return decrypted.toString("utf8");
+  return decrypted.toString(UFT8_FORMAT);
 }

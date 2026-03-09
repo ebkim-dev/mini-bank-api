@@ -1,7 +1,13 @@
+jest.mock("../../../src/utils/encryption", () => ({
+  encrypt: jest.fn(() => mockEncryptedRedisPayload)
+}));
+import { encrypt } from "../../../src/utils/encryption";
+
 jest.mock("crypto", () => ({
   randomUUID: jest.fn(),
+  randomBytes: jest.fn(),
 }));
-import { randomUUID } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { set: jest.fn() }
@@ -29,7 +35,8 @@ import {
   buildLoginOutput,
   buildRegisterInput,
   buildRegisterOutput,
-  buildUserRecord
+  buildUserRecord,
+  mockEncryptedRedisPayload
 } from "../../authMock";
 import { 
   buildPrismaError,
@@ -41,14 +48,15 @@ import {
 import * as authService from "../../../src/auth/authService";
 import { REDIS_SESSION_TTL_SEC } from "../../../src/auth/authService";
 import { mockHashedPassword, mockRedisKey, mockSessionId } from "../../commonMock";
+import { LoginOutput } from "../../../src/auth/user";
 
 const mockCreate = prismaClient.user.create as jest.Mock;
 const mockFindUnique = prismaClient.user.findUnique as jest.Mock;
-const mockedRandomUUID = randomUUID as jest.Mock;
+const mockRandomUUID = randomUUID as jest.Mock;
 const mockRedisSet = redisClient.set as jest.Mock;
+const mockEncrypt = encrypt as jest.Mock;
 const mockHash = bcrypt.hash as jest.Mock;
 const mockCompare = bcrypt.compare as jest.Mock;
-
 beforeEach(() => {
   jest.resetAllMocks();
   mockHash.mockResolvedValue(mockHashedPassword);
@@ -89,9 +97,12 @@ describe("loginUser service", () => {
     mockFindUnique.mockResolvedValue(buildUserRecord());
     mockCompare.mockResolvedValue(true);
     mockRedisSet.mockResolvedValue("OK");
-    mockedRandomUUID.mockReturnValue(mockSessionId);
+    mockRandomUUID.mockReturnValue(mockSessionId);
+    mockEncrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 
-    const result = await authService.loginUser(buildLoginInput());
+    const result: LoginOutput = await authService.loginUser(
+      buildLoginInput()
+    );
 
     expect(result).toMatchObject(buildLoginOutput());
     expect(mockRedisSet).toHaveBeenCalledWith(

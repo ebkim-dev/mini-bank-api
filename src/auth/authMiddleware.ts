@@ -3,6 +3,7 @@ import { EventCode } from "../types/eventCodes";
 import { UserRole } from "../generated/enums";
 import { redisClient } from "../redis/redisClient";
 import { AuthInput } from "./user";
+import { decrypt } from "../utils/encryption";
 import z from "zod";
 import type { 
   Request,
@@ -10,7 +11,6 @@ import type {
   NextFunction,
   RequestHandler
  } from "express";
-import { decrypt } from "../utils/encryption";
 
 export function requireAuth(): RequestHandler {
   return async (req: Request, _res: Response, next: NextFunction) => {

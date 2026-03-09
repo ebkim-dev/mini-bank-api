@@ -3,13 +3,18 @@ import { createApp } from "../../../src/app";
 import { Prisma } from "../../../src/generated/client";
 import { AccountStatus, UserRole } from "../../../src/generated/enums";
 import { buildAccountRecord } from "../../accountMock";
-import { buildAuthInput } from "../../authMock";
+import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
 import { 
   mockAccountId1,
   mockMissingAccountId,
   mockRedisKey,
   mockSessionId
 } from "../../commonMock";
+
+jest.mock("../../../src/utils/encryption", () => ({
+  decrypt: jest.fn()
+}));
+import { decrypt } from "../../../src/utils/encryption";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn() }
@@ -26,12 +31,12 @@ const app = createApp();
 
 const mockUpdate = prismaClient.account.update as jest.Mock;
 const mockRedisGet = redisClient.get as jest.Mock;
+const mockDecrypt = decrypt as jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
   mockUpdate.mockResolvedValue(buildAccountRecord());
-  mockRedisGet.mockResolvedValue(
-    JSON.stringify(buildAuthInput())
-  );
+  mockRedisGet.mockResolvedValue(mockEncryptedRedisPayload);
+  mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
 describe("PUT /accounts/:accountId", () => {
@@ -149,7 +154,7 @@ describe("PUT /accounts/:accountId", () => {
   });
 
   it('should return 403 given STANDARD role', async() => {
-    mockRedisGet.mockResolvedValue(JSON.stringify(
+    mockDecrypt.mockReturnValue(JSON.stringify(
       buildAuthInput({ role: UserRole.STANDARD })
     ));
     const res = await updateAccountRequest({ nickname: "newName" });

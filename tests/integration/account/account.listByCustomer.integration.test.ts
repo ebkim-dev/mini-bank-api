@@ -1,6 +1,6 @@
 import request from "supertest";
 import { createApp } from "../../../src/app";
-import { buildAuthInput } from "../../authMock";
+import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
 import { 
   buildAccountCreateOutput,
   buildAccountRecord,
@@ -24,15 +24,20 @@ jest.mock("../../../src/db/prismaClient", () => ({
 }));
 import prismaClient from "../../../src/db/prismaClient";
 
+jest.mock("../../../src/utils/encryption", () => ({
+  decrypt: jest.fn()
+}));
+import { decrypt } from "../../../src/utils/encryption";
+
 const app = createApp();
 
 const mockFindMany = prismaClient.account.findMany as jest.Mock;
 const mockRedisGet = redisClient.get as jest.Mock;
+const mockDecrypt = decrypt as jest.Mock;
 beforeEach(async () => {
   jest.clearAllMocks();
-  mockRedisGet.mockResolvedValue(
-    JSON.stringify(buildAuthInput())
-  );
+  mockRedisGet.mockResolvedValue(mockEncryptedRedisPayload);
+  mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
 describe("GET /accounts?customerId=...", () => {

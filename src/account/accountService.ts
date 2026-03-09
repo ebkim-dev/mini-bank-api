@@ -189,9 +189,7 @@ export async function deleteAccountById(
 ): Promise<AccountOutput> {
   const start = process.hrtime.bigint();
 
-  console.log("\n\n\n\nAAAAAAAAAAAAAAAA\n\n\n\n");
   if (authInput.role !== UserRole.ADMIN) {
-    console.log("\n\n\n\nBBBBBBBBBBBBBBBB\n\n\n\n");
     const event: AccountFailByAccountEvent = {
       executionStatus: ExecutionStatus.FAILURE,
       durationMs: getDurationMs(start),

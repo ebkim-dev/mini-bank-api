@@ -8,6 +8,7 @@ import { EventCode } from "../../../src/types/eventCodes";
 import { UserRole } from "../../../src/generated/enums";
 import { mockRedisKey, mockSessionId } from "../../commonMock";
 import { buildAuthInput } from "../../authMock";
+import { encrypt } from "../../../src/utils/encryption";
 
 const res: any = {};
 const mockedRedisGet = redisClient.get as jest.Mock;
@@ -15,7 +16,7 @@ const next: jest.Mock = jest.fn();
 beforeEach(() => {
   jest.resetAllMocks();
   mockedRedisGet.mockResolvedValue(
-    JSON.stringify(buildAuthInput())
+    encrypt(JSON.stringify(buildAuthInput()))
   );
 })
 

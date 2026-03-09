@@ -1,6 +1,7 @@
 import request from "supertest";
 import { createApp } from "../../../src/app";
 import { Decimal } from "@prisma/client/runtime/client";
+import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
 import { UserRole, AccountStatus } from "../../../src/generated/enums";
 import { 
   buildAccountCreateOutput,
@@ -19,18 +20,21 @@ jest.mock("../../../src/db/prismaClient", () => ({
   default: { account: { create: jest.fn() } }
 }));
 import prismaClient from "../../../src/db/prismaClient";
-import { buildAuthInput } from "../../authMock";
 
+jest.mock("../../../src/utils/encryption", () => ({
+  decrypt: jest.fn()
+}));
+import { decrypt } from "../../../src/utils/encryption";
 
 const app = createApp();
 
 const mockCreate = prismaClient.account.create as jest.Mock;
 const mockRedisGet = redisClient.get as jest.Mock;
+const mockDecrypt = decrypt as jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
-  mockRedisGet.mockResolvedValue(
-    JSON.stringify(buildAuthInput())
-  );
+  mockRedisGet.mockResolvedValue(mockEncryptedRedisPayload);
+  mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
 describe("POST /accounts", () => {
@@ -159,7 +163,7 @@ describe("POST /accounts", () => {
   });
 
   it('should return 403 given STANDARD role', async() => {
-    mockRedisGet.mockResolvedValue(JSON.stringify(
+    mockDecrypt.mockReturnValue(JSON.stringify(
       buildAuthInput({ role: UserRole.STANDARD })
     ));
     const res = await postAccountRequest(buildAccountCreateRequestBody());
