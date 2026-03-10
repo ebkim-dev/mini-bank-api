@@ -28,24 +28,38 @@ export async function registerUser(
   data: RegisterInput
 ): Promise<RegisterOutput> {
   const startTime = process.hrtime.bigint();
-  try { 
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+  try {
+    const userRecord = await prismaClient.$transaction(async (tx) => {
+      const createdCustomer = await tx.customer.create({
+        data: {
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email,
+          phone: data.phone ?? null,
+        }
+      });
+      const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    const userRecord = await prismaClient.user.create({ 
-      data: {
-        username: data.username,
-        password_hash: hashedPassword,
-        role: UserRole.STANDARD,
-      }
+      const createdUser = await tx.user.create({ 
+        data: {
+          customer_id: createdCustomer.id,
+          username: data.username,
+          password_hash: hashedPassword,
+          role: UserRole.STANDARD,
+        }
+      });
+
+      return createdUser;
     });
 
-    const serializedId = userRecord.id;
-    const userOutput: RegisterOutput = { id: serializedId };
+    const userOutput: RegisterOutput = { 
+      id: userRecord.id
+    };
     
     const event: AuthSuccessEvent = {
       executionStatus: ExecutionStatus.SUCCESS,
       durationMs: getDurationMs(startTime),
-      userId: serializedId,
+      userId: userRecord.id,
       username: userRecord.username,
       userRole: userRecord.role
     };
@@ -57,18 +71,22 @@ export async function registerUser(
       err instanceof Prisma.PrismaClientKnownRequestError && 
       err.code === "P2002"
     ) {
+      const field = Array.isArray(err.meta?.target) ? err.meta.target[0] : "unknown";
       const event: AuthFailureEvent = {
         executionStatus: ExecutionStatus.FAILURE,
         durationMs: getDurationMs(startTime),
         username: data.username,
-        errorCode: EventCode.USERNAME_ALREADY_EXISTS
+        errorCode: EventCode.UNKNOWN_CONFLICT
       };
-      logEvent(EventCode.USERNAME_ALREADY_EXISTS, event);
+      if (field === "username") {
+        event.errorCode = EventCode.USERNAME_ALREADY_EXISTS;
+      } else if (field === "email") {
+        event.errorCode = EventCode.EMAIL_ALREADY_EXISTS;
+      }
+
+      logEvent(event.errorCode, event);
       
-      throw ConflictError(
-        EventCode.USERNAME_ALREADY_EXISTS, 
-        "Username already exists"
-      );
+      throw ConflictError(event.errorCode, `${field} already exists`);
     }
     throw err;
   }

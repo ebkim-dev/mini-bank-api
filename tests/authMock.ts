@@ -7,8 +7,13 @@ import {
   RegisterOutput
 } from "../src/auth/user";
 import {
+  mockCustomerId,
+  mockEmail,
+  mockFirstName,
   mockHashedPassword,
+  mockLastName,
   mockPassword,
+  mockPhone,
   mockSessionId,
   mockUserId,
   mockUsername
@@ -22,6 +27,10 @@ export function buildRegisterInput(
   return {
     username: mockUsername,
     password: mockPassword,
+    firstName: mockFirstName,
+    lastName: mockLastName,
+    email: mockEmail,
+    phone: mockPhone,
     ...overrides,
   };
 }
@@ -60,6 +69,7 @@ export function buildUserRecord(
   const mockDate = new Date();
   const mockUserRecord: User = {
     id: mockUserId,
+    customer_id: mockCustomerId,
     username: mockUsername,
     password_hash: mockHashedPassword,
     role: UserRole.ADMIN,

@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated"
+  provider     = "prisma-client"
+  output       = "../src/generated"
   moduleFormat = "cjs"
 }
 
@@ -16,7 +16,7 @@ model User {
   password_hash String   @db.VarChar(255)
   role          UserRole @default(STANDARD)
   created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt @default(now())
+  updated_at    DateTime @default(now()) @updatedAt
 
   @@map("users")
 }
@@ -27,33 +27,33 @@ enum UserRole {
 }
 
 model Customer {
-  id            String   @id @default(uuid()) @db.Char(36)
-  first_name    String   @db.VarChar(100)
-  last_name     String   @db.VarChar(100)
-  email         String   @unique @db.VarChar(150)
-  phone         String?  @db.VarChar(30)
-  user          User? 
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt @default(now())
-  
-  accounts      Account[]
+  id         String   @id @default(uuid()) @db.Char(36)
+  first_name String   @db.VarChar(100)
+  last_name  String   @db.VarChar(100)
+  email      String   @unique @db.VarChar(150)
+  phone      String?  @db.VarChar(30)
+  user       User?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  accounts Account[]
 
   @@map("customers")
 }
 
 model Account {
-  id            String        @id @default(uuid()) @db.Char(36)
-  customer_id   String        @db.Char(36)
-  customer      Customer      @relation(fields: [customer_id], references: [id])
+  id          String   @id @default(uuid()) @db.Char(36)
+  customer_id String   @db.Char(36)
+  customer    Customer @relation(fields: [customer_id], references: [id])
 
-  type          AccountType     
-  currency      String        @db.VarChar(3)
-  nickname      String?       @db.VarChar(100)
-  status        AccountStatus @default(ACTIVE)
-  balance       Decimal       @db.Decimal(12, 2) @default(0.00)
-  
-  created_at    DateTime      @default(now())
-  updated_at    DateTime      @updatedAt @default(now())
+  type     AccountType
+  currency String        @db.VarChar(3)
+  nickname String?       @db.VarChar(100)
+  status   AccountStatus @default(ACTIVE)
+  balance  Decimal       @default(0.00) @db.Decimal(12, 2)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
 
   @@index([customer_id])
   @@map("accounts")
@@ -68,4 +68,3 @@ enum AccountStatus {
   ACTIVE
   CLOSED
 }
-

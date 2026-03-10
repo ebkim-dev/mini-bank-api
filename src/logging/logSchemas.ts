@@ -24,7 +24,7 @@ export interface AuthSuccessEvent extends BaseEvent {
 
 export interface AuthFailureEvent extends BaseEvent {
   username: string;
-  errorCode: string;
+  errorCode: EventCode;
 }
 
 export interface AccountBaseEvent extends BaseEvent {
@@ -53,7 +53,7 @@ export interface ManyAccountSuccessEvent extends AccountBaseEvent {
 
 // ==== Account (Failure) ====
 export interface AccountFailureBaseEvent extends AccountBaseEvent {
-  errorCode: string;
+  errorCode: EventCode;
 }
 
 export interface AccountFailByCustomerEvent extends AccountFailureBaseEvent {

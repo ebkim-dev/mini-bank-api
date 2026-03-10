@@ -1,5 +1,3 @@
-
-
 import { AccountType, AccountStatus } from "../generated/enums";
 
 export type AccountCreateInput = {

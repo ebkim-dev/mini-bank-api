@@ -1,9 +1,12 @@
-
 import { UserRole } from "../generated/enums"
 
 export type RegisterInput = {
   username: string;
   password: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
 };
 
 export type LoginInput = {

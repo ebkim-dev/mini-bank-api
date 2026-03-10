@@ -1,10 +1,13 @@
 import { z } from "zod";
-import { UserRole } from "../generated/enums";
 
 export const registerBodySchema = z
   .object({
     username: z.string().min(3).max(32),
     password: z.string().min(8).max(128),
+    firstName: z.string().trim().min(1).max(100),
+    lastName: z.string().trim().min(1).max(100),
+    email: z.email().max(150),
+    phone: z.string().trim().max(30).optional()
   })
   .strict();
 
