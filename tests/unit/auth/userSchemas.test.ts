@@ -2,8 +2,6 @@ import {
   registerBodySchema,
   loginBodySchema,
 } from "../../../src/auth/userSchemas";
-import { UserRole } from "../../../src/generated/enums";
-import { mockUserId } from "../../commonMock";
 
 describe("userSchemas.ts", () => {
   describe("registerBodySchema", () => {
