@@ -5,9 +5,8 @@ import { encrypt } from "../../../src/utils/encryption";
 
 jest.mock("crypto", () => ({
   randomUUID: jest.fn(),
-  randomBytes: jest.fn(),
 }));
-import { randomBytes, randomUUID } from "crypto";
+import { randomUUID } from "crypto";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { set: jest.fn() }
@@ -20,17 +19,28 @@ jest.mock("bcrypt", () => ({
 }));
 import bcrypt from "bcrypt";
 
-jest.mock('../../../src/db/prismaClient', () => ({
+const mockUserCreate = jest.fn();
+const mockCustomerCreate = jest.fn();
+
+jest.mock("../../../src/db/prismaClient", () => ({
   __esModule: true,
-  default: { user: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-  }}
+  default: {
+    $transaction: jest.fn(async (callback) => {
+      return callback({
+        user: { create: mockUserCreate },
+        customer: { create: mockCustomerCreate },
+      });
+    }),
+    user: {
+      findUnique: jest.fn(),
+    }
+  },
 }));
-import prismaClient from '../../../src/db/prismaClient';
+import prismaClient from "../../../src/db/prismaClient";
 
 import { 
   buildAuthInput,
+  buildCustomerRecord,
   buildLoginInput,
   buildLoginOutput,
   buildRegisterInput,
@@ -47,10 +57,9 @@ import {
 
 import * as authService from "../../../src/auth/authService";
 import { REDIS_SESSION_TTL_SEC } from "../../../src/auth/authService";
-import { mockHashedPassword, mockRedisKey, mockSessionId } from "../../commonMock";
+import { mockCustomerId, mockHashedPassword, mockPhone, mockRedisKey, mockSessionId } from "../../commonMock";
 import { LoginOutput } from "../../../src/auth/user";
 
-const mockCreate = prismaClient.user.create as jest.Mock;
 const mockFindUnique = prismaClient.user.findUnique as jest.Mock;
 const mockRandomUUID = randomUUID as jest.Mock;
 const mockRedisSet = redisClient.set as jest.Mock;
@@ -58,33 +67,76 @@ const mockEncrypt = encrypt as jest.Mock;
 const mockHash = bcrypt.hash as jest.Mock;
 const mockCompare = bcrypt.compare as jest.Mock;
 beforeEach(() => {
-  jest.resetAllMocks();
+  jest.clearAllMocks();
   mockHash.mockResolvedValue(mockHashedPassword);
+  mockCustomerCreate.mockResolvedValue(
+    buildCustomerRecord({ id: mockCustomerId })
+  );
+  mockUserCreate.mockResolvedValue(buildUserRecord());
 });
 
 describe("registerUser service", () => {
   it("should return user DTO given valid input", async () => {
-    mockCreate.mockResolvedValue(buildUserRecord());
+    await expect(authService.registerUser(
+      buildRegisterInput({
+        phone: mockPhone
+      }))).resolves.toMatchObject(buildRegisterOutput());
+  });
 
-    await expect(
-      authService.registerUser(buildRegisterInput())
-    ).resolves.toMatchObject(buildRegisterOutput());
+  it("should return user DTO without optional fields", async () => {
+    await expect(authService.registerUser(
+      buildRegisterInput()
+    )).resolves.toMatchObject(buildRegisterOutput());
   });
 
   it("should throw an error for a duplicate username", async () => {
-    mockCreate.mockRejectedValue(
-      buildPrismaError(CONFLICT_ERROR_MESSAGE, CONFLICT_ERROR_CODE)
-    );
+    const err = buildPrismaError(CONFLICT_ERROR_MESSAGE, CONFLICT_ERROR_CODE);
+    err.meta = { target: ["username"] };
+
+    mockUserCreate.mockRejectedValue(err);
    
     await expect(
       authService.registerUser(buildRegisterInput())
-    ).rejects.toThrow("Username already exists");
+    ).rejects.toThrow("username already exists");
+  });
+
+  it("should throw an error for a duplicate email", async () => {
+    const err = buildPrismaError(CONFLICT_ERROR_MESSAGE, CONFLICT_ERROR_CODE);
+    err.meta = { target: ["email"] };
+
+    mockUserCreate.mockRejectedValue(err);
+   
+    await expect(
+      authService.registerUser(buildRegisterInput())
+    ).rejects.toThrow("email already exists");
+  })
+
+  it("should throw an error given a singular err.meta.target", async () => {
+    const err = buildPrismaError(CONFLICT_ERROR_MESSAGE, CONFLICT_ERROR_CODE);
+    err.meta = { target: "not-an-array" };
+
+    mockUserCreate.mockRejectedValue(err);
+   
+    await expect(
+      authService.registerUser(buildRegisterInput())
+    ).rejects.toThrow("Unique constraint failed");
+  });
+
+  it("should throw an error for an unknown conflict", async () => {
+    const err = buildPrismaError(CONFLICT_ERROR_MESSAGE, CONFLICT_ERROR_CODE);
+    err.meta = { target: ["unknown"] };
+
+    mockUserCreate.mockRejectedValue(err);
+   
+    await expect(
+      authService.registerUser(buildRegisterInput())
+    ).rejects.toThrow("Unique constraint failed");
   });
     
   it("should rethrow for an unknown error", async () => {
     const unknownError = new Error(UNKNOWN_ERROR_MESSAGE);
 
-    mockCreate.mockRejectedValue(unknownError);
+    mockUserCreate.mockRejectedValue(unknownError);
    
     await expect(
       authService.registerUser(buildRegisterInput())

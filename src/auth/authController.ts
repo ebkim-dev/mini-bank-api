@@ -2,8 +2,8 @@ import type { Request, Response, NextFunction } from "express";
 import * as authService from "./authService";
 import type {
   RegisterInput,
-  LoginInput,
   RegisterOutput,
+  LoginInput,
   LoginOutput,
 } from './user';
 

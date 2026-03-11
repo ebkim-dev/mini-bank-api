@@ -4,6 +4,9 @@ components:
       required:
         - username
         - password
+        - firstName
+        - lastName
+        - email
       type: object
       properties:
         username:
@@ -15,9 +18,27 @@ components:
           type: string
           minLength: 8
           maxLength: 128
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        email:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 30
       example:
-        username: "alice"
+        username: "alice1234"
         password: "12345678"
+        firstName: "Alice"
+        lastName: "Smith"
+        email: "alice.smith@gmail.com"
+        phone: "1234567890"
     RegisterResponse:
       required:
         - id

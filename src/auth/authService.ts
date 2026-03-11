@@ -28,24 +28,38 @@ export async function registerUser(
   data: RegisterInput
 ): Promise<RegisterOutput> {
   const startTime = process.hrtime.bigint();
-  try { 
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+  try {
+    const userRecord = await prismaClient.$transaction(async (tx) => {
+      const createdCustomer = await tx.customer.create({
+        data: {
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email,
+          phone: data.phone ?? null,
+        }
+      });
+      const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    const userRecord = await prismaClient.user.create({ 
-      data: {
-        username: data.username,
-        password_hash: hashedPassword,
-        role: UserRole.STANDARD,
-      }
+      const createdUser = await tx.user.create({ 
+        data: {
+          customer_id: createdCustomer.id,
+          username: data.username,
+          password_hash: hashedPassword,
+          role: UserRole.STANDARD,
+        }
+      });
+
+      return createdUser;
     });
 
-    const serializedId = userRecord.id;
-    const userOutput: RegisterOutput = { id: serializedId };
+    const userOutput: RegisterOutput = { 
+      id: userRecord.id
+    };
     
     const event: AuthSuccessEvent = {
       executionStatus: ExecutionStatus.SUCCESS,
       durationMs: getDurationMs(startTime),
-      userId: serializedId,
+      userId: userRecord.id,
       username: userRecord.username,
       userRole: userRecord.role
     };
@@ -61,14 +75,25 @@ export async function registerUser(
         executionStatus: ExecutionStatus.FAILURE,
         durationMs: getDurationMs(startTime),
         username: data.username,
-        errorCode: EventCode.USERNAME_ALREADY_EXISTS
+        errorCode: EventCode.UNKNOWN_CONFLICT
       };
-      logEvent(EventCode.USERNAME_ALREADY_EXISTS, event);
+      if (!Array.isArray(err.meta?.target)) {
+        logEvent(event.errorCode, event);
+        throw err;
+      }
       
-      throw ConflictError(
-        EventCode.USERNAME_ALREADY_EXISTS, 
-        "Username already exists"
-      );
+      const field = err.meta.target[0];
+      if (field === "username") {
+        event.errorCode = EventCode.USERNAME_ALREADY_EXISTS;
+      } else if (field === "email") {
+        event.errorCode = EventCode.EMAIL_ALREADY_EXISTS;
+      } else {
+        logEvent(event.errorCode, event);
+        throw err;
+      }
+
+      logEvent(event.errorCode, event);
+      throw ConflictError(event.errorCode, `${field} already exists`);
     }
     throw err;
   }

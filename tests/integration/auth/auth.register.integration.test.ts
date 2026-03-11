@@ -2,7 +2,9 @@ import request from "supertest";
 import { createApp } from "../../../src/app";
 import { Prisma } from "../../../src/generated/client";
 import { RegisterInput } from "../../../src/auth/user";
+import { mockCustomerId } from "../../commonMock";
 import { 
+  buildCustomerRecord,
   buildRegisterInput, 
   buildRegisterOutput,
   buildUserRecord, 
@@ -19,18 +21,30 @@ jest.mock("bcrypt", () => ({
 }));
 import bcrypt from "bcrypt";
 
+const mockUserCreate = jest.fn();
+const mockCustomerCreate = jest.fn();
+
 jest.mock("../../../src/db/prismaClient", () => ({
   __esModule: true,
-  default: { user: { create: jest.fn() } }
+  default: {
+    $transaction: jest.fn(async (callback) => {
+      return callback({
+        user: { create: mockUserCreate },
+        customer: { create: mockCustomerCreate },
+      });
+    }),
+  },
 }));
 import prismaClient from "../../../src/db/prismaClient";
 
 const app = createApp();
 
-const mockCreate = prismaClient.user.create as jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
-  mockCreate.mockResolvedValue(buildUserRecord());
+  mockCustomerCreate.mockResolvedValue(
+    buildCustomerRecord({ id: mockCustomerId })
+  );
+  mockUserCreate.mockResolvedValue(buildUserRecord());
 });
 
 describe("POST /auth/register", () => {
@@ -134,12 +148,13 @@ describe("POST /auth/register", () => {
 
   test("Duplicate username => 409", async () => {
     const mockError = { code: "P2002" } as any;
+    mockError.meta = { target: ["username"] };
     Object.setPrototypeOf(
       mockError,
       Prisma.PrismaClientKnownRequestError.prototype
     );
     
-    mockCreate
+    mockUserCreate
       .mockResolvedValueOnce(buildUserRecord())
       .mockRejectedValueOnce(mockError);
 

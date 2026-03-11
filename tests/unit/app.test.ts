@@ -47,8 +47,8 @@ describe("app.ts - createApp", () => {
         mockExpress = jest.fn(() => mockApp);
         mockExpress.json = expressJsonMock;
         return {
-            __esModule: true,
-            default: mockExpress,
+          __esModule: true,
+          default: mockExpress,
         };
     });
 
