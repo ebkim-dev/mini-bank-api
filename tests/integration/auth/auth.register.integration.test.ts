@@ -4,6 +4,7 @@ import { Prisma } from "../../../src/generated/client";
 import { RegisterInput } from "../../../src/auth/user";
 import { mockCustomerId } from "../../commonMock";
 import { 
+  buildCustomerRecord,
   buildRegisterInput, 
   buildRegisterOutput,
   buildUserRecord, 
@@ -22,17 +23,16 @@ import bcrypt from "bcrypt";
 
 const mockUserCreate = jest.fn();
 const mockCustomerCreate = jest.fn();
-const mockTransaction = jest.fn(async (callback) => {
-  return callback({
-    user: { create: mockUserCreate },
-    customer: { create: mockCustomerCreate },
-  });
-});
 
 jest.mock("../../../src/db/prismaClient", () => ({
   __esModule: true,
   default: {
-    $transaction: mockTransaction,
+    $transaction: jest.fn(async (callback) => {
+      return callback({
+        user: { create: mockUserCreate },
+        customer: { create: mockCustomerCreate },
+      });
+    }),
   },
 }));
 import prismaClient from "../../../src/db/prismaClient";
@@ -41,9 +41,9 @@ const app = createApp();
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockCustomerCreate.mockResolvedValue({
-    id: mockCustomerId,
-  });
+  mockCustomerCreate.mockResolvedValue(
+    buildCustomerRecord({ id: mockCustomerId })
+  );
   mockUserCreate.mockResolvedValue(buildUserRecord());
 });
 
@@ -148,12 +148,13 @@ describe("POST /auth/register", () => {
 
   test("Duplicate username => 409", async () => {
     const mockError = { code: "P2002" } as any;
+    mockError.meta = { target: ["username"] };
     Object.setPrototypeOf(
       mockError,
       Prisma.PrismaClientKnownRequestError.prototype
     );
     
-    mockCreate
+    mockUserCreate
       .mockResolvedValueOnce(buildUserRecord())
       .mockRejectedValueOnce(mockError);
 

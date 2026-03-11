@@ -71,21 +71,28 @@ export async function registerUser(
       err instanceof Prisma.PrismaClientKnownRequestError && 
       err.code === "P2002"
     ) {
-      const field = Array.isArray(err.meta?.target) ? err.meta.target[0] : "unknown";
       const event: AuthFailureEvent = {
         executionStatus: ExecutionStatus.FAILURE,
         durationMs: getDurationMs(startTime),
         username: data.username,
         errorCode: EventCode.UNKNOWN_CONFLICT
       };
+      if (!Array.isArray(err.meta?.target)) {
+        logEvent(event.errorCode, event);
+        throw err;
+      }
+      
+      const field = err.meta.target[0];
       if (field === "username") {
         event.errorCode = EventCode.USERNAME_ALREADY_EXISTS;
       } else if (field === "email") {
         event.errorCode = EventCode.EMAIL_ALREADY_EXISTS;
+      } else {
+        logEvent(event.errorCode, event);
+        throw err;
       }
 
       logEvent(event.errorCode, event);
-      
       throw ConflictError(event.errorCode, `${field} already exists`);
     }
     throw err;

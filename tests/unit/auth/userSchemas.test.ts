@@ -2,19 +2,22 @@ import {
   registerBodySchema,
   loginBodySchema,
 } from "../../../src/auth/userSchemas";
+import { mockEmail, mockFirstName, mockLastName, mockPassword, mockUsername } from "../../commonMock";
 
 describe("userSchemas.ts", () => {
   describe("registerBodySchema", () => {
     test("parses valid register body", () => {
-      const parsed = registerBodySchema.parse({
-        username: "srey123",
-        password: "password123",
-      });
+      const registerBody = {
+        username: mockUsername,
+        password: mockPassword,
+        firstName: mockFirstName,
+        lastName: mockLastName,
+        email: mockEmail,
+      };
 
-      expect(parsed).toEqual({
-        username: "srey123",
-        password: "password123",
-      });
+      const parsed = registerBodySchema.parse(registerBody);
+
+      expect(parsed).toEqual(registerBody);
     });
 
     test("rejects username shorter than 3", () => {

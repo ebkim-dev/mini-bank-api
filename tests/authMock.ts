@@ -1,4 +1,4 @@
-import { User, UserRole } from "../src/generated/client";
+import { Customer, User, UserRole } from "../src/generated/client";
 import { 
   AuthInput,
   LoginInput,
@@ -30,7 +30,6 @@ export function buildRegisterInput(
     firstName: mockFirstName,
     lastName: mockLastName,
     email: mockEmail,
-    phone: mockPhone,
     ...overrides,
   };
 }
@@ -67,7 +66,7 @@ export function buildUserRecord(
   overrides: Partial<User> = {}
 ): User {
   const mockDate = new Date();
-  const mockUserRecord: User = {
+  return {
     id: mockUserId,
     customer_id: mockCustomerId,
     username: mockUsername,
@@ -77,7 +76,6 @@ export function buildUserRecord(
     updated_at: mockDate,
     ...overrides,
   };
-  return mockUserRecord;
 }
 
 export function buildAuthInput(
@@ -86,6 +84,22 @@ export function buildAuthInput(
   return {
     actorId: mockUserId,
     role: UserRole.ADMIN,
+    ...overrides,
+  };
+}
+
+export function buildCustomerRecord(
+  overrides: Partial<Customer> = {}
+): Customer {
+  const mockDate = new Date();
+  return {
+    id: mockCustomerId,
+    first_name: mockFirstName,
+    last_name: mockLastName,
+    email: mockEmail,
+    phone: mockPhone,
+    created_at: mockDate,
+    updated_at: mockDate,
     ...overrides,
   };
 }
