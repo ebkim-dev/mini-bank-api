@@ -11,7 +11,6 @@ import { validate } from "../middleware/validationMiddleware";
 import {
   createAccountBodySchema,
   updateAccountBodySchema,
-  getAccountsQuerySchema,
   accountIdParamsSchema,
 } from "./accountSchemas";
 import { requireAuth } from "../auth/authMiddleware";
@@ -28,7 +27,6 @@ router.post(
 router.get(
   "/",
   requireAuth(),
-  validate(getAccountsQuerySchema, "query"),
   getAccountsByCustomerId
 );
 
