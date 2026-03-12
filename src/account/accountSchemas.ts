@@ -8,15 +8,8 @@ export const accountIdParamsSchema = z
   })
   .strict();
 
-export const getAccountsQuerySchema = z
-  .object({
-    customer_id: z.uuid("customerId must be a valid UUID"),
-  })
-  .strict();
-
 export const createAccountBodySchema = z
   .object({
-    customer_id: z.uuid("customerId must be a valid UUID"),
     type: z.enum(AccountType),
     currency: z
       .string()
