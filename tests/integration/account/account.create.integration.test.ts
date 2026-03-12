@@ -161,16 +161,4 @@ describe("POST /accounts", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(mockCreate).not.toHaveBeenCalled();
   });
-
-  it('should return 403 given STANDARD role', async() => {
-    mockDecrypt.mockReturnValue(JSON.stringify(
-      buildAuthInput({ role: UserRole.STANDARD })
-    ));
-    const res = await postAccountRequest(buildAccountCreateRequestBody());
-
-    expect(res.status).toBe(403);
-    expect(res.headers).toHaveProperty("x-trace-id");
-    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockCreate).not.toHaveBeenCalled();
-  });
 });

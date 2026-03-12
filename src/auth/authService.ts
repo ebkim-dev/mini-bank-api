@@ -8,10 +8,10 @@ import { ConflictError, UnauthorizedError } from "../error/error";
 import { redisClient } from '../redis/redisClient';
 import { randomUUID } from "crypto";
 import { encrypt } from "../utils/encryption";
+import { logger } from '../logging/logger';
 import { 
   ExecutionStatus, 
   AuthSuccessEvent, 
-  logEvent, 
   AuthFailureEvent
 } from '../logging/logSchemas';
 import type {
@@ -63,7 +63,7 @@ export async function registerUser(
       username: userRecord.username,
       userRole: userRecord.role
     };
-    logEvent(EventCode.USER_REGISTERED, event);
+    logger.info(EventCode.USER_REGISTERED, event);
 
     return userOutput;
   } catch (err) {
@@ -78,7 +78,7 @@ export async function registerUser(
         errorCode: EventCode.UNKNOWN_CONFLICT
       };
       if (!Array.isArray(err.meta?.target)) {
-        logEvent(event.errorCode, event);
+        logger.info(event.errorCode, event);
         throw err;
       }
       
@@ -88,11 +88,11 @@ export async function registerUser(
       } else if (field === "email") {
         event.errorCode = EventCode.EMAIL_ALREADY_EXISTS;
       } else {
-        logEvent(event.errorCode, event);
+        logger.info(event.errorCode, event);
         throw err;
       }
 
-      logEvent(event.errorCode, event);
+      logger.info(event.errorCode, event);
       throw ConflictError(event.errorCode, `${field} already exists`);
     }
     throw err;
@@ -118,7 +118,7 @@ export async function loginUser(
       username: data.username,
       errorCode: EventCode.INVALID_CREDENTIALS
     };
-    logEvent(EventCode.INVALID_CREDENTIALS, event);
+    logger.info(EventCode.INVALID_CREDENTIALS, event);
 
     throw UnauthorizedError(
       EventCode.INVALID_CREDENTIALS, 
@@ -129,6 +129,7 @@ export async function loginUser(
   const payload: AuthInput = {
     actorId: userRecord.id,
     role: userRecord.role,
+    customerId: userRecord.customer_id,
   };
   
   const sessionId = randomUUID();
@@ -145,7 +146,7 @@ export async function loginUser(
     username: userRecord.username,
     userRole: userRecord.role
   };
-  logEvent(EventCode.LOGIN_SUCCESS, event);
+  logger.info(EventCode.LOGIN_SUCCESS, event);
 
   return { sessionId };
 }

@@ -7,6 +7,7 @@ import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
 import { 
   mockAccountId1,
   mockMissingAccountId,
+  mockMissingCustomerId,
   mockRedisKey,
   mockSessionId
 } from "../../commonMock";
@@ -23,12 +24,16 @@ import { redisClient } from "../../../src/redis/redisClient";
 
 jest.mock("../../../src/db/prismaClient", () => ({
   __esModule: true,
-  default: { account: { update: jest.fn() } }
+  default: { account: {
+    findUnique: jest.fn(),
+    update: jest.fn(),
+  } }
 }));
 import prismaClient from "../../../src/db/prismaClient";
 
 const app = createApp();
 
+const mockFindUnique = prismaClient.account.findUnique as jest.Mock;
 const mockUpdate = prismaClient.account.update as jest.Mock;
 const mockRedisGet = redisClient.get as jest.Mock;
 const mockDecrypt = decrypt as jest.Mock;
@@ -54,6 +59,7 @@ describe("PUT /accounts/:accountId", () => {
   test("nickname and status are both given => 200, account is updated and returned", async () => {
     const toUpdate = { nickname: "newNick", status: AccountStatus.CLOSED };
 
+    mockFindUnique.mockResolvedValue(buildAccountRecord());
     mockUpdate.mockResolvedValue(buildAccountRecord(toUpdate));
 
     const res = await updateAccountRequest(toUpdate);
@@ -68,6 +74,7 @@ describe("PUT /accounts/:accountId", () => {
 
   test("nickname only is given => 200, account is updated and returned", async () => {
     const toUpdate = { nickname: "onlyNick" };
+    mockFindUnique.mockResolvedValue(buildAccountRecord());
     mockUpdate.mockResolvedValue(buildAccountRecord(toUpdate));
 
     const res = await updateAccountRequest(toUpdate);
@@ -82,6 +89,7 @@ describe("PUT /accounts/:accountId", () => {
 
   test("status only is given => 200, account is updated and returned", async () => {
     const toUpdate = { status: AccountStatus.CLOSED };
+    mockFindUnique.mockResolvedValue(buildAccountRecord());
     mockUpdate.mockResolvedValue(buildAccountRecord(toUpdate));
 
     const res = await updateAccountRequest(toUpdate);
@@ -125,43 +133,46 @@ describe("PUT /accounts/:accountId", () => {
   test("Account not found for accountId => 404", async () => {
     const mockError = { code: "P2025" } as any;
     Object.setPrototypeOf(
-      mockError,
-      Prisma.PrismaClientKnownRequestError.prototype
+      mockError, Prisma.PrismaClientKnownRequestError.prototype
     );
-    mockUpdate.mockRejectedValue(mockError);
+    mockFindUnique.mockResolvedValue(null);
 
     const res = await updateAccountRequest(
-      { nickname: "x" }, 
-      mockMissingAccountId
+      { nickname: "x" }, mockMissingAccountId
     );
 
     expect(res.status).toBe(404);
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    expect(mockFindUnique).toHaveBeenCalledTimes(1);
+    expect(mockUpdate).toHaveBeenCalledTimes(0);
   });
 
-  it('should return 401 given invalid token', async () => {
+  it('should return 401 given invalid session ID', async () => {
     const res = await updateAccountRequest(
-      { nickname: "newName" },
-      mockAccountId1,
-      "WRONG_SESSION_ID"
+      { nickname: "newName" }, mockAccountId1, "WRONG_SESSION_ID"
     );
 
     expect(res.status).toBe(401);
     expect(res.headers).toHaveProperty("x-trace-id");
   });
+  
+  test("Account not owned by customer => 403", async () => {
+    mockFindUnique.mockResolvedValue(buildAccountRecord());
+    mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput({
+      customerId: mockMissingCustomerId
+    })));
 
-  it('should return 403 given STANDARD role', async() => {
-    mockDecrypt.mockReturnValue(JSON.stringify(
-      buildAuthInput({ role: UserRole.STANDARD })
-    ));
-    const res = await updateAccountRequest({ nickname: "newName" });
+    const res = await updateAccountRequest(
+      { nickname: "x" }, mockAccountId1
+    );
 
     expect(res.status).toBe(403);
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+    expect(mockFindUnique).toHaveBeenCalledTimes(1);
+    expect(mockUpdate).toHaveBeenCalledTimes(0);
   });
 });

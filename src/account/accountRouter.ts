@@ -14,15 +14,13 @@ import {
   getAccountsQuerySchema,
   accountIdParamsSchema,
 } from "./accountSchemas";
-import { requireAuth, requireRole } from "../auth/authMiddleware";
-import { UserRole } from "../generated/enums";
+import { requireAuth } from "../auth/authMiddleware";
 
 const router = Router();
 
 router.post(
   "/",
   requireAuth(),
-  requireRole(UserRole.ADMIN),
   validate(createAccountBodySchema, "body"),
   createAccount
 );
@@ -44,7 +42,6 @@ router.get(
 router.put(
   "/:id",
   requireAuth(),
-  requireRole(UserRole.ADMIN),
   validate(accountIdParamsSchema, "params"),
   validate(updateAccountBodySchema, "body"),
   updateAccount
@@ -53,7 +50,6 @@ router.put(
 router.post(
   "/:id/close",
   requireAuth(),
-  requireRole(UserRole.ADMIN),
   validate(accountIdParamsSchema, "params"),
   deleteAccount
 );

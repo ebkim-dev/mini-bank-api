@@ -48,15 +48,3 @@ export function requireAuth(): RequestHandler {
     }
   };
 };
-
-export function requireRole(role: UserRole): RequestHandler {
-  return (req: Request, _res: Response, next: NextFunction) => {
-    if (!req.user || req.user.role !== role) {
-      return next(
-        ForbiddenError(EventCode.FORBIDDEN, "Insufficient permissions")
-      );
-    }
-
-    return next();
-  };
-};

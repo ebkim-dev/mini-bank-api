@@ -3,8 +3,8 @@
 
 | Endpoint                 | ADMIN   | STANDARD |
 | --------                 | ------- | -------- |
-| POST /accounts           | ✅ | ❌ |
+| POST /accounts           | ✅ | ✅ |
 | GET /accounts            | ✅ | ✅ |
-| GET /accounts/:id        | ✅ | ✅ |
-| PUT /accounts/:id        | ✅ | ❌ |
-| POST /accounts/:id/close | ✅ | ❌ |
+| GET /accounts/:id        | ✅ (ALL Accounts) | Owned accounts only |
+| PUT /accounts/:id        | ✅ (ALL Accounts) | Owned accounts only |
+| POST /accounts/:id/close | ✅ (ALL Accounts) | Owned accounts only |

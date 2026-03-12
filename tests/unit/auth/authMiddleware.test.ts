@@ -5,7 +5,6 @@ import { redisClient } from "../../../src/redis/redisClient";
 
 import * as authMiddleware from "../../../src/auth/authMiddleware";
 import { EventCode } from "../../../src/types/eventCodes";
-import { UserRole } from "../../../src/generated/enums";
 import { mockRedisKey, mockSessionId } from "../../commonMock";
 import { buildAuthInput } from "../../authMock";
 import { encrypt } from "../../../src/utils/encryption";
@@ -87,27 +86,5 @@ describe("requireAuth middleware", () => {
     expect(next.mock.calls[0][0].code).toBe(EventCode.INVALID_TOKEN);
 
     spy.mockRestore();
-  });
-});
-
-describe("requireRole middleware", () => {
-  it("should not throw any errors given sufficient role", async () => {
-    const minimumRole: UserRole = UserRole.ADMIN;
-    const req: any = { user: { role: UserRole.ADMIN } };
-
-    await authMiddleware.requireRole(minimumRole)(req, res, next);
-
-    expect(next).toHaveBeenCalledTimes(1);
-    expect(next).toHaveBeenCalledWith();
-  });
-  it("should throw a ForbiddenError given insufficient role", async () => {
-    const minimumRole: UserRole = UserRole.ADMIN;
-    const req: any = { user: { role: UserRole.STANDARD } };
-
-    await authMiddleware.requireRole(minimumRole)(req, res, next);
-
-    expect(next).toHaveBeenCalledTimes(1);
-    expect(next.mock.calls[0][0]).toBeInstanceOf(Error);
-    expect(next.mock.calls[0][0].code).toBe(EventCode.FORBIDDEN);
   });
 });

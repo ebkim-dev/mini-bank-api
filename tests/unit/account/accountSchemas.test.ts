@@ -1,7 +1,6 @@
 import { Decimal } from "@prisma/client/runtime/client";
 import {
   accountIdParamsSchema,
-  getAccountsQuerySchema,
   createAccountBodySchema,
   updateAccountBodySchema,
 } from "../../../src/account/accountSchemas";
@@ -28,55 +27,21 @@ describe("accountIdParamsSchema", () => {
   });
 });
 
-describe("getAccountsQuerySchema", () => {
-  test("accepts UUID customerId", () => {
-    const parsed = getAccountsQuerySchema.parse({ 
-      customer_id: mockCustomerId
-    });
-    expect(parsed.customer_id).toBe(mockCustomerId);
-  });
-
-  test("rejects invalid UUID customerId", () => {
-    expect(() => 
-      getAccountsQuerySchema.parse({ customer_id: "999" })
-    ).toThrow();
-  });
-
-  test("rejects extra fields because of strict()", () => {
-    expect(() =>
-      getAccountsQuerySchema.parse({ customer_id: "1", extra: true })
-    ).toThrow();
-  });
-});
-
 describe("createAccountBodySchema", () => {
   test("accepts valid UUID customer_id", () => {
     const parsed = createAccountBodySchema.parse({
-      customer_id: mockCustomerId,
       type: AccountType.CHECKING,
       currency: "usd",
     });
 
-    expect(parsed.customer_id).toBe(mockCustomerId);
     expect(parsed.currency).toBe("USD");
     expect(parsed.status).toBe(AccountStatus.ACTIVE);
     expect(parsed.balance.toString()).toBe("0");
   });
 
-  test("rejects invalid UUID customer_id", () => {
-    expect(() =>
-      createAccountBodySchema.parse({
-        customer_id: "not-a-uuid",
-        type: AccountType.CHECKING,
-        currency: "usd",
-      })
-    ).toThrow();
-  });
-
   test("currency must be exactly 3 characters", () => {
     expect(() =>
       createAccountBodySchema.parse({
-        customer_id: mockCustomerId,
         type: AccountType.CHECKING,
         currency: "US",
       })
@@ -85,14 +50,12 @@ describe("createAccountBodySchema", () => {
 
   test("nickname can be omitted, provided, or null", () => {
     const parsed1 = createAccountBodySchema.parse({
-      customer_id: mockCustomerId,
       type: AccountType.CHECKING,
       currency: "usd",
     });
     expect(parsed1.nickname).toBeUndefined();
 
     const parsed2 = createAccountBodySchema.parse({
-      customer_id: mockCustomerId,
       type: AccountType.CHECKING,
       currency: "usd",
       nickname: "My Acc",
@@ -100,7 +63,6 @@ describe("createAccountBodySchema", () => {
     expect(parsed2.nickname).toBe("My Acc");
 
     const parsed3 = createAccountBodySchema.parse({
-      customer_id: mockCustomerId,
       type: AccountType.CHECKING,
       currency: "usd",
       nickname: null,
@@ -110,7 +72,6 @@ describe("createAccountBodySchema", () => {
 
   test("balance is correctly transformed to decimal", () => {
     const parsed = createAccountBodySchema.parse({
-      customer_id: mockCustomerId,
       type: AccountType.CHECKING,
       currency: "USD",
       balance: "123"
@@ -122,7 +83,6 @@ describe("createAccountBodySchema", () => {
   test("rejects extra fields because of strict()", () => {
     expect(() =>
       createAccountBodySchema.parse({
-        customer_id: mockCustomerId,
         type: AccountType.CHECKING,
         currency: "usd",
         extra: "nope",

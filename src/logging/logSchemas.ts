@@ -1,9 +1,5 @@
-import { AuthInput } from "../auth/user";
-import { Account } from "../generated/client";
 import type { AccountStatus, AccountType, UserRole } from "../generated/enums";
 import { EventCode } from "../types/eventCodes";
-import { logger } from "./logger";
-
 
 export enum ExecutionStatus {
   SUCCESS = "SUCCESS",
@@ -30,12 +26,12 @@ export interface AuthFailureEvent extends BaseEvent {
 export interface AccountBaseEvent extends BaseEvent {
   actorId: string;
   actorRole: UserRole;
+  customerId: string;
 }
 
 // ==== Account: (Success) ====
 export interface SingleAccountSuccessEvent extends AccountBaseEvent {
   accountId: string;
-  customerId: string;
   accountType: AccountType;
   currency: string;
   accountStatus: AccountStatus;
@@ -44,7 +40,6 @@ export interface SingleAccountSuccessEvent extends AccountBaseEvent {
 export interface ManyAccountSuccessEvent extends AccountBaseEvent {
   accounts: {
     accountId: string;
-    customerId: string;
     accountType: AccountType;
     currency: string;
     accountStatus: AccountStatus;
@@ -57,7 +52,6 @@ export interface AccountFailureBaseEvent extends AccountBaseEvent {
 }
 
 export interface AccountFailByCustomerEvent extends AccountFailureBaseEvent {
-  customerId: string;
   accountType: AccountType;
   currency: string;
   accountStatus?: AccountStatus;
@@ -67,46 +61,4 @@ export interface AccountFailByAccountEvent extends AccountFailureBaseEvent {
   accountId: string;
   nickname?: string;
   accountStatus?: AccountStatus;
-}
-
-export function logEvent(message: EventCode, event: BaseEvent) {
-  logger.info(message, event);
-}
-
-export function mapToSingleAccountSuccessEvent(
-  durationMs: number,
-  actorData: AuthInput,
-  accountRecord: Account
-): SingleAccountSuccessEvent {
-  return {
-    executionStatus: ExecutionStatus.SUCCESS,
-    durationMs,
-    actorId: actorData.actorId,
-    actorRole: actorData.role,
-    accountId: accountRecord.id,
-    customerId: accountRecord.customer_id,
-    accountType: accountRecord.type,
-    currency: accountRecord.currency,
-    accountStatus: accountRecord.status,
-  };
-}
-
-export function mapToManyAccountSuccessEvent(
-  durationMs: number,
-  actorData: AuthInput,
-  accountRecords: Account[]
-): ManyAccountSuccessEvent {
-  return {
-    executionStatus: ExecutionStatus.SUCCESS,
-    durationMs,
-    actorId: actorData.actorId,
-    actorRole: actorData.role,
-    accounts: accountRecords.map((accountRecord) => ({
-      accountId: accountRecord.id,
-      customerId: accountRecord.customer_id,
-      accountType: accountRecord.type,
-      currency: accountRecord.currency,
-      accountStatus: accountRecord.status
-    }))
-  };
 }
