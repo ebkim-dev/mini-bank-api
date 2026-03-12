@@ -14,10 +14,8 @@ import { serializeTransaction } from "./transactionUtils";
 import { getDurationMs } from "../utils/calculateDuration";
 import {
   logEvent,
-  mapToManyTransactionSuccessEvent,
-  mapToTransactionFailureEvent,
-  mapToTransactionSuccessEvent,
 } from "../logging/logSchemas";
+import { mapToManyTransactionSuccessEvent, mapToTransactionFailureEvent, mapToTransactionSuccessEvent } from "../logging/eventFactories";
 
 export async function insertTransaction(
   data: TransactionCreateInput,

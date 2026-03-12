@@ -15,8 +15,10 @@ import { logger } from '../logging/logger';
 import { 
   buildAccountFailEvent,
   buildManyAccountSuccessEvent,
-  buildSingleAccountSuccessEvent
+  buildSingleAccountSuccessEvent,
 } from '../logging/eventFactories';
+import { AccountFailByAccountEvent, ExecutionStatus, logEvent,  } from '../logging/logSchemas';
+import { getDurationMs } from '../utils/calculateDuration';
 
 
 
@@ -157,7 +159,6 @@ export async function deleteAccountById(
     );
     throw ForbiddenError(EventCode.FORBIDDEN, forbiddenErrorMessage);
   }
-<<<<<<< HEAD
 
   const closedAccount: Account = await prismaClient.account.update({
     where: { id }, data: { status: AccountStatus.CLOSED }
@@ -168,7 +169,7 @@ export async function deleteAccountById(
   ));
 
   return serializeAccount(closedAccount);
-=======
+
 }
 
 
@@ -188,6 +189,7 @@ export async function fetchAccountSummary(
       executionStatus: ExecutionStatus.FAILURE,
       durationMs: getDurationMs(start),
       actorId: authInput.actorId,
+      customerId:authInput.customerId,
       actorRole: authInput.role,
       accountId: id,
       errorCode: EventCode.ACCOUNT_NOT_FOUND,
@@ -215,8 +217,8 @@ export async function fetchAccountSummary(
   const totalDebits =
     counts.find((c) => c.type === "DEBIT")?._count.type ?? 0;
 
-  logEvent(EventCode.ACCOUNT_FETCHED, mapToSingleAccountSuccessEvent(
-    getDurationMs(start),
+  logEvent(EventCode.ACCOUNT_FETCHED, buildSingleAccountSuccessEvent(
+    start,
     authInput,
     account
   ));
@@ -236,5 +238,4 @@ export async function fetchAccountSummary(
       created_at: t.created_at,
     })),
   };
->>>>>>> f8ac299 (Implemented EPIC-2 (transactions). Also updated swagger and postman documentation.)
 }

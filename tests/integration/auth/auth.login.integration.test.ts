@@ -16,12 +16,10 @@ jest.mock("bcrypt", () => ({
     return Promise.resolve(false);
   }),
 }));
-import bcrypt from "bcrypt";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { set: jest.fn() }
 }));
-import { redisClient } from "../../../src/redis/redisClient";
 
 jest.mock("../../../src/db/prismaClient", () => ({
   __esModule: true,
@@ -37,12 +35,13 @@ beforeEach(() => {
   mockFindUnique.mockResolvedValue(buildUserRecord());
 });
 
+async function loginRequest(
+  loginInput: Partial<LoginInput> = {},
+){
+  return request(app).post("/auth/login").send(loginInput);
+}
+
 describe("POST /auth/login", () => {
-  async function loginRequest(
-    loginInput: Partial<LoginInput> = {},
-  ) {
-    return request(app).post("/auth/login").send(loginInput);
-  }
   
   test("Correct credentials => 201, login succeeds", async () => {
     const mockLoginInput = buildLoginInput({

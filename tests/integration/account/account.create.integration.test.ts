@@ -2,7 +2,7 @@ import request from "supertest";
 import { createApp } from "../../../src/app";
 import { Decimal } from "@prisma/client/runtime/client";
 import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
-import { UserRole, AccountStatus } from "../../../src/generated/enums";
+import { AccountStatus } from "../../../src/generated/enums";
 import { 
   buildAccountCreateOutput,
   buildAccountCreateRequestBody,
@@ -37,8 +37,7 @@ beforeEach(() => {
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
-describe("POST /accounts", () => {
-  async function postAccountRequest(
+async function postAccountRequest(
     body: any, 
     sessionId = mockSessionId
   ) {
@@ -47,6 +46,8 @@ describe("POST /accounts", () => {
       .set("x-session-id", sessionId)
       .send(body);
   }
+
+describe("POST /accounts", () => {
 
   test("Correct input => 201, new account is created and returned", async () => {
     const mockAccountCreateRequestBody = buildAccountCreateRequestBody({

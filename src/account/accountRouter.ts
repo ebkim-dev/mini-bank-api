@@ -17,7 +17,6 @@ import {
 } from "./accountSchemas";
 import { getTransactionsQuerySchema } from "../transaction/transactionSchemas";
 import { requireAuth } from "../auth/authMiddleware";
-import { UserRole } from "../generated/enums";
 
 const router = Router();
 
