@@ -31,10 +31,8 @@ export async function getAccountsByCustomerId(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { customer_id } = (req as any).validated.query;
     const authInput: AuthInput = req.user;
     const accounts: AccountOutput[] = await accountService.fetchAccountsByCustomerId(
-      customer_id,
       authInput
     );
     res.status(200).json(accounts);

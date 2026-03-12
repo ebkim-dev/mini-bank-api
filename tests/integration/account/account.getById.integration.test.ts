@@ -8,6 +8,7 @@ import {
 import { 
   mockAccountId1, 
   mockMissingAccountId,
+  mockMissingCustomerId,
   mockRedisKey,
   mockSessionId
 } from "../../commonMock";
@@ -68,6 +69,28 @@ describe("GET /accounts/:accountId", () => {
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
   });
 
+  test('Session ID not passed => 401', async () => {
+    const res = await request(app).get(`/accounts/${mockAccountId1}`);
+
+    expect(res.status).toBe(401);
+    expect(res.headers).toHaveProperty("x-trace-id");
+  });
+    
+  test("Account not owned by customer => 403", async () => {
+    mockFindUnique.mockResolvedValue(buildAccountRecord());
+    mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput({
+      customerId: mockMissingCustomerId
+    })));
+
+    const res = await getAccountRequest(mockAccountId1);
+
+    expect(res.status).toBe(403);
+    expect(res.headers).toHaveProperty("x-trace-id");
+      
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+    expect(mockFindUnique).toHaveBeenCalledTimes(1);
+  });
+
   test("Account not found for accountId => 404", async () => {
     mockFindUnique.mockResolvedValue(null);
 
@@ -77,12 +100,6 @@ describe("GET /accounts/:accountId", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
       
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
-  });
-
-  it('should return 401 given missing token', async () => {
-    const res = await request(app).get(`/accounts/${mockAccountId1}`);
-
-    expect(res.status).toBe(401);
-    expect(res.headers).toHaveProperty("x-trace-id");
+    expect(mockFindUnique).toHaveBeenCalledTimes(1);
   });
 });

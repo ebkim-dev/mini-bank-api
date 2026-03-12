@@ -71,7 +71,7 @@ export function buildUserRecord(
     customer_id: mockCustomerId,
     username: mockUsername,
     password_hash: mockHashedPassword,
-    role: UserRole.ADMIN,
+    role: UserRole.STANDARD,
     created_at: mockDate,
     updated_at: mockDate,
     ...overrides,
@@ -83,7 +83,8 @@ export function buildAuthInput(
 ): AuthInput {
   return {
     actorId: mockUserId,
-    role: UserRole.ADMIN,
+    role: UserRole.STANDARD,
+    customerId: mockCustomerId,
     ...overrides,
   };
 }

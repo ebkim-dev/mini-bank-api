@@ -23,24 +23,16 @@ paths:
         '400':
           description: Empty or malformed body
     get:
-      summary: Get accounts by customer ID
-      description: Retrieve all accounts for a customer. Returns the array of retrieved accounts on success.
+      summary: Get all accounts for user
+      description: Retrieve an array of all accounts for logged in user.
       tags:
         - accounts
       security:
         - sessionAuth: []
-      parameters:
-        - in: query
-          name: customer_id
-          schema:
-            type: string
-            format: uuid
-          description: UUID of the customer whose accounts are to be fetched
-          example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
           description: List of accounts for the customer
-          content: 
+          content:
             application/json:
               schema:
                 type: array
@@ -65,10 +57,6 @@ paths:
                   balance: "0"
                   created_at: "2026-02-17T12:01:00Z"
                   updated_at: "2026-02-17T12:01:00Z"
-        '400':
-          description: Invalid customer ID passed
-        '404':
-          description: Customer not found
   /accounts/{accountId}:
     get:
       summary: Fetch account by account ID
@@ -95,6 +83,8 @@ paths:
                 $ref: '#/components/schemas/AccountResponse'
         '400': 
           description: Invalid account ID passed
+        '403':
+          description: Forbidden - user does not own this account
         '404': 
           description: Account not found
     put:
@@ -128,6 +118,8 @@ paths:
                 $ref: '#/components/schemas/AccountResponse'
         '400': 
           description: Invalid account ID or body passed
+        '403':
+          description: Forbidden - user does not own this account
         '404': 
           description: Account not found
   /accounts/{accountId}/close:    
@@ -156,3 +148,5 @@ paths:
                 $ref: '#/components/schemas/AccountResponse'
         '400':
           description: Invalid account ID passed
+        '403':
+          description: Forbidden - user does not own this account

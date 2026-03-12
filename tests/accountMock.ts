@@ -5,7 +5,6 @@ import { mockAccountId1, mockCustomerId } from "./commonMock";
 import { AccountCreateInput, AccountOutput, AccountUpdateInput } from "../src/account/account";
 
 export interface AccountCreateRequestBody {
-  customer_id: string;
   type: AccountType;
   currency: string;
   nickname?: string | null;
@@ -17,7 +16,6 @@ export function buildAccountCreateRequestBody(
   overrides: Partial<AccountCreateRequestBody> = {}
 ) {
   return {
-    customer_id: mockCustomerId,
     type: AccountType.SAVINGS,
     currency: "USD",
     ...overrides,
@@ -28,7 +26,6 @@ export function buildAccountCreateInput(
   overrides: Partial<AccountCreateInput> = {}
 ): AccountCreateInput {
   return {
-    customer_id: mockCustomerId,
     type: AccountType.SAVINGS,
     currency: "USD",
     ...overrides,

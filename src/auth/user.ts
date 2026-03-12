@@ -25,4 +25,5 @@ export type LoginOutput = {
 export type AuthInput = {
   actorId: string;
   role: UserRole;
+  customerId: string;
 };

@@ -74,7 +74,6 @@ describe("getAccountsByCustomerId controller", () => {
     await accountController.getAccountsByCustomerId(req, res, next);
 
     expect(accountService.fetchAccountsByCustomerId).toHaveBeenCalledWith(
-      req.validated.query.customer_id,
       buildAuthInput()
     );
     expect(statusMock).toHaveBeenCalledWith(200);
@@ -89,7 +88,6 @@ describe("getAccountsByCustomerId controller", () => {
     await accountController.getAccountsByCustomerId(req, res, next);
 
     expect(accountService.fetchAccountsByCustomerId).toHaveBeenCalledWith(
-      req.validated.query.customer_id,
       buildAuthInput()
     );
     expect(statusMock).toHaveBeenCalledWith(200);
