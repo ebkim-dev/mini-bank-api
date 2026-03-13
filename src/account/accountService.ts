@@ -4,7 +4,7 @@ import type {
   AccountUpdateInput,
   AccountSummaryOutput
 } from './account';
-import type { Account } from '../generated/client';
+import type { Account, Transaction } from '../generated/client';
 import type { AuthInput } from '../auth/user';
 import prismaClient from '../db/prismaClient'
 import { AccountStatus, UserRole } from "../generated/enums";
@@ -16,9 +16,11 @@ import {
   buildAccountFailEvent,
   buildManyAccountSuccessEvent,
   buildSingleAccountSuccessEvent,
+  buildManyTransactionSuccessEvent,
 } from '../logging/eventFactories';
-import { AccountFailByAccountEvent, ExecutionStatus, logEvent,  } from '../logging/logSchemas';
 import { getDurationMs } from '../utils/calculateDuration';
+import { TransactionOutput, TransactionQueryInput } from '../transaction/transaction';
+import { serializeTransaction } from '../transaction/transactionUtils';
 
 
 
@@ -39,9 +41,10 @@ export async function insertAccount(
     },
   });
 
-  logger.info(EventCode.ACCOUNT_CREATED, buildSingleAccountSuccessEvent(
-    start, authInput, accountRecord
-  ));
+  logger.info(
+    EventCode.ACCOUNT_CREATED, 
+    buildSingleAccountSuccessEvent(start, authInput, accountRecord)
+  );
 
   return serializeAccount(accountRecord);
 }
@@ -56,9 +59,10 @@ export async function fetchAccountsByCustomerId(
     where: { customer_id: authInput.customerId }
   });
 
-  logger.info(EventCode.ACCOUNT_FETCHED, buildManyAccountSuccessEvent(
-    start, authInput, accountRecords
-  ));
+  logger.info(
+    EventCode.ACCOUNT_FETCHED, 
+    buildManyAccountSuccessEvent(start, authInput, accountRecords)
+  );
 
   return accountRecords.map((accountRecord) => serializeAccount(accountRecord));
 }
@@ -127,9 +131,10 @@ export async function updateAccountById(
     where: { id }, data
   });
     
-  logger.info(EventCode.ACCOUNT_UPDATED, buildSingleAccountSuccessEvent(
-    start, authInput, updatedAccount
-  ));
+  logger.info(
+    EventCode.ACCOUNT_UPDATED, 
+    buildSingleAccountSuccessEvent(start, authInput, updatedAccount)
+  );
 
   return serializeAccount(updatedAccount);
 }
@@ -164,14 +169,91 @@ export async function deleteAccountById(
     where: { id }, data: { status: AccountStatus.CLOSED }
   });
 
-  logger.info(EventCode.ACCOUNT_CLOSED, buildSingleAccountSuccessEvent(
-    start, authInput, closedAccount
-  ));
+  logger.info(
+    EventCode.ACCOUNT_CLOSED, 
+    buildSingleAccountSuccessEvent(start, authInput, closedAccount)
+  );
 
   return serializeAccount(closedAccount);
 
 }
 
+
+export async function fetchTransactions(
+  query: TransactionQueryInput,
+  authInput: AuthInput
+): Promise<TransactionOutput[]> {
+  const start = process.hrtime.bigint();
+
+  const where: any = {
+    account_id: query.account_id,
+  };
+
+  if (query.type) {
+    where.type = query.type;
+  }
+
+  if (query.from || query.to) {
+    where.created_at = {};
+    if (query.from) {
+      where.created_at.gte = new Date(query.from);
+    }
+    if (query.to) {
+      where.created_at.lte = new Date(query.to);
+    }
+  }
+
+  const account = await prismaClient.account.findUnique({
+    where: { id: query.account_id },
+  });
+
+  if (!account) {
+    logger.info(EventCode.ACCOUNT_NOT_FOUND,buildAccountFailEvent(
+        start,
+        authInput,
+        query.account_id,
+        EventCode.ACCOUNT_NOT_FOUND
+      )
+    );
+    throw NotFoundError(EventCode.ACCOUNT_NOT_FOUND, "Account not found", {
+      id: query.account_id,
+    });
+  }
+
+  if (
+    authInput.role !== UserRole.ADMIN &&
+    authInput.customerId !== account.customer_id
+  ){
+    const forbiddenErrorMessage =
+      "Only account owners can read account transactions";
+
+    logger.info(
+      EventCode.FORBIDDEN, 
+      buildAccountFailEvent(start, authInput,query.account_id,EventCode.FORBIDDEN)
+    );
+
+    throw ForbiddenError(EventCode.FORBIDDEN, forbiddenErrorMessage);
+  }
+
+  const records: Transaction[] = await prismaClient.transaction.findMany({
+    where,
+    orderBy: { created_at: "desc" },
+    take: query.limit,
+    skip: query.offset,
+  });
+
+  logger.info(
+    EventCode.TRANSACTION_FETCHED,
+    buildManyTransactionSuccessEvent(
+      start,
+      authInput,
+      query.account_id,
+      records.length
+    )
+  );
+
+  return records.map(serializeTransaction);
+}
 
 
 export async function fetchAccountSummary(
@@ -185,19 +267,25 @@ export async function fetchAccountSummary(
   });
 
   if (!account) {
-    const event: AccountFailByAccountEvent = {
-      executionStatus: ExecutionStatus.FAILURE,
-      durationMs: getDurationMs(start),
-      actorId: authInput.actorId,
-      customerId:authInput.customerId,
-      actorRole: authInput.role,
-      accountId: id,
-      errorCode: EventCode.ACCOUNT_NOT_FOUND,
-    };
-    logEvent(EventCode.ACCOUNT_NOT_FOUND, event);
+    logger.info(
+      EventCode.ACCOUNT_NOT_FOUND,
+      buildAccountFailEvent(start, authInput, id, EventCode.ACCOUNT_NOT_FOUND)
+    );
     throw NotFoundError(EventCode.ACCOUNT_NOT_FOUND, "Account not found", {
       id,
     });
+  }
+
+  if (
+    authInput.role !== UserRole.ADMIN &&
+    authInput.customerId !== account.customer_id
+  ){
+    const forbiddenErrorMessage = "Only account owners can read account summaries";
+    logger.info(
+      EventCode.FORBIDDEN,
+      buildAccountFailEvent(start, authInput, id, EventCode.FORBIDDEN)
+    );
+    throw ForbiddenError(EventCode.FORBIDDEN, forbiddenErrorMessage);
   }
 
   const recentTransactions = await prismaClient.transaction.findMany({
@@ -217,7 +305,7 @@ export async function fetchAccountSummary(
   const totalDebits =
     counts.find((c) => c.type === "DEBIT")?._count.type ?? 0;
 
-  logEvent(EventCode.ACCOUNT_FETCHED, buildSingleAccountSuccessEvent(
+  logger.info(EventCode.ACCOUNT_FETCHED, buildSingleAccountSuccessEvent(
     start,
     authInput,
     account

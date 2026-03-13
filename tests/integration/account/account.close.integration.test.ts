@@ -47,13 +47,13 @@ beforeEach(async () => {
 });
 
 async function closeAccountRequest(
-    accountId: string = mockAccountId1,
-    sessionId: string = mockSessionId
-  ) {
-    return request(app)
-      .post(`/accounts/${accountId}/close`)
-      .set("x-session-id", sessionId);
-  }
+  accountId: string = mockAccountId1,
+  sessionId: string = mockSessionId
+){
+  return request(app)
+    .post(`/accounts/${accountId}/close`)
+    .set("x-session-id", sessionId);
+}
 
 describe("POST /accounts/:accountId/close", () => {
 

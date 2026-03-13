@@ -38,14 +38,14 @@ beforeEach(() => {
 });
 
 async function postAccountRequest(
-    body: any, 
-    sessionId = mockSessionId
-  ) {
-    return request(app)
-      .post("/accounts")
-      .set("x-session-id", sessionId)
-      .send(body);
-  }
+  body: any, 
+  sessionId = mockSessionId
+){
+  return request(app)
+    .post("/accounts")
+    .set("x-session-id", sessionId)
+    .send(body);
+}
 
 describe("POST /accounts", () => {
 

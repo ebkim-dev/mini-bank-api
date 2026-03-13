@@ -41,10 +41,10 @@ beforeEach(async () => {
 });
 
 async function getAccountRequest(accountId: string) {
-    return request(app)
-      .get(`/accounts/${accountId}`)
-      .set("x-session-id", mockSessionId);
-  }
+  return request(app)
+    .get(`/accounts/${accountId}`)
+    .set("x-session-id", mockSessionId);
+}
 
 describe("GET /accounts/:accountId", () => {
 

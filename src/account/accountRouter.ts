@@ -5,10 +5,9 @@ import {
   getAccount,
   updateAccount,
   deleteAccount,
-  getAccountSummary
+  getAccountSummary,
+  getTransactions
 } from "./accountController";
-import { getTransactions } from "../transaction/transactionController";
-
 import { validate } from "../middleware/validationMiddleware";
 import {
   createAccountBodySchema,

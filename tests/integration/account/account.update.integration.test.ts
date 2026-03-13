@@ -45,15 +45,15 @@ beforeEach(() => {
 });
 
 async function updateAccountRequest(
-    body: any,
-    accountId: string = mockAccountId1,
-    sessionId: string = mockSessionId
-  ) {
-    return request(app)
-      .put(`/accounts/${accountId}`)
-      .set("x-session-id", sessionId)
-      .send(body);
-  }
+  body: any,
+  accountId: string = mockAccountId1,
+  sessionId: string = mockSessionId
+) {
+  return request(app)
+    .put(`/accounts/${accountId}`)
+    .set("x-session-id", sessionId)
+    .send(body);
+}
   
 describe("PUT /accounts/:accountId", () => {
 

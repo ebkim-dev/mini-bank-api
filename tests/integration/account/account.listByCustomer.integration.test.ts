@@ -39,12 +39,12 @@ beforeEach(async () => {
 });
 
 async function getAccountsRequest(
-    sessionId: string = mockSessionId
-  ) {
-    return request(app)
-      .get("/accounts")
-      .set("x-session-id", sessionId);
-  }
+  sessionId: string = mockSessionId
+){
+  return request(app)
+    .get("/accounts")
+    .set("x-session-id", sessionId);
+}
 
 describe("GET /accounts", () => {
 

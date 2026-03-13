@@ -72,14 +72,14 @@ export function buildAccountFailEvent(
 }
 
 
-export function mapToTransactionSuccessEvent(
-  durationMs: number,
+export function buildTransactionSuccessEvent(
+  start: bigint,
   actorData: AuthInput,
   transactionRecord: Transaction
 ): TransactionSuccessEvent {
   return {
     executionStatus: ExecutionStatus.SUCCESS,
-    durationMs,
+    durationMs: getDurationMs(start),
     actorId: actorData.actorId,
     actorRole: actorData.role,
     customerId: actorData.customerId,
@@ -90,15 +90,15 @@ export function mapToTransactionSuccessEvent(
   };
 }
 
-export function mapToManyTransactionSuccessEvent(
-  durationMs: number,
+export function buildManyTransactionSuccessEvent(
+  start: bigint,
   actorData: AuthInput,
   accountId: string,
   count: number
 ): TransactionSuccessEvent {
   return {
     executionStatus: ExecutionStatus.SUCCESS,
-    durationMs,
+    durationMs: getDurationMs(start),
     actorId: actorData.actorId,
     customerId: actorData.customerId,
     actorRole: actorData.role,
@@ -107,8 +107,8 @@ export function mapToManyTransactionSuccessEvent(
   };
 }
 
-export function mapToTransactionFailureEvent(
-  durationMs: number,
+export function buildTransactionFailureEvent(
+  start: bigint,
   actorData: AuthInput,
   errorCode: string,
   transactionId?: string,
@@ -116,7 +116,7 @@ export function mapToTransactionFailureEvent(
 ): TransactionFailureEvent {
   return {
     executionStatus: ExecutionStatus.FAILURE,
-    durationMs,
+    durationMs: getDurationMs(start),
     actorId: actorData.actorId,
     customerId:actorData.customerId,
     actorRole: actorData.role,

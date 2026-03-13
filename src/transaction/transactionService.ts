@@ -12,10 +12,8 @@ import { ConflictError, NotFoundError } from "../error/error";
 import { EventCode } from "../types/eventCodes";
 import { serializeTransaction } from "./transactionUtils";
 import { getDurationMs } from "../utils/calculateDuration";
-import {
-  logEvent,
-} from "../logging/logSchemas";
-import { mapToManyTransactionSuccessEvent, mapToTransactionFailureEvent, mapToTransactionSuccessEvent } from "../logging/eventFactories";
+import { buildTransactionFailureEvent, buildTransactionSuccessEvent } from "../logging/eventFactories";
+import { logger } from "../logging/logger";
 
 export async function insertTransaction(
   data: TransactionCreateInput,
@@ -30,10 +28,10 @@ export async function insertTransaction(
     });
 
     if (!account) {
-      logEvent(
+      logger.info(
         EventCode.ACCOUNT_NOT_FOUND,
-        mapToTransactionFailureEvent(
-          getDurationMs(start),
+        buildTransactionFailureEvent(
+          start,
           authInput,
           EventCode.ACCOUNT_NOT_FOUND,
           undefined,
@@ -48,10 +46,10 @@ export async function insertTransaction(
     }
 
     if (account.status !== AccountStatus.ACTIVE) {
-      logEvent(
+      logger.info(
         EventCode.ACCOUNT_NOT_ACTIVE,
-        mapToTransactionFailureEvent(
-          getDurationMs(start),
+        buildTransactionFailureEvent(
+          start,
           authInput,
           EventCode.ACCOUNT_NOT_ACTIVE,
           undefined,
@@ -72,10 +70,10 @@ export async function insertTransaction(
     if (data.type === TransactionType.DEBIT) {
       newBalance = account.balance.minus(amount);
       if (newBalance.lessThan(0)) {
-        logEvent(
+        logger.info(
           EventCode.INSUFFICIENT_FUNDS,
-          mapToTransactionFailureEvent(
-            getDurationMs(start),
+          buildTransactionFailureEvent(
+            start,
             authInput,
             EventCode.INSUFFICIENT_FUNDS,
             undefined,
@@ -116,57 +114,15 @@ export async function insertTransaction(
     return transactionRecord;
   });
 
-  logEvent(
+  logger.info(
     EventCode.TRANSACTION_CREATED,
-    mapToTransactionSuccessEvent(getDurationMs(start), authInput, result)
+    buildTransactionSuccessEvent(start, authInput, result)
   );
 
   return serializeTransaction(result);
 }
 
-export async function fetchTransactions(
-  query: TransactionQueryInput,
-  authInput: AuthInput
-): Promise<TransactionOutput[]> {
-  const start = process.hrtime.bigint();
 
-  const where: any = {
-    account_id: query.account_id,
-  };
-
-  if (query.type) {
-    where.type = query.type;
-  }
-
-  if (query.from || query.to) {
-    where.created_at = {};
-    if (query.from) {
-      where.created_at.gte = new Date(query.from);
-    }
-    if (query.to) {
-      where.created_at.lte = new Date(query.to);
-    }
-  }
-
-  const records: Transaction[] = await prismaClient.transaction.findMany({
-    where,
-    orderBy: { created_at: "desc" },
-    take: query.limit,
-    skip: query.offset,
-  });
-
-  logEvent(
-    EventCode.TRANSACTION_FETCHED,
-    mapToManyTransactionSuccessEvent(
-      getDurationMs(start),
-      authInput,
-      query.account_id,
-      records.length
-    )
-  );
-
-  return records.map(serializeTransaction);
-}
 
 export async function fetchTransactionById(
   id: string,
@@ -178,10 +134,10 @@ export async function fetchTransactionById(
     await prismaClient.transaction.findUnique({ where: { id } });
 
   if (!record) {
-    logEvent(
+    logger.info(
       EventCode.TRANSACTION_NOT_FOUND,
-      mapToTransactionFailureEvent(
-        getDurationMs(start),
+      buildTransactionFailureEvent(
+        start,
         authInput,
         EventCode.TRANSACTION_NOT_FOUND,
         id
@@ -195,9 +151,9 @@ export async function fetchTransactionById(
     );
   }
 
-  logEvent(
+  logger.info(
     EventCode.TRANSACTION_FETCHED,
-    mapToTransactionSuccessEvent(getDurationMs(start), authInput, record)
+    buildTransactionSuccessEvent(start, authInput, record)
   );
 
   return serializeTransaction(record);
