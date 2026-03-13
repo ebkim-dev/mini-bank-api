@@ -70,12 +70,16 @@ components:
         password: "12345678"
     LoginResponse:
       required:
-        - sessionId
+        - accessToken
+        - expiresIn
       type: object
       properties:
-        sessionId:
+        token:
           type: string
-          format: uuid
-          description: Session ID for authenticating subsequent requests via x-session-id header
+          description: JWT access token
+        expiresIn:
+          type: integer
+          description: Expiration time in seconds
       example:
-        sessionId: "ae712543-3271-4dab-97f8-a075fdd0eaee"
+        token: "my_access_token"
+        expiresIn: 3600

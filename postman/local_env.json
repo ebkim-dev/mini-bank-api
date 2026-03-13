@@ -17,12 +17,7 @@
       "enabled": true
     },
     {
-      "key": "sessionId",
-      "value": "",
-      "enabled": true
-    },
-    {
-      "key": "transactionId",
+      "key": "authToken",
       "value": "",
       "enabled": true
     }
