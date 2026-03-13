@@ -27,7 +27,7 @@ paths:
       tags:
         - auth
       summary: Login a user
-      description: Authenticates a user with username and password. Creates a Redis session and returns a session ID. Use the session ID in the x-session-id header for authenticated requests.
+      description: Authenticates a user with username and password. Returns a JWT access token on success.
       requestBody:
         required: true
         content:
@@ -35,13 +35,13 @@ paths:
             schema:
               $ref: '#/components/schemas/LoginRequest'
       responses:
-        '200':
-          description: Login successful, session created
-          content:
+        '200': 
+          description: Retrieved user given valid credentials
+          content: 
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
-        '400':
+        '400': 
           description: Validation error (invalid input)
-        '401':
+        '401': 
           description: Invalid credentials

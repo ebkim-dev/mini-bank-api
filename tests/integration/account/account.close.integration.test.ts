@@ -2,7 +2,7 @@ import request from "supertest";
 import { createApp } from "../../../src/app";
 import { Prisma } from "../../../src/generated/client";
 import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
-import { AccountStatus} from "../../../src/generated/enums";
+import { AccountStatus, UserRole } from "../../../src/generated/enums";
 import { 
   buildAccountOutput,
   buildAccountRecord
@@ -46,7 +46,8 @@ beforeEach(async () => {
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
-async function closeAccountRequest(
+describe("POST /accounts/:accountId/close", () => {
+  async function closeAccountRequest(
     accountId: string = mockAccountId1,
     sessionId: string = mockSessionId
   ) {
@@ -54,8 +55,6 @@ async function closeAccountRequest(
       .post(`/accounts/${accountId}/close`)
       .set("x-session-id", sessionId);
   }
-
-describe("POST /accounts/:accountId/close", () => {
 
   test("Account found for accountId => 200, account is closed and returned", async () => {
     mockFindUnique.mockResolvedValue(buildAccountRecord());
