@@ -5,5 +5,3 @@ tags:
     description: Register and login
   - name: accounts
     description: Access to accounts data
-  - name: transactions
-    description: Financial transactions (deposits and withdrawals)

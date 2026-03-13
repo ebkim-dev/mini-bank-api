@@ -5,9 +5,10 @@ describe("app.ts - createApp", () => {
 
   let appUseMock: jest.Mock;
   let mockApp: { use: jest.Mock };
-  let mockExpress: any;
+  let mockExpress: any ;
   
   // Express mocks
+  let expressDefaultMock: jest.Mock;
   let expressJsonMock: jest.Mock;
   let jsonMw: RequestHandler;
 
@@ -20,7 +21,6 @@ describe("app.ts - createApp", () => {
   const healthRouterMock: any = { _router: "health" };
   const accountRouterMock: any = { _router: "accounts" };
   const authRouterMock: any = { _router: "auth" };
-  const transactionRouterMock: any = { _router: "transactions" };
 
   // Swagger mocks
   const swaggerSpecMock: any = { openapi: "3.0.0" };
@@ -38,6 +38,7 @@ describe("app.ts - createApp", () => {
 
     // express mocks
     jsonMw = (_req, _res, next) => next();
+    expressDefaultMock = jest.fn(() => mockApp);
     expressJsonMock = jest.fn(() => jsonMw);
 
     
@@ -83,11 +84,6 @@ describe("app.ts - createApp", () => {
       default: authRouterMock,
     }));
 
-    jest.doMock("../../src/transaction/transactionRouter", () => ({
-      __esModule: true,
-      default: transactionRouterMock,
-    }));
-
     // 4) Mock swagger
     jest.doMock("swagger-ui-express", () => {
       return {
@@ -113,10 +109,11 @@ describe("app.ts - createApp", () => {
     const { createApp } = require("../../src/app");
 
     expect(() => createApp()).toThrow("ENCRYPTION_KEY is not defined");
+    expect(expressDefaultMock).not.toHaveBeenCalled();
   });
 
   test("creates app and wires all middleware/routes in correct order", () => {
-    process.env.ENCRYPTION_KEY = "test-encryption-key";
+    process.env.JWT_SECRET = "test-secret";
 
     const { createApp } = require("../../src/app");
 
@@ -140,7 +137,6 @@ describe("app.ts - createApp", () => {
       ["/auth", authRouterMock],
       ["/health", healthRouterMock],
       ["/accounts", accountRouterMock],
-      ["/transactions", transactionRouterMock],
       ["/docs", swaggerServeMw, swaggerSetupMw],
       [notFoundHandlerMw],
       [errorHandlerMw],
