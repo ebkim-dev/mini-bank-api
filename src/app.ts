@@ -6,6 +6,7 @@ import { notFoundHandler, errorHandler } from "./middleware/errorHandler";
 import healthRouter from "./health/healthRouter";
 import accountRouter from './account/accountRouter';
 import authRouter from './auth/authRouter';
+import transactionRouter from './transaction/transactionRouter';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 
@@ -23,6 +24,7 @@ export const createApp = (): Application => {
   app.use("/auth", authRouter);
   app.use("/health", healthRouter);
   app.use("/accounts", accountRouter);
+  app.use("/transactions",transactionRouter);
   app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
   app.use(notFoundHandler);

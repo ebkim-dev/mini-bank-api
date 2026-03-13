@@ -1,5 +1,8 @@
-import type { AccountStatus, AccountType, UserRole } from "../generated/enums";
+import { AuthInput } from "../auth/user";
+import { Account, Transaction } from "../generated/client";
+import type { AccountStatus, AccountType, TransactionType, UserRole } from "../generated/enums";
 import { EventCode } from "../types/eventCodes";
+import { logger } from "./logger";
 
 export enum ExecutionStatus {
   SUCCESS = "SUCCESS",
@@ -61,4 +64,24 @@ export interface AccountFailByAccountEvent extends AccountFailureBaseEvent {
   accountId: string;
   nickname?: string;
   accountStatus?: AccountStatus;
+}
+
+// ==== Transaction (Success) ====
+export interface TransactionSuccessEvent extends AccountBaseEvent {
+  transactionId?: string;
+  accountId: string;
+  transactionType?: TransactionType;
+  amount?: string;
+  count?: number;
+}
+
+// ==== Transaction (Failure) ====
+export interface TransactionFailureEvent extends AccountBaseEvent {
+  transactionId?: string;
+  accountId?: string;
+  errorCode: string;
+}
+
+export function logEvent(message: EventCode, event: BaseEvent) {
+  logger.info(message, event);
 }

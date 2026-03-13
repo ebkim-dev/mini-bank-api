@@ -12,5 +12,7 @@ export function serializeAccount(
     nickname: account.nickname ?? "",
     status: account.status,
     balance: account.balance.toString(),
+    created_at: account.created_at,
+    updated_at: account.updated_at,
   }
 }

@@ -2,7 +2,7 @@ paths:
   /accounts:
     post:
       summary: Create a new account
-      description: Creates a new account for a customer. Returns the account data on success.
+      description: Creates a new account for a customer. Requires ADMIN role.
       tags:
         - accounts
       security:
@@ -22,6 +22,10 @@ paths:
                 $ref: '#/components/schemas/AccountResponse'
         '400':
           description: Empty or malformed body
+        '401':
+          description: Authentication failed
+        '403':
+          description: Insufficient permissions (ADMIN required)
     get:
       summary: Get all accounts for user
       description: Retrieve an array of all accounts for logged in user.
@@ -59,25 +63,25 @@ paths:
                   updated_at: "2026-02-17T12:01:00Z"
   /accounts/{accountId}:
     get:
-      summary: Fetch account by account ID
-      description: Retrieve an account given its account ID. Returns the retrieved account on success.
+      summary: Fetch account by ID
+      description: Retrieve an account given its UUID.
       tags:
         - accounts
       security:
         - sessionAuth: []
       parameters:
-        - name: accountId
+        - name: id
           in: path
-          description: UUID of the account to be fetched
+          description: UUID of the account
           required: true
           example: "550e8400-e29b-41d4-a716-446655440001"
           schema:
             type: string
             format: uuid
       responses:
-        '200': 
-          description: Retrieved account given account ID
-          content: 
+        '200':
+          description: Retrieved account
+          content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AccountResponse'
@@ -88,16 +92,16 @@ paths:
         '404': 
           description: Account not found
     put:
-      summary: Update account by account ID
-      description: Update an account given its account ID and new values. Returns the updated account on success.
+      summary: Update account by ID
+      description: Update allowed fields (nickname, status). Requires ADMIN role.
       tags:
         - accounts
       security:
         - sessionAuth: []
       parameters:
-        - name: accountId
+        - name: id
           in: path
-          description: UUID of the account to be updated
+          description: UUID of the account
           required: true
           example: "550e8400-e29b-41d4-a716-446655440001"
           schema:
@@ -111,8 +115,8 @@ paths:
               $ref: '#/components/schemas/AccountUpdateRequest'
       responses:
         '200':
-          description: Updated account given account ID and new values
-          content: 
+          description: Updated account
+          content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AccountResponse'
@@ -122,18 +126,18 @@ paths:
           description: Forbidden - user does not own this account
         '404': 
           description: Account not found
-  /accounts/{accountId}/close:    
+  /accounts/{id}/close:
     post:
-      summary: Close the given account.
-      description: Marks the given account as closed. Returns the closed account on success.
+      summary: Close an account
+      description: Marks the account as closed. Requires ADMIN role.
       tags:
         - accounts
       security:
         - sessionAuth: []
       parameters:
-        - name: accountId
+        - name: id
           in: path
-          description: UUID of the account to be closed
+          description: UUID of the account
           required: true
           example: "550e8400-e29b-41d4-a716-446655440001"
           schema:
@@ -141,8 +145,8 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Closed account given account ID
-          content: 
+          description: Closed account
+          content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AccountResponse'

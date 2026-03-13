@@ -40,12 +40,13 @@ beforeEach(async () => {
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
-describe("GET /accounts/:accountId", () => {
-  async function getAccountRequest(accountId: string) {
+async function getAccountRequest(accountId: string) {
     return request(app)
       .get(`/accounts/${accountId}`)
       .set("x-session-id", mockSessionId);
   }
+
+describe("GET /accounts/:accountId", () => {
 
   test("Account found for accountId => 200, account is returned", async () => {
     mockFindUnique.mockResolvedValue(buildAccountRecord());

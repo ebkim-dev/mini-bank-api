@@ -7,8 +7,6 @@ import {
 } from "../../accountMock";
 import { 
   mockAccountId2,
-  mockCustomerId,
-  mockMissingCustomerId,
   mockRedisKey,
   mockSessionId
 } from "../../commonMock";
@@ -40,14 +38,15 @@ beforeEach(async () => {
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
-describe("GET /accounts", () => {
-  async function getAccountsRequest(
+async function getAccountsRequest(
     sessionId: string = mockSessionId
   ) {
     return request(app)
       .get("/accounts")
       .set("x-session-id", sessionId);
   }
+
+describe("GET /accounts", () => {
 
   test("1+ account found for customerId => 200, array of found accounts is returned", async () => {
     mockFindMany.mockResolvedValue([
@@ -59,7 +58,7 @@ describe("GET /accounts", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
-    expect(res.body).toEqual([
+    expect(res.body).toMatchObject([
       buildAccountCreateOutput(),
       buildAccountCreateOutput({ id: mockAccountId2 }),
     ]);
