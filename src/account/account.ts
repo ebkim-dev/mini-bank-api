@@ -21,4 +21,22 @@ export type AccountOutput = {
   nickname?: string;
   status: AccountStatus;
   balance: string;
+  created_at?: Date;
+  updated_at?: Date;
+};
+
+export type AccountSummaryOutput = {
+  account_id: string;
+  balance: string;
+  currency: string;
+  status: AccountStatus;
+  total_credits: number;
+  total_debits: number;
+  recent_transactions: {
+    id: string;
+    type: string;
+    amount: string;
+    description: string;
+    created_at: Date;
+  }[];
 };

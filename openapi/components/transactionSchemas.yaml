@@ -1,0 +1,74 @@
+components:
+  schemas:
+    TransactionCreateRequest:
+      required:
+        - account_id
+        - type
+        - amount
+      type: object
+      properties:
+        account_id:
+          type: string
+          format: uuid
+          description: UUID of the account
+        type:
+          type: string
+          enum:
+            - DEBIT
+            - CREDIT
+          description: DEBIT for withdrawals, CREDIT for deposits
+        amount:
+          type: string
+          description: Positive amount as a string (e.g. "100.00")
+        description:
+          type: string
+          maxLength: 255
+          description: Human readable description
+        category:
+          type: string
+          maxLength: 100
+          description: Optional category (e.g. FOOD, CASH, DEPOSIT)
+      example:
+        account_id: "550e8400-e29b-41d4-a716-446655440001"
+        type: CREDIT
+        amount: "500.00"
+        description: "Initial deposit"
+        category: "DEPOSIT"
+    TransactionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID of the transaction
+        account_id:
+          type: string
+          format: uuid
+          description: UUID of the account
+        type:
+          type: string
+          enum:
+            - DEBIT
+            - CREDIT
+        amount:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        related_transfer_id:
+          type: string
+          description: UUID of related transfer (empty if standalone)
+        created_at:
+          type: string
+          format: date-time
+      example:
+        id: "44cfd375-4821-4eb0-9672-18d289eb47e7"
+        account_id: "550e8400-e29b-41d4-a716-446655440001"
+        type: CREDIT
+        amount: "500"
+        description: "Initial deposit"
+        category: "DEPOSIT"
+        related_transfer_id: ""
+        created_at: "2026-03-05T22:45:45.741Z"
+    

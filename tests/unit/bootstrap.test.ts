@@ -4,7 +4,7 @@ jest.mock("../../src/logging/logger", () => ({
     error: jest.fn(),
   }
 }));
-import { logger } from "../../src/logging/logger";
+
 jest.doMock("../../src/config/env", () => ({
   __esModule: true,
   default: { port: 5555, env: "test" },

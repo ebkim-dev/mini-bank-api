@@ -77,8 +77,10 @@ components:
           format: double
         created_at:
           type: string
+          format: date-time
         updated_at:
           type: string
+          format: date-time
       example:
         id: "550e8400-e29b-41d4-a716-446655440001"
         customer_id: "550e8400-e29b-41d4-a716-446655440000"
@@ -89,3 +91,60 @@ components:
         balance: "0"
         created_at: "2026-02-17T12:00:00Z"
         updated_at: "2026-02-17T12:00:00Z"
+    AccountSummaryResponse:
+      type: object
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        balance:
+          type: string
+        currency:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - CLOSED
+        total_credits:
+          type: integer
+        total_debits:
+          type: integer
+        recent_transactions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              type:
+                type: string
+                enum:
+                  - DEBIT
+                  - CREDIT
+              amount:
+                type: string
+              description:
+                type: string
+              created_at:
+                type: string
+                format: date-time
+      example:
+        account_id: "550e8400-e29b-41d4-a716-446655440001"
+        balance: "450"
+        currency: "USD"
+        status: "ACTIVE"
+        total_credits: 1
+        total_debits: 1
+        recent_transactions:
+          - id: "5b27f26e-7f9a-4eff-a4ce-53afcf29872c"
+            type: DEBIT
+            amount: "50"
+            description: "ATM withdrawal"
+            created_at: "2026-03-05T23:36:36.828Z"
+          - id: "44cfd375-4821-4eb0-9672-18d289eb47e7"
+            type: CREDIT
+            amount: "500"
+            description: "Initial deposit"
+            created_at: "2026-03-05T22:45:45.741Z"

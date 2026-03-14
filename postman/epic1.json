@@ -30,7 +30,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}"
+          "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"email\": \"testuser@example.com\",\n  \"phone\": \"1234567890\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/auth/register",
@@ -48,9 +48,9 @@
             "type": "text/javascript",
             "exec": [
               "const res = pm.response.json();",
-              "if (res.token) {",
-              "  pm.environment.set('authToken', res.token);",
-              "  console.log('Token saved to authToken');",
+              "if (res.sessionId) {",
+              "  pm.environment.set('sessionId', res.sessionId);",
+              "  console.log('Session ID saved');",
               "}"
             ]
           }
@@ -83,21 +83,15 @@
           {
             "key": "Content-Type",
             "value": "application/json"
+          },
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
           }
         ],
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
-            }
-          ]
-        },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"customer_id\": \"{{customerId}}\",\n  \"type\": \"SAVINGS\",\n  \"currency\": \"USD\"\n}"
+          "raw": "{\n  \"type\": \"SAVINGS\",\n  \"currency\": \"USD\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/accounts",
@@ -107,30 +101,19 @@
       }
     },
     {
-      "name": "Get Accounts by Customer",
+      "name": "Get Accounts",
       "request": {
         "method": "GET",
-        "header": [],
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
-            }
-          ]
-        },
+        "header": [
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
+          }
+        ],
         "url": {
-          "raw": "{{baseUrl}}/accounts?customer_id={{customerId}}",
+          "raw": "{{baseUrl}}/accounts",
           "host": ["{{baseUrl}}"],
-          "path": ["accounts"],
-          "query": [
-            {
-              "key": "customer_id",
-              "value": "{{customerId}}"
-            }
-          ]
+          "path": ["accounts"]
         }
       }
     },
@@ -138,17 +121,12 @@
       "name": "Get Account by ID",
       "request": {
         "method": "GET",
-        "header": [],
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
-            }
-          ]
-        },
+        "header": [
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
+          }
+        ],
         "url": {
           "raw": "{{baseUrl}}/accounts/{{accountId}}",
           "host": ["{{baseUrl}}"],
@@ -164,18 +142,12 @@
           {
             "key": "Content-Type",
             "value": "application/json"
+          },
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
           }
         ],
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
-            }
-          ]
-        },
         "body": {
           "mode": "raw",
           "raw": "{\n  \"nickname\": \"Primary Account\"\n}"
@@ -195,18 +167,12 @@
           {
             "key": "Content-Type",
             "value": "application/json"
+          },
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
           }
         ],
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
-            }
-          ]
-        },
         "body": {
           "mode": "raw",
           "raw": "{\n  \"balance\": 5000\n}"
@@ -222,17 +188,12 @@
       "name": "Close Account",
       "request": {
         "method": "POST",
-        "header": [],
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
-            }
-          ]
-        },
+        "header": [
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
+          }
+        ],
         "url": {
           "raw": "{{baseUrl}}/accounts/{{accountId}}/close",
           "host": ["{{baseUrl}}"],

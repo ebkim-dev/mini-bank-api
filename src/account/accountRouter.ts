@@ -5,14 +5,16 @@ import {
   getAccount,
   updateAccount,
   deleteAccount,
+  getAccountSummary,
+  getTransactions
 } from "./accountController";
-
 import { validate } from "../middleware/validationMiddleware";
 import {
   createAccountBodySchema,
   updateAccountBodySchema,
   accountIdParamsSchema,
 } from "./accountSchemas";
+import { getTransactionsQuerySchema } from "../transaction/transactionSchemas";
 import { requireAuth } from "../auth/authMiddleware";
 
 const router = Router();
@@ -36,6 +38,22 @@ router.get(
   validate(accountIdParamsSchema, "params"),
   getAccount
 );
+
+router.get(
+  "/:id/summary",
+  requireAuth(),
+  validate(accountIdParamsSchema, "params"),
+  getAccountSummary
+);
+
+router.get(
+  "/:id/transactions",
+  requireAuth(),
+  validate(accountIdParamsSchema, "params"),
+  validate(getTransactionsQuerySchema, "query"),
+  getTransactions
+);
+
 
 router.put(
   "/:id",
