@@ -1,15 +1,19 @@
 import { AccountUpdateInput } from "../account/account";
 import { AuthInput } from "../auth/user";
-import { Account, Transaction } from "../generated/client";
+import { Account, Transaction, Transfer } from "../generated/client";
+import { TransferCreateInput } from "../generated/models";
 import { EventCode } from "../types/eventCodes";
 import { getDurationMs } from "../utils/calculateDuration";
 import { 
-  AccountFailByAccountEvent,
+  AccountFailureEvent,
   ExecutionStatus,
   ManyAccountSuccessEvent,
   SingleAccountSuccessEvent,
+  ManyTransferSuccessEvent,
   TransactionFailureEvent,
-  TransactionSuccessEvent
+  TransactionSuccessEvent,
+  SingleTransferSuccessEvent,
+  TransferFailureEvent
 } from "./logSchemas";
 
 export function buildSingleAccountSuccessEvent(
@@ -57,7 +61,7 @@ export function buildAccountFailEvent(
   accountId: string,
   errorCode: EventCode,
   data?: AccountUpdateInput
-): AccountFailByAccountEvent {
+): AccountFailureEvent {
   return {
     executionStatus: ExecutionStatus.FAILURE,
     durationMs: getDurationMs(start),
@@ -125,3 +129,51 @@ export function buildTransactionFailureEvent(
     ...(accountId && { accountId }),
   };
 }
+
+export function buildSingleTransferSuccessEvent(
+  start: bigint,
+  actorData: AuthInput,
+  transferRecord: Transfer
+): SingleTransferSuccessEvent {
+  return {
+    executionStatus: ExecutionStatus.SUCCESS,
+    durationMs: getDurationMs(start),
+    actorId: actorData.actorId,
+    actorRole: actorData.role,
+    customerId: actorData.customerId,
+    transferId: transferRecord.id,
+    fromAccountId: transferRecord.from_account_id,
+    toAccountId: transferRecord.to_account_id,
+    amount: transferRecord.amount.toString(),
+  };
+}
+
+export function buildManyTransferSuccessEvent(
+  start: bigint,
+  actorData: AuthInput,
+  transferRecords: Transfer[]
+): ManyTransferSuccessEvent {
+  return {
+    executionStatus: ExecutionStatus.SUCCESS,
+    durationMs: getDurationMs(start),
+    actorId: actorData.actorId,
+    actorRole: actorData.role,
+    customerId: actorData.customerId,
+    transfers: transferRecords.map((transferRecord) => ({
+      transferId: transferRecord.id,
+      fromAccountId: transferRecord.from_account_id,
+      toAccountId: transferRecord.to_account_id,
+      amount: transferRecord.amount.toString(),
+    })),
+  };
+}
+
+// export function buildTransferFailureEvent(
+//   start: bigint,
+//   actorData: AuthInput,
+//   transferCreateInput: TransferCreateInput
+// ): TransferFailureEvent {
+//   return {
+    
+//   }
+// }
