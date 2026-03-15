@@ -81,7 +81,7 @@ export interface TransferBaseEvent extends BaseEvent {
 export interface SingleTransferSuccessEvent extends TransferBaseEvent {
   transferId: string;
   fromAccountId: string;
-  toAccountId: String;
+  toAccountId: string;
   amount: string;
 }
 
@@ -97,5 +97,6 @@ export interface ManyTransferSuccessEvent extends TransferBaseEvent {
 export interface TransferFailureEvent extends TransferBaseEvent {
   errorCode: EventCode;
   fromAccountId: string;
-  toAccountId: String;
+  toAccountId?: string;
+  amount?: string;
 }

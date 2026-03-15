@@ -1,9 +1,9 @@
-import { TransactionType } from "../generated/enums";
+import { Decimal } from "@prisma/client/runtime/client";
 
 export type TransferCreateInput = {
   fromAccountId: string;
   toAccountId: string;
-  amount: string;
+  amount: Decimal;
   memo?: string;
 };
 
@@ -13,4 +13,11 @@ export type TransferOutput = {
   toAccountId: string;
   amount: string;
   memo?: string;
+};
+
+export type TransferQueryInput = {
+  limit: number;
+  offset: number;
+  from?: string;
+  to?: string;
 };

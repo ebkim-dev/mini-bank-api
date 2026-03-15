@@ -1,7 +1,11 @@
 import { AccountUpdateInput } from "../account/account";
 import { AuthInput } from "../auth/user";
+<<<<<<< HEAD
 import { Account, Transaction, Transfer } from "../generated/client";
 import { TransferCreateInput } from "../generated/models";
+=======
+import { Account, Transfer } from "../generated/client";
+>>>>>>> 8e2d677 (transfer endpoints added, tests pending)
 import { EventCode } from "../types/eventCodes";
 import { getDurationMs } from "../utils/calculateDuration";
 import { 
@@ -15,6 +19,7 @@ import {
   SingleTransferSuccessEvent,
   TransferFailureEvent
 } from "./logSchemas";
+import { Decimal } from "@prisma/client/runtime/client";
 
 export function buildSingleAccountSuccessEvent(
   start: bigint,
@@ -168,12 +173,23 @@ export function buildManyTransferSuccessEvent(
   };
 }
 
-// export function buildTransferFailureEvent(
-//   start: bigint,
-//   actorData: AuthInput,
-//   transferCreateInput: TransferCreateInput
-// ): TransferFailureEvent {
-//   return {
-    
-//   }
-// }
+export function buildTransferFailureEvent(
+  start: bigint,
+  actorData: AuthInput,
+  errorCode: EventCode,
+  fromAccountId: string,
+  toAccountId?: string,
+  amount?: Decimal,
+): TransferFailureEvent {
+  return {
+    executionStatus: ExecutionStatus.FAILURE,
+    durationMs: getDurationMs(start),
+    errorCode,
+    actorId: actorData.actorId,
+    actorRole: actorData.role,
+    customerId: actorData.customerId,
+    fromAccountId,
+    ...(toAccountId !== undefined && { toAccountId }),
+    ...(amount !== undefined && { amount: amount.toString() }),
+  }
+}
