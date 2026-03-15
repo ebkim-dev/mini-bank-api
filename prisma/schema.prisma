@@ -55,6 +55,10 @@ model Account {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
+  transactions   Transaction[]
+  from_transfers Transfer[]    @relation("TransferFromAccount")
+  to_transfers   Transfer[]    @relation("TransferToAccount")
+
   @@index([customer_id])
   @@map("accounts")
 }
@@ -67,4 +71,49 @@ enum AccountType {
 enum AccountStatus {
   ACTIVE
   CLOSED
+}
+
+model Transaction {
+  id         String  @id @default(uuid()) @db.Char(36)
+  account_id String  @db.Char(36)
+  account    Account @relation(fields: [account_id], references: [id])
+
+  type        TransactionType
+  amount      Decimal         @db.Decimal(12, 2)
+  description String?         @db.VarChar(255)
+  category    String?         @db.VarChar(100)
+
+  related_transfer_id String?   @db.Char(36)
+  transfer            Transfer? @relation(fields: [related_transfer_id], references: [id])
+
+  created_at DateTime @default(now())
+
+  @@index([account_id])
+  @@index([related_transfer_id])
+  @@map("transactions")
+}
+
+enum TransactionType {
+  DEBIT
+  CREDIT
+}
+
+model Transfer {
+  id              String  @id @default(uuid()) @db.Char(36)
+  from_account_id String  @db.Char(36)
+  from_account    Account @relation("TransferFromAccount", fields: [from_account_id], references: [id])
+  to_account_id   String  @db.Char(36)
+  to_account      Account @relation("TransferToAccount", fields: [to_account_id], references: [id])
+
+  transactions Transaction[]
+
+  amount Decimal @db.Decimal(12, 2)
+  memo   String? @db.VarChar(255)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@index([from_account_id])
+  @@index([to_account_id])
+  @@map("transfers")
 }

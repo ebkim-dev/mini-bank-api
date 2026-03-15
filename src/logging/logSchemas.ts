@@ -12,6 +12,7 @@ export interface BaseEvent {
 }
 
 // ==== User ====
+
 export interface AuthSuccessEvent extends BaseEvent {
   userId: string;
   username: string;
@@ -23,13 +24,14 @@ export interface AuthFailureEvent extends BaseEvent {
   errorCode: EventCode;
 }
 
+// ==== Account ====
+
 export interface AccountBaseEvent extends BaseEvent {
   actorId: string;
   actorRole: UserRole;
   customerId: string;
 }
 
-// ==== Account: (Success) ====
 export interface SingleAccountSuccessEvent extends AccountBaseEvent {
   accountId: string;
   accountType: AccountType;
@@ -46,19 +48,39 @@ export interface ManyAccountSuccessEvent extends AccountBaseEvent {
   }[];
 }
 
-// ==== Account (Failure) ====
-export interface AccountFailureBaseEvent extends AccountBaseEvent {
+export interface AccountFailureEvent extends AccountBaseEvent {
   errorCode: EventCode;
-}
-
-export interface AccountFailByCustomerEvent extends AccountFailureBaseEvent {
-  accountType: AccountType;
-  currency: string;
-  accountStatus?: AccountStatus;
-}
-
-export interface AccountFailByAccountEvent extends AccountFailureBaseEvent {
   accountId: string;
   nickname?: string;
   accountStatus?: AccountStatus;
+}
+
+// ==== Transfer ====
+
+export interface TransferBaseEvent extends BaseEvent {
+  actorId: string;
+  actorRole: UserRole;
+  customerId: string;
+}
+
+export interface SingleTransferSuccessEvent extends TransferBaseEvent {
+  transferId: string;
+  fromAccountId: string;
+  toAccountId: String;
+  amount: string;
+}
+
+export interface ManyTransferSuccessEvent extends TransferBaseEvent {
+  transfers: {
+    transferId: string;
+    fromAccountId: string;
+    toAccountId: string;
+    amount: string;
+  }[];
+}
+
+export interface TransferFailureEvent extends TransferBaseEvent {
+  errorCode: EventCode;
+  fromAccountId: string;
+  toAccountId: String;
 }
