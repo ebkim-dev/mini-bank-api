@@ -1,8 +1,5 @@
-import { AccountType, AccountStatus } from "../src/generated/enums";
-import { Decimal } from "@prisma/client/runtime/client";
-import { Account } from "../src/generated/client";
-import { mockAccountId1, mockAccountId2, mockAmount, mockCustomerId, mockTransferId1 } from "./commonMock";
-import { AccountCreateInput, AccountOutput, AccountUpdateInput } from "../src/account/account";
+import { Transfer } from "../src/generated/client";
+import { mockAccountId1, mockAccountId2, mockAmount, mockTransferId1 } from "./commonMock";
 import { TransferCreateInput, TransferOutput } from "../src/transfer/transfer";
 
 export function buildTransferCreateInput(
@@ -16,7 +13,7 @@ export function buildTransferCreateInput(
   };
 }
 
-export function buildTransferCreateOutput(
+export function buildTransferOutput(
   overrides: Partial<TransferOutput> = {}
 ): TransferOutput {
   return {
@@ -28,48 +25,18 @@ export function buildTransferCreateOutput(
   };
 }
 
-// continue from here...
-
-export function buildAccountUpdateInput(
-  overrides: Partial<AccountUpdateInput> = {}
-): AccountUpdateInput {
-  return {
-    nickname: "mockUpdateNickname",
-    status: AccountStatus.ACTIVE,
-    ...overrides,
-  };
-}
-
-export function buildAccountRecord(
-  overrides: Partial<Account> = {}
-): Account { 
+export function buildTransferRecord(
+  overrides: Partial<Transfer> = {}
+): Transfer { 
   const mockDate = new Date();
-  const mockAccountRecord: Account = {
-    id: mockAccountId1,
-    customer_id: mockCustomerId,
-    type: AccountType.SAVINGS,
-    currency: "USD",
-    nickname: null,
-    status: AccountStatus.ACTIVE,
-    balance: new Decimal(0),
+  return {
+    id: mockTransferId1,
+    from_account_id: mockAccountId1,
+    to_account_id: mockAccountId2,
+    amount: mockAmount,
+    memo: null,
     created_at: mockDate,
     updated_at: mockDate,
     ...overrides
-  };
-  return mockAccountRecord;
-}
-
-export function buildAccountOutput(
-  overrides: Partial<AccountOutput> = {}
-): AccountOutput {
-  return {
-    id: mockAccountId1,
-    customer_id: mockCustomerId,
-    type: AccountType.SAVINGS,
-    currency: "USD",
-    nickname: "",
-    status: AccountStatus.ACTIVE,
-    balance: (new Decimal(0)).toString(),
-    ...overrides,
   };
 }

@@ -1,11 +1,7 @@
 import { AccountUpdateInput } from "../account/account";
 import { AuthInput } from "../auth/user";
-<<<<<<< HEAD
 import { Account, Transaction, Transfer } from "../generated/client";
 import { TransferCreateInput } from "../generated/models";
-=======
-import { Account, Transfer } from "../generated/client";
->>>>>>> 8e2d677 (transfer endpoints added, tests pending)
 import { EventCode } from "../types/eventCodes";
 import { getDurationMs } from "../utils/calculateDuration";
 import { 

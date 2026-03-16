@@ -6,7 +6,7 @@ import type {
   TransactionOutput,
   TransactionQueryInput,
 } from "../src/transaction/transaction";
-import { mockAccountId1 } from "./commonMock";
+import { mockAccountId1, mockAmount } from "./commonMock";
 
 export const mockTransactionId1 = "550e8400-e29b-41d4-a716-446655440030";
 export const mockTransactionId2 = "550e8400-e29b-41d4-a716-446655440031";
