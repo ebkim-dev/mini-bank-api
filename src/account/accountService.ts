@@ -2,6 +2,7 @@ import type {
   AccountCreateInput,
   AccountOutput,
   AccountUpdateInput,
+  AccountSummaryOutput
 } from './account';
 import type { Account } from '../generated/client';
 import type { AuthInput } from '../auth/user';
@@ -14,8 +15,10 @@ import { logger } from '../logging/logger';
 import { 
   buildAccountFailEvent,
   buildManyAccountSuccessEvent,
-  buildSingleAccountSuccessEvent
+  buildSingleAccountSuccessEvent,
 } from '../logging/eventFactories';
+
+
 
 
 export async function insertAccount(
@@ -35,9 +38,10 @@ export async function insertAccount(
     },
   });
 
-  logger.info(EventCode.ACCOUNT_CREATED, buildSingleAccountSuccessEvent(
-    start, authInput, accountRecord
-  ));
+  logger.info(
+    EventCode.ACCOUNT_CREATED, 
+    buildSingleAccountSuccessEvent(start, authInput, accountRecord)
+  );
 
   return serializeAccount(accountRecord);
 }
@@ -52,9 +56,10 @@ export async function fetchAccountsByCustomerId(
     where: { customer_id: authInput.customerId }
   });
 
-  logger.info(EventCode.ACCOUNT_FETCHED, buildManyAccountSuccessEvent(
-    start, authInput, accountRecords
-  ));
+  logger.info(
+    EventCode.ACCOUNT_FETCHED, 
+    buildManyAccountSuccessEvent(start, authInput, accountRecords)
+  );
 
   return accountRecords.map((accountRecord) => serializeAccount(accountRecord));
 }
@@ -123,9 +128,10 @@ export async function updateAccountById(
     where: { id }, data
   });
     
-  logger.info(EventCode.ACCOUNT_UPDATED, buildSingleAccountSuccessEvent(
-    start, authInput, updatedAccount
-  ));
+  logger.info(
+    EventCode.ACCOUNT_UPDATED, 
+    buildSingleAccountSuccessEvent(start, authInput, updatedAccount)
+  );
 
   return serializeAccount(updatedAccount);
 }
@@ -160,9 +166,84 @@ export async function deleteAccountById(
     where: { id }, data: { status: AccountStatus.CLOSED }
   });
 
-  logger.info(EventCode.ACCOUNT_CLOSED, buildSingleAccountSuccessEvent(
-    start, authInput, closedAccount
-  ));
+  logger.info(
+    EventCode.ACCOUNT_CLOSED, 
+    buildSingleAccountSuccessEvent(start, authInput, closedAccount)
+  );
 
   return serializeAccount(closedAccount);
+
+}
+
+
+export async function fetchAccountSummary(
+  id: string,
+  authInput: AuthInput
+): Promise<AccountSummaryOutput> {
+  const start = process.hrtime.bigint();
+
+  const account = await prismaClient.account.findUnique({
+    where: { id },
+  });
+
+  if (!account) {
+    logger.info(
+      EventCode.ACCOUNT_NOT_FOUND,
+      buildAccountFailEvent(start, authInput, id, EventCode.ACCOUNT_NOT_FOUND)
+    );
+    throw NotFoundError(EventCode.ACCOUNT_NOT_FOUND, "Account not found", {
+      id,
+    });
+  }
+
+  if (
+    authInput.role !== UserRole.ADMIN &&
+    authInput.customerId !== account.customer_id
+  ){
+    const forbiddenErrorMessage = "Only account owners can read account summaries";
+    logger.info(
+      EventCode.FORBIDDEN,
+      buildAccountFailEvent(start, authInput, id, EventCode.FORBIDDEN)
+    );
+    throw ForbiddenError(EventCode.FORBIDDEN, forbiddenErrorMessage);
+  }
+
+  const recentTransactions = await prismaClient.transaction.findMany({
+    where: { account_id: id },
+    orderBy: { created_at: "desc" },
+    take: 10,
+  });
+
+  const counts = await prismaClient.transaction.groupBy({
+    by: ["type"],
+    where: { account_id: id },
+    _count: { type: true },
+  });
+
+  const totalCredits =
+    counts.find((c) => c.type === "CREDIT")?._count.type ?? 0;
+  const totalDebits =
+    counts.find((c) => c.type === "DEBIT")?._count.type ?? 0;
+
+  logger.info(EventCode.ACCOUNT_FETCHED, buildSingleAccountSuccessEvent(
+    start,
+    authInput,
+    account
+  ));
+
+  return {
+    account_id: account.id,
+    balance: account.balance.toString(),
+    currency: account.currency,
+    status: account.status,
+    total_credits: totalCredits,
+    total_debits: totalDebits,
+    recent_transactions: recentTransactions.map((t) => ({
+      id: t.id,
+      type: t.type,
+      amount: t.amount.toString(),
+      description: t.description ?? "",
+      created_at: t.created_at,
+    })),
+  };
 }
