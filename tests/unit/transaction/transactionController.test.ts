@@ -4,6 +4,7 @@ import { TransactionType } from "../../../src/generated/enums";
 import { buildAuthInput } from "../../authMock";
 import { mockAccountId1 } from "../../commonMock";
 import {
+  buildTransactionCreateInput,
   buildTransactionOutput,
   buildTransactionQueryInput,
   mockMissingTransactionId,
@@ -43,15 +44,11 @@ function buildReq(
 }
 
 describe("createTransaction controller", () => {
-  it("should merge accountId from params with body and return 201", async () => {
+  it("should pass accountId and body separately to service and return 201", async () => {
+    const body = buildTransactionCreateInput();
     const req: any = buildReq({
       params: { accountId: mockAccountId1 },
-      body: {
-        type: TransactionType.CREDIT,
-        amount: "100.00",
-        description: "mock transaction description",
-        category: "mock category",
-      },
+      body,
       user: buildAuthInput(),
     });
 
@@ -62,13 +59,8 @@ describe("createTransaction controller", () => {
     await transactionController.createTransaction(req, res, next);
 
     expect(transactionService.insertTransaction).toHaveBeenCalledWith(
-      {
-        account_id: mockAccountId1,
-        type: TransactionType.CREDIT,
-        amount: "100.00",
-        description: "mock transaction description",
-        category: "mock category",
-      },
+      mockAccountId1,
+      body,
       buildAuthInput()
     );
     expect(statusMock).toHaveBeenCalledWith(201);
@@ -79,10 +71,7 @@ describe("createTransaction controller", () => {
   it("should call next when service throws", async () => {
     const req: any = buildReq({
       params: { accountId: mockAccountId1 },
-      body: {
-        type: TransactionType.CREDIT,
-        amount: "100.00",
-      },
+      body: buildTransactionCreateInput(),
       user: buildAuthInput(),
     });
 
@@ -99,10 +88,11 @@ describe("createTransaction controller", () => {
 });
 
 describe("getTransactions controller", () => {
-  it("should call fetchTransactions and return 200 with empty array if no transactions are found", async () => {
+  it("should pass accountId and query separately to service and return 200 with empty array", async () => {
+    const query = buildTransactionQueryInput();
     const req: any = buildReq({
       params: { accountId: mockAccountId1 },
-      query: buildTransactionQueryInput(),
+      query,
       user: buildAuthInput(),
     });
 
@@ -113,10 +103,8 @@ describe("getTransactions controller", () => {
     await transactionController.getTransactions(req, res, next);
 
     expect(transactionService.fetchTransactions).toHaveBeenCalledWith(
-      {
-        account_id: mockAccountId1,
-        ...req.validated.query,
-      },
+      mockAccountId1,
+      query,
       buildAuthInput()
     );
     expect(statusMock).toHaveBeenCalledWith(200);
@@ -124,14 +112,15 @@ describe("getTransactions controller", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("should call fetchTransactions and return 200 with serialized transactions", async () => {
+  it("should return 200 with serialized transactions", async () => {
+    const query = buildTransactionQueryInput({
+      type: TransactionType.DEBIT,
+      limit: 5,
+      offset: 10,
+    });
     const req: any = buildReq({
       params: { accountId: mockAccountId1 },
-      query: buildTransactionQueryInput({
-        type: TransactionType.DEBIT,
-        limit: 5,
-        offset: 10,
-      }),
+      query,
       user: buildAuthInput(),
     });
 
@@ -142,10 +131,8 @@ describe("getTransactions controller", () => {
     await transactionController.getTransactions(req, res, next);
 
     expect(transactionService.fetchTransactions).toHaveBeenCalledWith(
-      {
-        account_id: mockAccountId1,
-        ...req.validated.query,
-      },
+      mockAccountId1,
+      query,
       buildAuthInput()
     );
     expect(statusMock).toHaveBeenCalledWith(200);

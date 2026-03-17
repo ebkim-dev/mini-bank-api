@@ -14,16 +14,11 @@ export async function createTransaction(
 ): Promise<void> {
   try {
     const { accountId } = (req as any).validated.params;
-    const body = (req as any).validated.body;
+    const body: TransactionCreateInput = (req as any).validated.body;
     const authInput: AuthInput = req.user;
 
-    const input: TransactionCreateInput = {
-      account_id: accountId,
-      ...body,
-    };
-
     const newTransaction: TransactionOutput =
-      await transactionService.insertTransaction(input, authInput);
+      await transactionService.insertTransaction(accountId, body, authInput);
     res.status(201).json(newTransaction);
   } catch (err) {
     next(err);
@@ -37,16 +32,11 @@ export async function getTransactions(
 ): Promise<void> {
   try {
     const { accountId } = (req as any).validated.params;
-    const query = (req as any).validated.query;
+    const query: TransactionQueryInput = (req as any).validated.query;
     const authInput: AuthInput = req.user;
 
-    const transactionQuery: TransactionQueryInput = {
-      account_id: accountId,
-      ...query,
-    };
-
     const transactions: TransactionOutput[] =
-      await transactionService.fetchTransactions(transactionQuery, authInput);
+      await transactionService.fetchTransactions(accountId, query, authInput);
     res.status(200).json(transactions);
   } catch (err) {
     next(err);

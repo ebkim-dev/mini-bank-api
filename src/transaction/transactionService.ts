@@ -15,6 +15,7 @@ import { buildManyTransactionSuccessEvent, buildTransactionFailureEvent, buildTr
 import { logger } from "../logging/logger";
 
 export async function insertTransaction(
+  accountId: string,
   data: TransactionCreateInput,
   authInput: AuthInput
 ): Promise<TransactionOutput> {
@@ -23,7 +24,7 @@ export async function insertTransaction(
   const result = await prismaClient.$transaction(async (tx) => {
     // 1. Fetch the account and validate
     const account = await tx.account.findUnique({
-      where: { id: data.account_id },
+      where: { id: accountId },
     });
 
     if (!account) {
@@ -34,13 +35,13 @@ export async function insertTransaction(
           authInput,
           EventCode.ACCOUNT_NOT_FOUND,
           undefined,
-          data.account_id
+          accountId
         )
       );
       throw NotFoundError(
         EventCode.ACCOUNT_NOT_FOUND,
         "Account not found",
-        { account_id: data.account_id }
+        { account_id: accountId }
       );
     }
 
@@ -52,13 +53,13 @@ export async function insertTransaction(
           authInput,
           EventCode.ACCOUNT_NOT_ACTIVE,
           undefined,
-          data.account_id
+          accountId
         )
       );
       throw ConflictError(
         EventCode.ACCOUNT_NOT_ACTIVE,
         "Account is not active",
-        { account_id: data.account_id, status: account.status }
+        { account_id: accountId, status: account.status }
       );
     }
 
@@ -76,14 +77,14 @@ export async function insertTransaction(
             authInput,
             EventCode.INSUFFICIENT_FUNDS,
             undefined,
-            data.account_id
+            accountId
           )
         );
         throw ConflictError(
           EventCode.INSUFFICIENT_FUNDS,
           "Insufficient funds",
           {
-            account_id: data.account_id,
+            account_id: accountId,
             current_balance: account.balance.toString(),
             requested_amount: data.amount,
           }
@@ -96,7 +97,7 @@ export async function insertTransaction(
     // 3. Create transaction record
     const transactionRecord: Transaction = await tx.transaction.create({
       data: {
-        account_id: data.account_id,
+        account_id: accountId,
         type: data.type,
         amount,
         description: data.description ?? null,
@@ -106,7 +107,7 @@ export async function insertTransaction(
 
     // 4. Update account balance
     await tx.account.update({
-      where: { id: data.account_id },
+      where: { id: accountId },
       data: { balance: newBalance },
     });
 
@@ -123,13 +124,14 @@ export async function insertTransaction(
 
 
 export async function fetchTransactions(
+  accountId: string,
   query: TransactionQueryInput,
   authInput: AuthInput
 ): Promise<TransactionOutput[]> {
   const start = process.hrtime.bigint();
 
   const where: any = {
-    account_id: query.account_id,
+    account_id: accountId,
   };
 
   if (query.type) {
@@ -147,7 +149,7 @@ export async function fetchTransactions(
   }
 
   const account = await prismaClient.account.findUnique({
-    where: { id: query.account_id },
+    where: { id: accountId },
   });
 
   if (!account) {
@@ -158,11 +160,11 @@ export async function fetchTransactions(
         authInput,
         EventCode.ACCOUNT_NOT_FOUND,
         undefined,
-        query.account_id
+        accountId
       )
     );
     throw NotFoundError(EventCode.ACCOUNT_NOT_FOUND, "Account not found", {
-      id: query.account_id,
+      id: accountId,
     });
   }
 
@@ -177,7 +179,7 @@ export async function fetchTransactions(
         authInput,
         EventCode.FORBIDDEN,
         undefined,
-        query.account_id
+        accountId
       )
     );
     throw ForbiddenError(
@@ -198,7 +200,7 @@ export async function fetchTransactions(
     buildManyTransactionSuccessEvent(
       start,
       authInput,
-      query.account_id,
+      accountId,
       records.length
     )
   );

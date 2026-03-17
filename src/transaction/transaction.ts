@@ -1,7 +1,6 @@
 import { TransactionType } from "../generated/enums";
 
 export type TransactionCreateInput = {
-  account_id: string;
   type: TransactionType;
   amount: string;
   description?: string;
@@ -20,7 +19,6 @@ export type TransactionOutput = {
 };
 
 export type TransactionQueryInput = {
-  account_id: string;
   limit: number;
   offset: number;
   type?: TransactionType;

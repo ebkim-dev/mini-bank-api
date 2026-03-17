@@ -16,7 +16,6 @@ export const mockRelatedTransferId = "550e8400-e29b-41d4-a716-446655440040";
 export const mockTransactionDate = new Date("2026-01-15T10:00:00.000Z");
 
 export interface TransactionCreateRequestBody {
-  account_id: string;
   type: TransactionType;
   amount: string;
   description?: string;
@@ -27,7 +26,6 @@ export function buildTransactionCreateRequestBody(
   overrides: Partial<TransactionCreateRequestBody> = {}
 ): TransactionCreateRequestBody {
   return {
-    account_id: mockAccountId1,
     type: TransactionType.CREDIT,
     amount: "100.00",
     description: "mock transaction description",
@@ -49,7 +47,6 @@ export function buildTransactionCreateInputWithoutOptionalFields(
   overrides: Partial<Omit<TransactionCreateInput, "description" | "category">> = {}
 ): TransactionCreateInput {
   return {
-    account_id: mockAccountId1,
     type: TransactionType.CREDIT,
     amount: "100.00",
     ...overrides,
@@ -92,7 +89,6 @@ export function buildTransactionQueryInput(
   overrides: Partial<TransactionQueryInput> = {}
 ): TransactionQueryInput {
   return {
-    account_id: mockAccountId1,
     limit: 20,
     offset: 0,
     ...overrides,
