@@ -1,9 +1,21 @@
 import { z } from "zod";
 import { TransactionType } from "../generated/enums";
 
+export const accountIdParamsSchema = z
+  .object({
+    accountId: z.uuid("accountId must be a valid UUID"),
+  })
+  .strict();
+
+export const transactionIdParamsSchema = z
+  .object({
+    accountId: z.uuid("accountId must be a valid UUID"),
+    transactionId: z.uuid("transactionId must be a valid UUID"),
+  })
+  .strict();
+
 export const createTransactionBodySchema = z
   .object({
-    account_id: z.uuid("account_id must be a valid UUID"),
     type: z.enum(TransactionType),
     amount: z
       .string()
@@ -37,11 +49,5 @@ export const getTransactionsQuerySchema = z
     type: z.enum(TransactionType).optional(),
     from: z.string().datetime({ message: "from must be a valid ISO date" }).optional(),
     to: z.string().datetime({ message: "to must be a valid ISO date" }).optional(),
-  })
-  .strict();
-
-export const transactionIdParamsSchema = z
-  .object({
-    id: z.uuid("id must be a valid UUID"),
   })
   .strict();

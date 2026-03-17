@@ -5,7 +5,6 @@ import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
 import { AccountStatus, TransactionType } from "../../../src/generated/enums";
 import { buildAccountRecord } from "../../accountMock";
 import {
-  buildTransactionCreateRequestBody,
   buildTransactionOutput,
   buildTransactionRecord,
 } from "../../transactionMock";
@@ -65,16 +64,17 @@ beforeEach(() => {
 });
 
 async function postTransactionRequest(
+  accountId: string,
   body: any,
   sessionId = mockSessionId
 ) {
   return request(app)
-    .post("/transactions")
+    .post(`/accounts/${accountId}/transactions`)
     .set("x-session-id", sessionId)
     .send(body);
 }
 
-describe("POST /transactions", () => {
+describe("POST /accounts/:accountId/transactions", () => {
   test("Correct CREDIT input => 201, transaction created and returned", async () => {
     txMock.account.findUnique.mockResolvedValue(
       buildAccountRecord({ balance: new Decimal("250.00") })
@@ -84,13 +84,18 @@ describe("POST /transactions", () => {
       buildAccountRecord({ balance: new Decimal("350.00") })
     );
 
-    const res = await postTransactionRequest(buildTransactionCreateRequestBody());
+    const res = await postTransactionRequest(mockAccountId1, {
+      type: TransactionType.CREDIT,
+      amount: "100.00",
+      description: "mock transaction description",
+      category: "mock category",
+    });
 
     expect(res.status).toBe(201);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(res.body).toMatchObject({
-        ...buildTransactionOutput(),
-        created_at: buildTransactionOutput().created_at.toISOString(),
+      ...buildTransactionOutput(),
+      created_at: buildTransactionOutput().created_at.toISOString(),
     });
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockPrismaTransaction).toHaveBeenCalledTimes(1);
@@ -110,12 +115,10 @@ describe("POST /transactions", () => {
       buildAccountRecord({ balance: new Decimal("450.00") })
     );
 
-    const res = await postTransactionRequest(
-      buildTransactionCreateRequestBody({
-        type: TransactionType.DEBIT,
-        amount: "50.00",
-      })
-    );
+    const res = await postTransactionRequest(mockAccountId1, {
+      type: TransactionType.DEBIT,
+      amount: "50.00",
+    });
 
     expect(res.status).toBe(201);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -133,8 +136,7 @@ describe("POST /transactions", () => {
       buildAccountRecord({ balance: new Decimal("200.00") })
     );
 
-    const res = await postTransactionRequest({
-      account_id: mockAccountId1,
+    const res = await postTransactionRequest(mockAccountId1, {
       type: TransactionType.CREDIT,
       amount: "100.00",
     });
@@ -144,20 +146,8 @@ describe("POST /transactions", () => {
     expect(res.body.category).toBe("");
   });
 
-  test("Missing required field (account_id) => 400", async () => {
-    const res = await postTransactionRequest({
-      type: TransactionType.CREDIT,
-      amount: "100.00",
-    });
-
-    expect(res.status).toBe(400);
-    expect(res.headers).toHaveProperty("x-trace-id");
-    expect(mockPrismaTransaction).not.toHaveBeenCalled();
-  });
-
   test("Missing required field (type) => 400", async () => {
-    const res = await postTransactionRequest({
-      account_id: mockAccountId1,
+    const res = await postTransactionRequest(mockAccountId1, {
       amount: "100.00",
     });
 
@@ -167,8 +157,7 @@ describe("POST /transactions", () => {
   });
 
   test("Missing required field (amount) => 400", async () => {
-    const res = await postTransactionRequest({
-      account_id: mockAccountId1,
+    const res = await postTransactionRequest(mockAccountId1, {
       type: TransactionType.CREDIT,
     });
 
@@ -178,17 +167,30 @@ describe("POST /transactions", () => {
   });
 
   test("Empty body => 400", async () => {
-    const res = await postTransactionRequest({});
+    const res = await postTransactionRequest(mockAccountId1, {});
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(mockPrismaTransaction).not.toHaveBeenCalled();
   });
 
-  test("Invalid UUID account_id => 400", async () => {
-    const res = await postTransactionRequest(
-      buildTransactionCreateRequestBody({ account_id: "not-a-uuid" })
-    );
+  test("Invalid accountId in path => 400", async () => {
+    const res = await postTransactionRequest("not-a-uuid", {
+      type: TransactionType.CREDIT,
+      amount: "100.00",
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+    expect(mockPrismaTransaction).not.toHaveBeenCalled();
+  });
+
+  test("account_id in body rejected (strict) => 400", async () => {
+    const res = await postTransactionRequest(mockAccountId1, {
+      account_id: mockAccountId1,
+      type: TransactionType.CREDIT,
+      amount: "100.00",
+    });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -196,9 +198,10 @@ describe("POST /transactions", () => {
   });
 
   test("Invalid enum type => 400", async () => {
-    const res = await postTransactionRequest(
-      buildTransactionCreateRequestBody({ type: "TRANSFER" as any })
-    );
+    const res = await postTransactionRequest(mockAccountId1, {
+      type: "TRANSFER",
+      amount: "100.00",
+    });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -206,9 +209,10 @@ describe("POST /transactions", () => {
   });
 
   test("Negative amount => 400", async () => {
-    const res = await postTransactionRequest(
-      buildTransactionCreateRequestBody({ amount: "-50.00" })
-    );
+    const res = await postTransactionRequest(mockAccountId1, {
+      type: TransactionType.CREDIT,
+      amount: "-50.00",
+    });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -216,9 +220,10 @@ describe("POST /transactions", () => {
   });
 
   test("Zero amount => 400", async () => {
-    const res = await postTransactionRequest(
-      buildTransactionCreateRequestBody({ amount: "0" })
-    );
+    const res = await postTransactionRequest(mockAccountId1, {
+      type: TransactionType.CREDIT,
+      amount: "0",
+    });
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -226,8 +231,9 @@ describe("POST /transactions", () => {
   });
 
   test("Extra fields => 400", async () => {
-    const res = await postTransactionRequest({
-      ...buildTransactionCreateRequestBody(),
+    const res = await postTransactionRequest(mockAccountId1, {
+      type: TransactionType.CREDIT,
+      amount: "100.00",
       extra: "nope",
     });
 
@@ -239,9 +245,10 @@ describe("POST /transactions", () => {
   test("Account not found => 404", async () => {
     txMock.account.findUnique.mockResolvedValue(null);
 
-    const res = await postTransactionRequest(
-      buildTransactionCreateRequestBody({ account_id: mockMissingAccountId })
-    );
+    const res = await postTransactionRequest(mockMissingAccountId, {
+      type: TransactionType.CREDIT,
+      amount: "100.00",
+    });
 
     expect(res.status).toBe(404);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -252,7 +259,10 @@ describe("POST /transactions", () => {
       buildAccountRecord({ status: AccountStatus.CLOSED })
     );
 
-    const res = await postTransactionRequest(buildTransactionCreateRequestBody());
+    const res = await postTransactionRequest(mockAccountId1, {
+      type: TransactionType.CREDIT,
+      amount: "100.00",
+    });
 
     expect(res.status).toBe(409);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -264,12 +274,10 @@ describe("POST /transactions", () => {
       buildAccountRecord({ balance: new Decimal("10.00") })
     );
 
-    const res = await postTransactionRequest(
-      buildTransactionCreateRequestBody({
-        type: TransactionType.DEBIT,
-        amount: "999.00",
-      })
-    );
+    const res = await postTransactionRequest(mockAccountId1, {
+      type: TransactionType.DEBIT,
+      amount: "999.00",
+    });
 
     expect(res.status).toBe(409);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -278,7 +286,8 @@ describe("POST /transactions", () => {
 
   it("should return 401 given missing session", async () => {
     const res = await postTransactionRequest(
-      buildTransactionCreateRequestBody(),
+      mockAccountId1,
+      { type: TransactionType.CREDIT, amount: "100.00" },
       ""
     );
 

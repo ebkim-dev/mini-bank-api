@@ -73,54 +73,54 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"account_id\": \"{{accountId}}\",\n  \"type\": \"CREDIT\",\n  \"amount\": \"500.00\",\n  \"description\": \"Initial deposit\",\n  \"category\": \"DEPOSIT\"\n}"
+          "raw": "{\n  \"type\": \"CREDIT\",\n  \"amount\": \"500.00\",\n  \"description\": \"Initial deposit\",\n  \"category\": \"DEPOSIT\"\n}"
         },
         "url": {
-          "raw": "{{baseUrl}}/transactions",
+          "raw": "{{baseUrl}}/accounts/{{accountId}}/transactions",
           "host": ["{{baseUrl}}"],
-          "path": ["transactions"]
+          "path": ["accounts", "{{accountId}}", "transactions"]
         }
       }
     },
     {
-        "name": "Create Transaction (DEBIT)",
-        "event": [
-            {
-            "listen": "test",
-            "script": {
-                "type": "text/javascript",
-                "exec": [
-                "const res = pm.response.json();",
-                "if (res.id) {",
-                "  pm.environment.set('transactionId', res.id);",
-                "  console.log('Transaction ID saved');",
-                "}"
-                ]
-            }
-            }
-        ],
-        "request": {
-            "method": "POST",
-            "header": [
-            {
-                "key": "Content-Type",
-                "value": "application/json"
-            },
-            {
-                "key": "x-session-id",
-                "value": "{{sessionId}}"
-            }
-            ],
-            "body": {
-            "mode": "raw",
-            "raw": "{\n  \"account_id\": \"{{accountId}}\",\n  \"type\": \"DEBIT\",\n  \"amount\": \"50.00\",\n  \"description\": \"ATM withdrawal\",\n  \"category\": \"CASH\"\n}"
-            },
-            "url": {
-            "raw": "{{baseUrl}}/transactions",
-            "host": ["{{baseUrl}}"],
-            "path": ["transactions"]
-            }
+      "name": "Create Transaction (DEBIT)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.id) {",
+              "  pm.environment.set('transactionId', res.id);",
+              "  console.log('Transaction ID saved');",
+              "}"
+            ]
+          }
         }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"DEBIT\",\n  \"amount\": \"50.00\",\n  \"description\": \"ATM withdrawal\",\n  \"category\": \"CASH\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId}}/transactions",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId}}", "transactions"]
+        }
+      }
     },
     {
       "name": "Create Transaction (Overdraft - Should Fail 409)",
@@ -138,12 +138,12 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"account_id\": \"{{accountId}}\",\n  \"type\": \"DEBIT\",\n  \"amount\": \"999999.00\",\n  \"description\": \"Should fail - overdraft\"\n}"
+          "raw": "{\n  \"type\": \"DEBIT\",\n  \"amount\": \"999999.00\",\n  \"description\": \"Should fail - overdraft\"\n}"
         },
         "url": {
-          "raw": "{{baseUrl}}/transactions",
+          "raw": "{{baseUrl}}/accounts/{{accountId}}/transactions",
           "host": ["{{baseUrl}}"],
-          "path": ["transactions"]
+          "path": ["accounts", "{{accountId}}", "transactions"]
         }
       }
     },
@@ -163,12 +163,12 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"account_id\": \"{{accountId}}\",\n  \"type\": \"CREDIT\",\n  \"amount\": \"-100.00\",\n  \"description\": \"Should fail - negative amount\"\n}"
+          "raw": "{\n  \"type\": \"CREDIT\",\n  \"amount\": \"-100.00\",\n  \"description\": \"Should fail - negative amount\"\n}"
         },
         "url": {
-          "raw": "{{baseUrl}}/transactions",
+          "raw": "{{baseUrl}}/accounts/{{accountId}}/transactions",
           "host": ["{{baseUrl}}"],
-          "path": ["transactions"]
+          "path": ["accounts", "{{accountId}}", "transactions"]
         }
       }
     },
@@ -184,12 +184,12 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"account_id\": \"{{accountId}}\",\n  \"type\": \"CREDIT\",\n  \"amount\": \"100.00\"\n}"
+          "raw": "{\n  \"type\": \"CREDIT\",\n  \"amount\": \"100.00\"\n}"
         },
         "url": {
-          "raw": "{{baseUrl}}/transactions",
+          "raw": "{{baseUrl}}/accounts/{{accountId}}/transactions",
           "host": ["{{baseUrl}}"],
-          "path": ["transactions"]
+          "path": ["accounts", "{{accountId}}", "transactions"]
         }
       }
     },
@@ -254,9 +254,9 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/transactions/{{transactionId}}",
+          "raw": "{{baseUrl}}/accounts/{{accountId}}/transactions/{{transactionId}}",
           "host": ["{{baseUrl}}"],
-          "path": ["transactions", "{{transactionId}}"]
+          "path": ["accounts", "{{accountId}}", "transactions", "{{transactionId}}"]
         }
       }
     },
@@ -271,9 +271,9 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/transactions/550e8400-e29b-41d4-a716-44665544ffff",
+          "raw": "{{baseUrl}}/accounts/{{accountId}}/transactions/550e8400-e29b-41d4-a716-44665544ffff",
           "host": ["{{baseUrl}}"],
-          "path": ["transactions", "550e8400-e29b-41d4-a716-44665544ffff"]
+          "path": ["accounts", "{{accountId}}", "transactions", "550e8400-e29b-41d4-a716-44665544ffff"]
         }
       }
     },

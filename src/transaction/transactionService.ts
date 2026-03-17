@@ -7,12 +7,11 @@ import type { Transaction } from "../generated/client";
 import type { AuthInput } from "../auth/user";
 import prismaClient from "../db/prismaClient";
 import { Decimal } from "@prisma/client/runtime/client";
-import { AccountStatus, TransactionType } from "../generated/enums";
-import { ConflictError, NotFoundError } from "../error/error";
+import { AccountStatus, TransactionType, UserRole } from "../generated/enums";
+import { ConflictError, ForbiddenError, NotFoundError } from "../error/error";
 import { EventCode } from "../types/eventCodes";
 import { serializeTransaction } from "./transactionUtils";
-import { getDurationMs } from "../utils/calculateDuration";
-import { buildTransactionFailureEvent, buildTransactionSuccessEvent } from "../logging/eventFactories";
+import { buildManyTransactionSuccessEvent, buildTransactionFailureEvent, buildTransactionSuccessEvent } from "../logging/eventFactories";
 import { logger } from "../logging/logger";
 
 export async function insertTransaction(
@@ -120,6 +119,91 @@ export async function insertTransaction(
   );
 
   return serializeTransaction(result);
+}
+
+
+export async function fetchTransactions(
+  query: TransactionQueryInput,
+  authInput: AuthInput
+): Promise<TransactionOutput[]> {
+  const start = process.hrtime.bigint();
+
+  const where: any = {
+    account_id: query.account_id,
+  };
+
+  if (query.type) {
+    where.type = query.type;
+  }
+
+  if (query.from || query.to) {
+    where.created_at = {};
+    if (query.from) {
+      where.created_at.gte = new Date(query.from);
+    }
+    if (query.to) {
+      where.created_at.lte = new Date(query.to);
+    }
+  }
+
+  const account = await prismaClient.account.findUnique({
+    where: { id: query.account_id },
+  });
+
+  if (!account) {
+    logger.info(
+      EventCode.ACCOUNT_NOT_FOUND,
+      buildTransactionFailureEvent(
+        start,
+        authInput,
+        EventCode.ACCOUNT_NOT_FOUND,
+        undefined,
+        query.account_id
+      )
+    );
+    throw NotFoundError(EventCode.ACCOUNT_NOT_FOUND, "Account not found", {
+      id: query.account_id,
+    });
+  }
+
+  if (
+    authInput.role !== UserRole.ADMIN &&
+    authInput.customerId !== account.customer_id
+  ) {
+    logger.info(
+      EventCode.FORBIDDEN,
+      buildTransactionFailureEvent(
+        start,
+        authInput,
+        EventCode.FORBIDDEN,
+        undefined,
+        query.account_id
+      )
+    );
+    throw ForbiddenError(
+      EventCode.FORBIDDEN,
+      "Only account owners can read account transactions"
+    );
+  }
+
+  const records: Transaction[] = await prismaClient.transaction.findMany({
+    where,
+    orderBy: { created_at: "desc" },
+    take: query.limit,
+    skip: query.offset,
+  });
+
+  logger.info(
+    EventCode.TRANSACTION_FETCHED,
+    buildManyTransactionSuccessEvent(
+      start,
+      authInput,
+      query.account_id,
+      records.length
+    )
+  );
+
+  return records.map(serializeTransaction);
 }
 
 

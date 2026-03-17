@@ -4,7 +4,7 @@ import type {
   AccountUpdateInput,
   AccountSummaryOutput
 } from './account';
-import type { Account, Transaction } from '../generated/client';
+import type { Account } from '../generated/client';
 import type { AuthInput } from '../auth/user';
 import prismaClient from '../db/prismaClient'
 import { AccountStatus, UserRole } from "../generated/enums";
@@ -16,11 +16,8 @@ import {
   buildAccountFailEvent,
   buildManyAccountSuccessEvent,
   buildSingleAccountSuccessEvent,
-  buildManyTransactionSuccessEvent,
 } from '../logging/eventFactories';
-import { getDurationMs } from '../utils/calculateDuration';
-import { TransactionOutput, TransactionQueryInput } from '../transaction/transaction';
-import { serializeTransaction } from '../transaction/transactionUtils';
+
 
 
 
@@ -176,83 +173,6 @@ export async function deleteAccountById(
 
   return serializeAccount(closedAccount);
 
-}
-
-
-export async function fetchTransactions(
-  query: TransactionQueryInput,
-  authInput: AuthInput
-): Promise<TransactionOutput[]> {
-  const start = process.hrtime.bigint();
-
-  const where: any = {
-    account_id: query.account_id,
-  };
-
-  if (query.type) {
-    where.type = query.type;
-  }
-
-  if (query.from || query.to) {
-    where.created_at = {};
-    if (query.from) {
-      where.created_at.gte = new Date(query.from);
-    }
-    if (query.to) {
-      where.created_at.lte = new Date(query.to);
-    }
-  }
-
-  const account = await prismaClient.account.findUnique({
-    where: { id: query.account_id },
-  });
-
-  if (!account) {
-    logger.info(EventCode.ACCOUNT_NOT_FOUND,buildAccountFailEvent(
-        start,
-        authInput,
-        query.account_id,
-        EventCode.ACCOUNT_NOT_FOUND
-      )
-    );
-    throw NotFoundError(EventCode.ACCOUNT_NOT_FOUND, "Account not found", {
-      id: query.account_id,
-    });
-  }
-
-  if (
-    authInput.role !== UserRole.ADMIN &&
-    authInput.customerId !== account.customer_id
-  ){
-    const forbiddenErrorMessage =
-      "Only account owners can read account transactions";
-
-    logger.info(
-      EventCode.FORBIDDEN, 
-      buildAccountFailEvent(start, authInput,query.account_id,EventCode.FORBIDDEN)
-    );
-
-    throw ForbiddenError(EventCode.FORBIDDEN, forbiddenErrorMessage);
-  }
-
-  const records: Transaction[] = await prismaClient.transaction.findMany({
-    where,
-    orderBy: { created_at: "desc" },
-    take: query.limit,
-    skip: query.offset,
-  });
-
-  logger.info(
-    EventCode.TRANSACTION_FETCHED,
-    buildManyTransactionSuccessEvent(
-      start,
-      authInput,
-      query.account_id,
-      records.length
-    )
-  );
-
-  return records.map(serializeTransaction);
 }
 
 

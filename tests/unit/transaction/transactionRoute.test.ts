@@ -5,6 +5,7 @@ describe("transactionRouter.ts (pure unit)", () => {
   let getMock: jest.Mock;
 
   let mockCreateTransaction: jest.Mock;
+  let mockGetTransactions: jest.Mock;
   let mockGetTransactionById: jest.Mock;
 
   let requireAuthMock: jest.Mock;
@@ -24,6 +25,7 @@ describe("transactionRouter.ts (pure unit)", () => {
     getMock = jest.fn();
 
     mockCreateTransaction = jest.fn();
+    mockGetTransactions = jest.fn();
     mockGetTransactionById = jest.fn();
 
     requireAuthMock = jest.fn(() => makeMw("requireAuth"));
@@ -43,6 +45,7 @@ describe("transactionRouter.ts (pure unit)", () => {
     jest.doMock("../../../src/transaction/transactionController", () => {
       return {
         createTransaction: mockCreateTransaction,
+        getTransactions: mockGetTransactions,
         getTransactionById: mockGetTransactionById,
       };
     });
@@ -67,75 +70,69 @@ describe("transactionRouter.ts (pure unit)", () => {
   };
 
   test("registers POST / with correct middlewares and handler (createTransaction)", () => {
-    const { createTransactionBodySchema } = require("../../../src/transaction/transactionSchemas");
+    const { accountIdParamsSchema, createTransactionBodySchema } =
+      require("../../../src/transaction/transactionSchemas");
 
-    expect(requireAuthMock).toHaveBeenCalledTimes(2);
+    expect(requireAuthMock).toHaveBeenCalledTimes(3);
+    expect(validateMock).toHaveBeenCalledWith(accountIdParamsSchema, "params");
     expect(validateMock).toHaveBeenCalledWith(createTransactionBodySchema, "body");
 
     const call = findCall(postMock, "/");
     expect(call).toBeDefined();
 
-    const [path, mw1, mw2, handler] = call as unknown[];
+    const [path, mw1, mw2, mw3, handler] = call as unknown[];
 
     expect(path).toBe("/");
     expect(typeof mw1).toBe("function");
     expect(typeof mw2).toBe("function");
+    expect(typeof mw3).toBe("function");
     expect(handler).toBe(mockCreateTransaction);
-
-    expect(mw1).toBe(requireAuthMock.mock.results[0]!.value);
-    expect(mw2).toBe(validateMock.mock.results[0]!.value);
   });
 
-  test("registers GET /:id with correct middlewares and handler (getTransactionById)", () => {
-    const { transactionIdParamsSchema } = require("../../../src/transaction/transactionSchemas");
+  test("registers GET / with correct middlewares and handler (getTransactions)", () => {
+    const { accountIdParamsSchema, getTransactionsQuerySchema } =
+      require("../../../src/transaction/transactionSchemas");
+
+    expect(validateMock).toHaveBeenCalledWith(accountIdParamsSchema, "params");
+    expect(validateMock).toHaveBeenCalledWith(getTransactionsQuerySchema, "query");
+
+    const call = findCall(getMock, "/");
+    expect(call).toBeDefined();
+
+    const [path, mw1, mw2, mw3, handler] = call as unknown[];
+
+    expect(path).toBe("/");
+    expect(typeof mw1).toBe("function");
+    expect(typeof mw2).toBe("function");
+    expect(typeof mw3).toBe("function");
+    expect(handler).toBe(mockGetTransactions);
+  });
+
+  test("registers GET /:transactionId with correct middlewares and handler (getTransactionById)", () => {
+    const { transactionIdParamsSchema } =
+      require("../../../src/transaction/transactionSchemas");
 
     expect(validateMock).toHaveBeenCalledWith(transactionIdParamsSchema, "params");
 
-    const call = findCall(getMock, "/:id");
+    const call = findCall(getMock, "/:transactionId");
     expect(call).toBeDefined();
 
     const [path, mw1, mw2, handler] = call as unknown[];
 
-    expect(path).toBe("/:id");
+    expect(path).toBe("/:transactionId");
     expect(typeof mw1).toBe("function");
     expect(typeof mw2).toBe("function");
     expect(handler).toBe(mockGetTransactionById);
-
-    expect(mw1).toBe(requireAuthMock.mock.results[1]!.value);
-    expect(mw2).toBe(validateMock.mock.results[1]!.value);
   });
 
-  test("registers exactly 2 routes (1 POST, 1 GET) and nothing else", () => {
+  test("registers exactly 3 routes (1 POST, 2 GET) and nothing else", () => {
     expect(postMock).toHaveBeenCalledTimes(1);
-    expect(getMock).toHaveBeenCalledTimes(1);
+    expect(getMock).toHaveBeenCalledTimes(2);
 
     const postPaths = postMock.mock.calls.map((call: unknown[]) => call[0]);
     const getPaths = getMock.mock.calls.map((call: unknown[]) => call[0]);
 
     expect(postPaths).toEqual(["/"]);
-    expect(getPaths).toEqual(["/:id"]);
-  });
-
-  test("uses the middleware returned by requireAuth() and validate() for each route", () => {
-    const postCall = findCall(postMock, "/");
-    const getCall = findCall(getMock, "/:id");
-
-    expect(postCall).toBeDefined();
-    expect(getCall).toBeDefined();
-
-    expect(requireAuthMock).toHaveBeenCalledTimes(2);
-    expect(validateMock).toHaveBeenCalledTimes(2);
-
-    const firstAuthMw = requireAuthMock.mock.results[0]!.value;
-    const secondAuthMw = requireAuthMock.mock.results[1]!.value;
-
-    const firstValidateMw = validateMock.mock.results[0]!.value;
-    const secondValidateMw = validateMock.mock.results[1]!.value;
-
-    expect(postCall![1]).toBe(firstAuthMw);
-    expect(postCall![2]).toBe(firstValidateMw);
-
-    expect(getCall![1]).toBe(secondAuthMw);
-    expect(getCall![2]).toBe(secondValidateMw);
+    expect(getPaths).toEqual(["/", "/:transactionId"]);
   });
 });

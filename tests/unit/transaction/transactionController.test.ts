@@ -4,7 +4,6 @@ import { TransactionType } from "../../../src/generated/enums";
 import { buildAuthInput } from "../../authMock";
 import { mockAccountId1 } from "../../commonMock";
 import {
-  buildTransactionCreateInput,
   buildTransactionOutput,
   buildTransactionQueryInput,
   mockMissingTransactionId,
@@ -44,12 +43,18 @@ function buildReq(
 }
 
 describe("createTransaction controller", () => {
-  const req: any = buildReq({
-    body: buildTransactionCreateInput(),
-    user: buildAuthInput(),
-  });
+  it("should merge accountId from params with body and return 201", async () => {
+    const req: any = buildReq({
+      params: { accountId: mockAccountId1 },
+      body: {
+        type: TransactionType.CREDIT,
+        amount: "100.00",
+        description: "mock transaction description",
+        category: "mock category",
+      },
+      user: buildAuthInput(),
+    });
 
-  it("should call insertTransaction and return 201 with serialized transaction", async () => {
     jest
       .spyOn(transactionService, "insertTransaction")
       .mockResolvedValue(mockTransactionOutput1);
@@ -57,7 +62,13 @@ describe("createTransaction controller", () => {
     await transactionController.createTransaction(req, res, next);
 
     expect(transactionService.insertTransaction).toHaveBeenCalledWith(
-      req.validated.body,
+      {
+        account_id: mockAccountId1,
+        type: TransactionType.CREDIT,
+        amount: "100.00",
+        description: "mock transaction description",
+        category: "mock category",
+      },
       buildAuthInput()
     );
     expect(statusMock).toHaveBeenCalledWith(201);
@@ -66,6 +77,15 @@ describe("createTransaction controller", () => {
   });
 
   it("should call next when service throws", async () => {
+    const req: any = buildReq({
+      params: { accountId: mockAccountId1 },
+      body: {
+        type: TransactionType.CREDIT,
+        amount: "100.00",
+      },
+      user: buildAuthInput(),
+    });
+
     jest
       .spyOn(transactionService, "insertTransaction")
       .mockRejectedValue(serviceError);
@@ -81,7 +101,7 @@ describe("createTransaction controller", () => {
 describe("getTransactions controller", () => {
   it("should call fetchTransactions and return 200 with empty array if no transactions are found", async () => {
     const req: any = buildReq({
-      params: { id: mockAccountId1 },
+      params: { accountId: mockAccountId1 },
       query: buildTransactionQueryInput(),
       user: buildAuthInput(),
     });
@@ -94,7 +114,7 @@ describe("getTransactions controller", () => {
 
     expect(transactionService.fetchTransactions).toHaveBeenCalledWith(
       {
-        account_id: req.validated.params.id,
+        account_id: mockAccountId1,
         ...req.validated.query,
       },
       buildAuthInput()
@@ -106,7 +126,7 @@ describe("getTransactions controller", () => {
 
   it("should call fetchTransactions and return 200 with serialized transactions", async () => {
     const req: any = buildReq({
-      params: { id: mockAccountId1 },
+      params: { accountId: mockAccountId1 },
       query: buildTransactionQueryInput({
         type: TransactionType.DEBIT,
         limit: 5,
@@ -123,7 +143,7 @@ describe("getTransactions controller", () => {
 
     expect(transactionService.fetchTransactions).toHaveBeenCalledWith(
       {
-        account_id: req.validated.params.id,
+        account_id: mockAccountId1,
         ...req.validated.query,
       },
       buildAuthInput()
@@ -136,34 +156,9 @@ describe("getTransactions controller", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("should let params.id override any account_id coming from query", async () => {
-    const req: any = buildReq({
-      params: { id: mockAccountId1 },
-      query: {
-        ...buildTransactionQueryInput(),
-        account_id: "should-not-win",
-      },
-      user: buildAuthInput(),
-    });
-
-    jest
-      .spyOn(transactionService, "fetchTransactions")
-      .mockResolvedValue([]);
-
-    await transactionController.getTransactions(req, res, next);
-
-    expect(transactionService.fetchTransactions).toHaveBeenCalledWith(
-      {
-        account_id: "should-not-win",
-        ...req.validated.query,
-      },
-      buildAuthInput()
-    );
-  });
-
   it("should call next when service throws", async () => {
     const req: any = buildReq({
-      params: { id: mockAccountId1 },
+      params: { accountId: mockAccountId1 },
       query: buildTransactionQueryInput(),
       user: buildAuthInput(),
     });
@@ -183,7 +178,7 @@ describe("getTransactions controller", () => {
 describe("getTransactionById controller", () => {
   it("should call fetchTransactionById and return 200 with serialized transaction", async () => {
     const req: any = buildReq({
-      params: { id: mockTransactionId1 },
+      params: { accountId: mockAccountId1, transactionId: mockTransactionId1 },
       user: buildAuthInput(),
     });
 
@@ -194,7 +189,7 @@ describe("getTransactionById controller", () => {
     await transactionController.getTransactionById(req, res, next);
 
     expect(transactionService.fetchTransactionById).toHaveBeenCalledWith(
-      req.validated.params.id,
+      mockTransactionId1,
       buildAuthInput()
     );
     expect(statusMock).toHaveBeenCalledWith(200);
@@ -204,7 +199,7 @@ describe("getTransactionById controller", () => {
 
   it("should call next when service throws", async () => {
     const req: any = buildReq({
-      params: { id: mockMissingTransactionId },
+      params: { accountId: mockAccountId1, transactionId: mockMissingTransactionId },
       user: buildAuthInput(),
     });
 

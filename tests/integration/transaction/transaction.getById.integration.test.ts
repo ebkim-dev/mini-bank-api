@@ -7,7 +7,7 @@ import {
   mockMissingTransactionId,
   mockTransactionId1,
 } from "../../transactionMock";
-import { mockRedisKey, mockSessionId } from "../../commonMock";
+import { mockAccountId1, mockRedisKey, mockSessionId } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn() }
@@ -39,30 +39,33 @@ beforeEach(() => {
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
-async function getTransactionRequest(transactionId: string) {
+async function getTransactionRequest(
+  accountId: string,
+  transactionId: string
+) {
   return request(app)
-    .get(`/transactions/${transactionId}`)
+    .get(`/accounts/${accountId}/transactions/${transactionId}`)
     .set("x-session-id", mockSessionId);
 }
 
-describe("GET /transactions/:id", () => {
+describe("GET /accounts/:accountId/transactions/:transactionId", () => {
   test("Transaction found => 200, transaction is returned", async () => {
     mockFindUnique.mockResolvedValue(buildTransactionRecord());
 
-    const res = await getTransactionRequest(mockTransactionId1);
+    const res = await getTransactionRequest(mockAccountId1, mockTransactionId1);
 
     expect(res.status).toBe(200);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(res.body).toMatchObject({
-        ...buildTransactionOutput(),
-        created_at: buildTransactionOutput().created_at.toISOString(),
+      ...buildTransactionOutput(),
+      created_at: buildTransactionOutput().created_at.toISOString(),
     });
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
   });
 
-  test("Invalid UUID format => 400", async () => {
-    const res = await getTransactionRequest("not-a-uuid");
+  test("Invalid UUID transactionId => 400", async () => {
+    const res = await getTransactionRequest(mockAccountId1, "not-a-uuid");
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -70,10 +73,18 @@ describe("GET /transactions/:id", () => {
     expect(mockFindUnique).not.toHaveBeenCalled();
   });
 
+  test("Invalid UUID accountId => 400", async () => {
+    const res = await getTransactionRequest("not-a-uuid", mockTransactionId1);
+
+    expect(res.status).toBe(400);
+    expect(res.headers).toHaveProperty("x-trace-id");
+    expect(mockFindUnique).not.toHaveBeenCalled();
+  });
+
   test("Transaction not found => 404", async () => {
     mockFindUnique.mockResolvedValue(null);
 
-    const res = await getTransactionRequest(mockMissingTransactionId);
+    const res = await getTransactionRequest(mockAccountId1, mockMissingTransactionId);
 
     expect(res.status).toBe(404);
     expect(res.headers).toHaveProperty("x-trace-id");
@@ -83,7 +94,7 @@ describe("GET /transactions/:id", () => {
 
   it("should return 401 given missing session", async () => {
     const res = await request(app)
-      .get(`/transactions/${mockTransactionId1}`);
+      .get(`/accounts/${mockAccountId1}/transactions/${mockTransactionId1}`);
 
     expect(res.status).toBe(401);
     expect(res.headers).toHaveProperty("x-trace-id");

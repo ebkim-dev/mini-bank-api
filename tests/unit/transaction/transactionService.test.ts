@@ -2,6 +2,9 @@ jest.mock("../../../src/db/prismaClient", () => ({
   __esModule: true,
   default: {
     $transaction: jest.fn(),
+    account: {
+      findUnique: jest.fn(),
+    },
     transaction: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
@@ -11,11 +14,19 @@ jest.mock("../../../src/db/prismaClient", () => ({
 
 import { Decimal } from "@prisma/client/runtime/client";
 import prismaClient from "../../../src/db/prismaClient";
-import { AccountStatus, TransactionType } from "../../../src/generated/enums";
+import {
+  AccountStatus,
+  TransactionType,
+  UserRole,
+} from "../../../src/generated/enums";
 import * as transactionService from "../../../src/transaction/transactionService";
 import { buildAccountRecord } from "../../accountMock";
 import { buildAuthInput } from "../../authMock";
-import { mockAccountId1 } from "../../commonMock";
+import {
+  mockAccountId1,
+  mockCustomerId,
+  mockMissingAccountId,
+} from "../../commonMock";
 import {
   buildTransactionCreateInput,
   buildTransactionCreateInputWithoutOptionalFields,
@@ -28,8 +39,9 @@ import {
 } from "../../transactionMock";
 
 const mockPrismaTransaction = prismaClient.$transaction as jest.Mock;
-const mockFindMany = prismaClient.transaction.findMany as jest.Mock;
-const mockFindUnique = prismaClient.transaction.findUnique as jest.Mock;
+const mockAccountFindUnique = prismaClient.account.findUnique as jest.Mock;
+const mockTransactionFindMany = prismaClient.transaction.findMany as jest.Mock;
+const mockTransactionFindUnique = prismaClient.transaction.findUnique as jest.Mock;
 
 type TxMock = {
   account: {
@@ -213,7 +225,8 @@ describe("insertTransaction service", () => {
 
 describe("fetchTransactions service", () => {
   it("should return retrieved transactions with default filters", async () => {
-    mockFindMany.mockResolvedValue([
+    mockAccountFindUnique.mockResolvedValue(buildAccountRecord());
+    mockTransactionFindMany.mockResolvedValue([
       buildTransactionRecord(),
       buildTransactionRecord({
         id: mockTransactionId2,
@@ -231,7 +244,11 @@ describe("fetchTransactions service", () => {
       buildTransactionOutput({ id: mockTransactionId2, amount: "60" }),
     ]);
 
-    expect(mockFindMany).toHaveBeenCalledWith({
+    expect(mockAccountFindUnique).toHaveBeenCalledWith({
+      where: { id: mockAccountId1 },
+    });
+
+    expect(mockTransactionFindMany).toHaveBeenCalledWith({
       where: {
         account_id: mockAccountId1,
       },
@@ -242,7 +259,8 @@ describe("fetchTransactions service", () => {
   });
 
   it("should include type, from, and to filters when provided", async () => {
-    mockFindMany.mockResolvedValue([]);
+    mockAccountFindUnique.mockResolvedValue(buildAccountRecord());
+    mockTransactionFindMany.mockResolvedValue([]);
 
     await transactionService.fetchTransactions(
       buildTransactionQueryInput({
@@ -255,7 +273,7 @@ describe("fetchTransactions service", () => {
       buildAuthInput()
     );
 
-    expect(mockFindMany).toHaveBeenCalledWith({
+    expect(mockTransactionFindMany).toHaveBeenCalledWith({
       where: {
         account_id: mockAccountId1,
         type: TransactionType.DEBIT,
@@ -271,14 +289,15 @@ describe("fetchTransactions service", () => {
   });
 
   it("should include only the from date when only from is provided", async () => {
-    mockFindMany.mockResolvedValue([]);
+    mockAccountFindUnique.mockResolvedValue(buildAccountRecord());
+    mockTransactionFindMany.mockResolvedValue([]);
 
     await transactionService.fetchTransactions(
       buildTransactionQueryInput({ from: "2026-02-01T00:00:00.000Z" }),
       buildAuthInput()
     );
 
-    expect(mockFindMany).toHaveBeenCalledWith({
+    expect(mockTransactionFindMany).toHaveBeenCalledWith({
       where: {
         account_id: mockAccountId1,
         created_at: {
@@ -292,14 +311,15 @@ describe("fetchTransactions service", () => {
   });
 
   it("should include only the to date when only to is provided", async () => {
-    mockFindMany.mockResolvedValue([]);
+    mockAccountFindUnique.mockResolvedValue(buildAccountRecord());
+    mockTransactionFindMany.mockResolvedValue([]);
 
     await transactionService.fetchTransactions(
       buildTransactionQueryInput({ to: "2026-02-28T23:59:59.999Z" }),
       buildAuthInput()
     );
 
-    expect(mockFindMany).toHaveBeenCalledWith({
+    expect(mockTransactionFindMany).toHaveBeenCalledWith({
       where: {
         account_id: mockAccountId1,
         created_at: {
@@ -312,9 +332,55 @@ describe("fetchTransactions service", () => {
     });
   });
 
-  it("should rethrow when prisma throws", async () => {
+  it("should throw a NotFoundError when the account does not exist", async () => {
+    mockAccountFindUnique.mockResolvedValue(null);
+
+    await expect(
+      transactionService.fetchTransactions(
+        buildTransactionQueryInput({ account_id: mockMissingAccountId }),
+        buildAuthInput()
+      )
+    ).rejects.toThrow("Account not found");
+
+    expect(mockTransactionFindMany).not.toHaveBeenCalled();
+  });
+
+  it("should throw a ForbiddenError when a standard user tries to read another customer's transactions", async () => {
+    mockAccountFindUnique.mockResolvedValue(
+      buildAccountRecord({ customer_id: "550e8400-e29b-41d4-a716-446655449999" })
+    );
+
+    await expect(
+      transactionService.fetchTransactions(
+        buildTransactionQueryInput(),
+        buildAuthInput({
+          role: UserRole.STANDARD,
+          customerId: mockCustomerId,
+        })
+      )
+    ).rejects.toThrow("Only account owners can read account transactions");
+
+    expect(mockTransactionFindMany).not.toHaveBeenCalled();
+  });
+
+  it("should allow an admin user to read another customer's transactions", async () => {
+    mockAccountFindUnique.mockResolvedValue(
+      buildAccountRecord({ customer_id: "550e8400-e29b-41d4-a716-446655449999" })
+    );
+    mockTransactionFindMany.mockResolvedValue([buildTransactionRecord()]);
+
+    await expect(
+      transactionService.fetchTransactions(
+        buildTransactionQueryInput(),
+        buildAuthInput({ role: UserRole.ADMIN })
+      )
+    ).resolves.toMatchObject([buildTransactionOutput()]);
+  });
+
+  it("should rethrow when prisma throws while reading transactions", async () => {
     const mockError = new Error("Unknown error");
-    mockFindMany.mockRejectedValue(mockError);
+    mockAccountFindUnique.mockResolvedValue(buildAccountRecord());
+    mockTransactionFindMany.mockRejectedValue(mockError);
 
     await expect(
       transactionService.fetchTransactions(
@@ -327,7 +393,7 @@ describe("fetchTransactions service", () => {
 
 describe("fetchTransactionById service", () => {
   it("should return the fetched transaction given a valid transaction ID", async () => {
-    mockFindUnique.mockResolvedValue(buildTransactionRecord());
+    mockTransactionFindUnique.mockResolvedValue(buildTransactionRecord());
 
     await expect(
       transactionService.fetchTransactionById(
@@ -336,13 +402,13 @@ describe("fetchTransactionById service", () => {
       )
     ).resolves.toMatchObject(buildTransactionOutput());
 
-    expect(mockFindUnique).toHaveBeenCalledWith({
+    expect(mockTransactionFindUnique).toHaveBeenCalledWith({
       where: { id: mockTransactionId1 },
     });
   });
 
   it("should throw a NotFoundError for a nonexistent transaction ID", async () => {
-    mockFindUnique.mockResolvedValue(null);
+    mockTransactionFindUnique.mockResolvedValue(null);
 
     await expect(
       transactionService.fetchTransactionById(
@@ -354,7 +420,7 @@ describe("fetchTransactionById service", () => {
 
   it("should rethrow when prisma throws", async () => {
     const mockError = new Error("Unknown error");
-    mockFindUnique.mockRejectedValue(mockError);
+    mockTransactionFindUnique.mockRejectedValue(mockError);
 
     await expect(
       transactionService.fetchTransactionById(

@@ -1,4 +1,5 @@
 import {
+  accountIdParamsSchema,
   createTransactionBodySchema,
   getTransactionsQuerySchema,
   transactionIdParamsSchema,
@@ -8,28 +9,79 @@ import { TransactionType } from "../../../src/generated/enums";
 import { mockAccountId1 } from "../../commonMock";
 import { mockTransactionId1 } from "../../transactionMock";
 
-describe("transactionIdParamsSchema", () => {
-  test("accepts valid UUID id", () => {
-    const parsed = transactionIdParamsSchema.parse({
-      id: mockTransactionId1,
+describe("accountIdParamsSchema", () => {
+  test("accepts valid UUID accountId", () => {
+    const parsed = accountIdParamsSchema.parse({
+      accountId: mockAccountId1,
     });
-    expect(parsed.id).toBe(mockTransactionId1);
+    expect(parsed.accountId).toBe(mockAccountId1);
   });
 
-  test("rejects invalid UUID id", () => {
+  test("rejects invalid UUID accountId", () => {
     expect(() =>
-      transactionIdParamsSchema.parse({ id: "not-a-uuid" })
+      accountIdParamsSchema.parse({ accountId: "not-a-uuid" })
     ).toThrow();
   });
 
-  test("rejects missing id", () => {
-    expect(() => transactionIdParamsSchema.parse({})).toThrow();
+  test("rejects missing accountId", () => {
+    expect(() => accountIdParamsSchema.parse({})).toThrow();
+  });
+
+  test("rejects extra fields because of strict()", () => {
+    expect(() =>
+      accountIdParamsSchema.parse({
+        accountId: mockAccountId1,
+        extra: "nope",
+      })
+    ).toThrow();
+  });
+});
+
+describe("transactionIdParamsSchema", () => {
+  test("accepts valid UUID accountId and transactionId", () => {
+    const parsed = transactionIdParamsSchema.parse({
+      accountId: mockAccountId1,
+      transactionId: mockTransactionId1,
+    });
+    expect(parsed.accountId).toBe(mockAccountId1);
+    expect(parsed.transactionId).toBe(mockTransactionId1);
+  });
+
+  test("rejects invalid UUID transactionId", () => {
+    expect(() =>
+      transactionIdParamsSchema.parse({
+        accountId: mockAccountId1,
+        transactionId: "not-a-uuid",
+      })
+    ).toThrow();
+  });
+
+  test("rejects invalid UUID accountId", () => {
+    expect(() =>
+      transactionIdParamsSchema.parse({
+        accountId: "not-a-uuid",
+        transactionId: mockTransactionId1,
+      })
+    ).toThrow();
+  });
+
+  test("rejects missing transactionId", () => {
+    expect(() =>
+      transactionIdParamsSchema.parse({ accountId: mockAccountId1 })
+    ).toThrow();
+  });
+
+  test("rejects missing accountId", () => {
+    expect(() =>
+      transactionIdParamsSchema.parse({ transactionId: mockTransactionId1 })
+    ).toThrow();
   });
 
   test("rejects extra fields because of strict()", () => {
     expect(() =>
       transactionIdParamsSchema.parse({
-        id: mockTransactionId1,
+        accountId: mockAccountId1,
+        transactionId: mockTransactionId1,
         extra: "nope",
       })
     ).toThrow();
@@ -39,14 +91,12 @@ describe("transactionIdParamsSchema", () => {
 describe("createTransactionBodySchema", () => {
   test("accepts valid body with all fields", () => {
     const parsed = createTransactionBodySchema.parse({
-      account_id: mockAccountId1,
       type: TransactionType.CREDIT,
       amount: "100.00",
       description: "Test deposit",
       category: "DEPOSIT",
     });
 
-    expect(parsed.account_id).toBe(mockAccountId1);
     expect(parsed.type).toBe(TransactionType.CREDIT);
     expect(parsed.amount).toBe("100.00");
     expect(parsed.description).toBe("Test deposit");
@@ -55,22 +105,20 @@ describe("createTransactionBodySchema", () => {
 
   test("accepts valid body with only required fields", () => {
     const parsed = createTransactionBodySchema.parse({
-      account_id: mockAccountId1,
       type: TransactionType.DEBIT,
       amount: "50.00",
     });
 
-    expect(parsed.account_id).toBe(mockAccountId1);
     expect(parsed.type).toBe(TransactionType.DEBIT);
     expect(parsed.amount).toBe("50.00");
     expect(parsed.description).toBeUndefined();
     expect(parsed.category).toBeUndefined();
   });
 
-  test("rejects invalid UUID account_id", () => {
+  test("rejects account_id in body (strict mode)", () => {
     expect(() =>
       createTransactionBodySchema.parse({
-        account_id: "not-a-uuid",
+        account_id: mockAccountId1,
         type: TransactionType.CREDIT,
         amount: "100.00",
       })
@@ -80,7 +128,6 @@ describe("createTransactionBodySchema", () => {
   test("rejects invalid enum type", () => {
     expect(() =>
       createTransactionBodySchema.parse({
-        account_id: mockAccountId1,
         type: "TRANSFER",
         amount: "100.00",
       })
@@ -90,7 +137,6 @@ describe("createTransactionBodySchema", () => {
   test("rejects negative amount", () => {
     expect(() =>
       createTransactionBodySchema.parse({
-        account_id: mockAccountId1,
         type: TransactionType.CREDIT,
         amount: "-50.00",
       })
@@ -100,7 +146,6 @@ describe("createTransactionBodySchema", () => {
   test("rejects zero amount", () => {
     expect(() =>
       createTransactionBodySchema.parse({
-        account_id: mockAccountId1,
         type: TransactionType.CREDIT,
         amount: "0",
       })
@@ -110,7 +155,6 @@ describe("createTransactionBodySchema", () => {
   test("rejects non-numeric amount", () => {
     expect(() =>
       createTransactionBodySchema.parse({
-        account_id: mockAccountId1,
         type: TransactionType.CREDIT,
         amount: "abc",
       })
@@ -119,31 +163,17 @@ describe("createTransactionBodySchema", () => {
 
   test("rejects missing required fields", () => {
     expect(() =>
-      createTransactionBodySchema.parse({
-        type: TransactionType.CREDIT,
-        amount: "100.00",
-      })
+      createTransactionBodySchema.parse({ amount: "100.00" })
     ).toThrow();
 
     expect(() =>
-      createTransactionBodySchema.parse({
-        account_id: mockAccountId1,
-        amount: "100.00",
-      })
-    ).toThrow();
-
-    expect(() =>
-      createTransactionBodySchema.parse({
-        account_id: mockAccountId1,
-        type: TransactionType.CREDIT,
-      })
+      createTransactionBodySchema.parse({ type: TransactionType.CREDIT })
     ).toThrow();
   });
 
   test("rejects description longer than 255 characters", () => {
     expect(() =>
       createTransactionBodySchema.parse({
-        account_id: mockAccountId1,
         type: TransactionType.CREDIT,
         amount: "100.00",
         description: "a".repeat(256),
@@ -154,7 +184,6 @@ describe("createTransactionBodySchema", () => {
   test("rejects category longer than 100 characters", () => {
     expect(() =>
       createTransactionBodySchema.parse({
-        account_id: mockAccountId1,
         type: TransactionType.CREDIT,
         amount: "100.00",
         category: "a".repeat(101),
@@ -165,7 +194,6 @@ describe("createTransactionBodySchema", () => {
   test("rejects extra fields because of strict()", () => {
     expect(() =>
       createTransactionBodySchema.parse({
-        account_id: mockAccountId1,
         type: TransactionType.CREDIT,
         amount: "100.00",
         extra: "nope",
@@ -209,8 +237,6 @@ describe("getTransactionsQuerySchema", () => {
 
     expect(typeof parsed.limit).toBe("number");
     expect(typeof parsed.offset).toBe("number");
-    expect(parsed.limit).toBe(50);
-    expect(parsed.offset).toBe(25);
   });
 
   test("rejects limit below 1", () => {

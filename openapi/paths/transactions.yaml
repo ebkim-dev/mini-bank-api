@@ -1,5 +1,5 @@
 paths:
-  /transactions:
+  /accounts/{accountId}/transactions:
     post:
       summary: Create a transaction
       description: Creates a deposit (CREDIT) or withdrawal (DEBIT). Updates account balance atomically. Returns 409 if DEBIT exceeds balance.
@@ -7,6 +7,15 @@ paths:
         - transactions
       security:
         - sessionAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: UUID of the account
+          example: "550e8400-e29b-41d4-a716-446655440001"
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -28,7 +37,73 @@ paths:
           description: Account not found
         '409':
           description: Insufficient funds or account not active
-  /transactions/{id}:
+    get:
+      summary: Get transactions by account
+      description: Retrieve transactions for an account with pagination and optional filters. Ordered newest first.
+      tags:
+        - transactions
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: UUID of the account
+          example: "550e8400-e29b-41d4-a716-446655440001"
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Number of transactions to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Number of transactions to skip
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum:
+              - DEBIT
+              - CREDIT
+          description: Filter by transaction type
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date-time
+          description: Start date filter (ISO 8601)
+          example: "2026-03-01T00:00:00Z"
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date-time
+          description: End date filter (ISO 8601)
+          example: "2026-03-31T23:59:59Z"
+      responses:
+        '200':
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Validation error
+        '401':
+          description: Authentication failed
+  /accounts/{accountId}/transactions/{transactionId}:
     get:
       summary: Get transaction by ID
       description: Retrieve a single transaction by its UUID.
@@ -37,7 +112,15 @@ paths:
       security:
         - sessionAuth: []
       parameters:
-        - name: id
+        - name: accountId
+          in: path
+          required: true
+          description: UUID of the account
+          example: "550e8400-e29b-41d4-a716-446655440001"
+          schema:
+            type: string
+            format: uuid
+        - name: transactionId
           in: path
           required: true
           description: UUID of the transaction

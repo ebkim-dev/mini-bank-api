@@ -140,7 +140,7 @@ describe("app.ts - createApp", () => {
       ["/auth", authRouterMock],
       ["/health", healthRouterMock],
       ["/accounts", accountRouterMock],
-      ["/transactions", transactionRouterMock],
+      ["/accounts/:accountId/transactions", transactionRouterMock],
       ["/docs", swaggerServeMw, swaggerSetupMw],
       [notFoundHandlerMw],
       [errorHandlerMw],

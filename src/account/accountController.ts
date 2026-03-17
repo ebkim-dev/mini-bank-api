@@ -98,29 +98,6 @@ export async function deleteAccount(
   }
 }
 
-export async function getTransactions(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const { id } = (req as any).validated.params;
-    const query = (req as any).validated.query;
-    const authInput: AuthInput = req.user;
-
-    const transactionQuery: TransactionQueryInput = {
-      account_id: id,
-      ...query,
-    };
-
-    const transactions: TransactionOutput[] =
-      await accountService.fetchTransactions(transactionQuery,authInput);
-    res.status(200).json(transactions);
-  } catch (err) {
-    next(err);
-  }
-}
-
 export async function getAccountSummary(
   req: Request,
   res: Response,
