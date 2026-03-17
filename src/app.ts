@@ -26,7 +26,7 @@ export const createApp = (): Application => {
   app.use("/health", healthRouter);
   app.use("/accounts", accountRouter);
   app.use("/accounts/:accountId/transactions", transactionRouter);
-  app.use("/:accountId/transfers", transferRouter);
+  app.use("/accounts/:accountId/transfers", transferRouter);
   app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
   app.use(notFoundHandler);

@@ -2,6 +2,24 @@ import { Transfer } from "../src/generated/client";
 import { mockAccountId1, mockAccountId2, mockAmount, mockTransferId1 } from "./commonMock";
 import { TransferCreateInput, TransferOutput } from "../src/transfer/transfer";
 
+export interface TransferCreateRequestBody {
+  fromAccountId: string;
+  toAccountId: string;
+  amount: string;
+  memo?: string;
+}
+
+export function buildTransferCreateRequestBody(
+  overrides: Partial<TransferCreateRequestBody> = {}
+) {
+  return {
+    fromAccountId: mockAccountId1,
+    toAccountId: mockAccountId2,
+    amount: mockAmount,
+    ...overrides,
+  };
+}
+
 export function buildTransferCreateInput(
   overrides: Partial<TransferCreateInput> = {}
 ): TransferCreateInput {
@@ -21,6 +39,7 @@ export function buildTransferOutput(
     fromAccountId: mockAccountId1,
     toAccountId: mockAccountId2,
     amount: mockAmount.toString(),
+    memo: "",
     ...overrides,
   };
 }

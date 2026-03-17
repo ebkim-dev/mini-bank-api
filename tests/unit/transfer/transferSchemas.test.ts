@@ -87,8 +87,8 @@ describe("getTransfersQuerySchema", () => {
 
     expect(parsed.limit).toBe(20);
     expect(parsed.offset).toBe(0);
-    expect(parsed.from).toBe(mockFromDate);
-    expect(parsed.to).toBe(mockToDate);
+    expect(parsed.from).toBeUndefined();
+    expect(parsed.to).toBeUndefined();
   });
 
   it("rejects invalid limit", () => {

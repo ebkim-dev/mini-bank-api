@@ -5,6 +5,7 @@ import { logger } from "../logging/logger";
 import { Transfer } from "../generated/client";
 import { AppError } from "../error/error";
 import { TransactionType } from "../generated/enums";
+import { serializeTransfer } from "./transferUtils";
 import {
   buildManyTransferSuccessEvent,
   buildSingleTransferSuccessEvent,
@@ -16,7 +17,6 @@ import {
   TransferQueryInput
 } from "./transfer";
 import {
-  serializeTransfer,
   throwIfAccountNotActive,
   throwIfAccountNotFound,
   throwIfNotAccountOwner,
@@ -24,7 +24,7 @@ import {
   throwIfInsufficientFunds,
   throwIfSelfTransfer,
   throwIfTransferNotFound,
-} from "./transferUtils";
+} from "../utils/serviceAssertions"
 
 
 export async function insertTransfer(

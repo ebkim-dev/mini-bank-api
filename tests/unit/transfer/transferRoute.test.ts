@@ -1,180 +1,130 @@
 import type { RequestHandler } from "express";
+import { accountIdParamsSchema } from "../../../src/account/accountSchemas";
+import {
+  createTransferBodySchema,
+  getTransferParamsSchema,
+  getTransfersQuerySchema,
+} from "../../../src/transfer/transferSchemas";
 
-describe("accountRouter.ts (pure unit)", () => {
-  let postMock: jest.Mock;
-  let getMock: jest.Mock;
-  let putMock: jest.Mock;
+let postMock: jest.Mock;
+let getMock: jest.Mock;
 
-  let mockCreateAccount: jest.Mock;
-  let mockGetAccountsByCustomerId: jest.Mock;
-  let mockGetAccount: jest.Mock;
-  let mockUpdateAccount: jest.Mock;
-  let mockDeleteAccount: jest.Mock;
+let mockCreateTransfer: jest.Mock;
+let mockGetTransfer: jest.Mock;
+let mockGetTransfers: jest.Mock;
 
-  let requireAuthMock: jest.Mock;
-  let requireRoleMock: jest.Mock;
-  let validateMock: jest.Mock;
+let requireAuthMock: jest.Mock;
+let validateMock: jest.Mock;
 
-  
-  const makeMw = (name: string): RequestHandler => {
-    const mw: RequestHandler = (_req, _res, next) => next();
-    (mw as any)._mwName = name;
-    return mw;
-  };
+const makeMw = (): RequestHandler => 
+  (_req, _res, next) => next();
 
-  beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+beforeEach(() => {
+  jest.resetModules();
+  jest.clearAllMocks();
 
-    postMock = jest.fn();
-    getMock = jest.fn();
-    putMock = jest.fn();
+  postMock = jest.fn();
+  getMock = jest.fn();
 
-    mockCreateAccount = jest.fn();
-    mockGetAccountsByCustomerId = jest.fn();
-    mockGetAccount = jest.fn();
-    mockUpdateAccount = jest.fn();
-    mockDeleteAccount = jest.fn();
+  mockCreateTransfer = jest.fn();
+  mockGetTransfer = jest.fn();
+  mockGetTransfers = jest.fn();
 
-    requireAuthMock = jest.fn(() => makeMw("requireAuth"));
-    requireRoleMock = jest.fn((_role: unknown) => makeMw("requireRole"));
-    validateMock = jest.fn((_schema: unknown, _source: unknown) =>
-      makeMw("validate")
-    );
+  requireAuthMock = jest.fn(() => makeMw());
+  validateMock = jest.fn((schema, source) => makeMw());
 
-    jest.doMock("express", () => {
-      return {
-        Router: () => ({
-          post: postMock,
-          get: getMock,
-          put: putMock,
-        }),
-      };
-    });
-
-    jest.doMock("../../../src/account/accountController", () => {
-      return {
-        createAccount: mockCreateAccount,
-        getAccountsByCustomerId: mockGetAccountsByCustomerId,
-        getAccount: mockGetAccount,
-        updateAccount: mockUpdateAccount,
-        deleteAccount: mockDeleteAccount,
-      };
-    });
-
-    jest.doMock("../../../src/middleware/validationMiddleware", () => {
-      return {
-        validate: validateMock,
-      };
-    });
-
-    jest.doMock("../../../src/auth/authMiddleware", () => {
-      return {
-        requireAuth: requireAuthMock,
-        requireRole: requireRoleMock,
-      };
-    });
-
-    require("../../../src/account/accountRouter");
+  jest.doMock("express", () => {
+    return {
+      Router: () => ({
+        post: postMock,
+        get: getMock,
+      }),
+    };
   });
 
-  const findCall = (mockFn: jest.Mock, path: string) => {
-    return mockFn.mock.calls.find((c: any[]) => c[0] === path);
-  };
-
-  test("registers POST / with correct middlewares and handler (createAccount)", () => {
-    const { createAccountBodySchema } = require("../../../src/account/accountSchemas");
-
-    expect(requireAuthMock).toHaveBeenCalledTimes(5);
-    expect(validateMock).toHaveBeenCalledWith(createAccountBodySchema, "body");
-
-    const call = findCall(postMock, "/");
-    expect(call).toBeDefined();
-
-    const [path, mw1, mw2, handler] = call as any[];
-
-    expect(path).toBe("/");
-    expect(typeof mw1).toBe("function");
-    expect(typeof mw2).toBe("function");
-    expect(handler).toBe(mockCreateAccount);
-
-    expect(mw1).toBe(requireAuthMock.mock.results[0]!.value);
-    expect(mw2).toBe(validateMock.mock.results[0]!.value); // first validate() call: create body
+  jest.doMock("../../../src/transfer/transferController", () => {
+    return {
+      createTransfer: mockCreateTransfer,
+      getTransfer: mockGetTransfer,
+      getTransfers: mockGetTransfers,
+    };
   });
 
-  test("registers GET / with correct middlewares and handler (getAccountsByCustomerId)", () => {
-    const call = findCall(getMock, "/");
-    expect(call).toBeDefined();
-
-    const [path, mw1, handler] = call as any[];
-
-    expect(path).toBe("/");
-    expect(typeof mw1).toBe("function");
-    expect(handler).toBe(mockGetAccountsByCustomerId);
+  jest.doMock("../../../src/middleware/validationMiddleware", () => {
+    return {
+      validate: validateMock,
+    };
   });
 
-  test("registers GET /:id with correct middlewares and handler (getAccount)", () => {
-
-    const { accountIdParamsSchema } = require("../../../src/account/accountSchemas");
-
-    expect(validateMock).toHaveBeenCalledWith(accountIdParamsSchema, "params");
-
-    const call = findCall(getMock, "/:id");
-    expect(call).toBeDefined();
-
-    const [path, mw1, mw2, handler] = call as any[];
-
-    expect(path).toBe("/:id");
-    expect(typeof mw1).toBe("function");
-    expect(typeof mw2).toBe("function");
-    expect(handler).toBe(mockGetAccount);
+  jest.doMock("../../../src/auth/authMiddleware", () => {
+    return {
+      requireAuth: requireAuthMock,
+    };
   });
 
-  test("registers PUT /:id with correct middlewares and handler (updateAccount)", () => {
-    const { accountIdParamsSchema, updateAccountBodySchema } = require("../../../src/account/accountSchemas");
+  require("../../../src/transfer/transferRouter");
+});
 
-    expect(validateMock).toHaveBeenCalledWith(accountIdParamsSchema, "params");
-    expect(validateMock).toHaveBeenCalledWith(updateAccountBodySchema, "body");
+const findCall = (mockFn: jest.Mock, path: string) => {
+  return mockFn.mock.calls.find((c: any[]) => c[0] === path);
+};
 
-    const call = findCall(putMock, "/:id");
-    expect(call).toBeDefined();
+test("registers POST / with correct middlewares and handler (createTransfer)", () => {
+  const call = findCall(postMock, "/");
+  expect(call).toBeDefined();
 
-    const [path, mw1, mw2, mw3, handler] = call as any[];
+  const [
+    path,
+    requireAuthMw,
+    validateMw,
+    handler
+  ] = call;
 
-    expect(path).toBe("/:id");
-    expect(typeof mw1).toBe("function");
-    expect(typeof mw2).toBe("function");
-    expect(typeof mw3).toBe("function");
-    expect(handler).toBe(mockUpdateAccount);
-  });
+  expect(path).toBe("/");
+  expect(typeof requireAuthMw).toBe("function");
+  expect(typeof validateMw).toBe("function");
+  expect(handler).toBe(mockCreateTransfer);
 
-  test("registers POST /:id/close with correct middlewares and handler (deleteAccount)", () => {
-    const { accountIdParamsSchema } = require("../../../src/account/accountSchemas");
+  expect(validateMock).toHaveBeenCalledWith(createTransferBodySchema, "body");
+});
 
-    expect(validateMock).toHaveBeenCalledWith(accountIdParamsSchema, "params");
+test("registers GET /:transferId with correct middlewares and handler (getTransfer)", () => {
+  const call = findCall(getMock, "/:transferId");
+  expect(call).toBeDefined();
 
-    const call = findCall(postMock, "/:id/close");
-    expect(call).toBeDefined();
+  const [
+    path,
+    requireAuthMw,
+    validateMw,
+    handler
+  ] = call;
 
-    const [path, mw1, mw2, handler] = call as any[];
+  expect(path).toBe("/:transferId");
+  expect(typeof requireAuthMw).toBe("function");
+  expect(typeof validateMw).toBe("function");
+  expect(handler).toBe(mockGetTransfer);
 
-    expect(path).toBe("/:id/close");
-    expect(typeof mw1).toBe("function");
-    expect(typeof mw2).toBe("function");
-    expect(handler).toBe(mockDeleteAccount);
-  });
+  expect(validateMock).toHaveBeenCalledWith(getTransferParamsSchema, "params");
+});
 
-  test("registers exactly 5 routes (2 POST, 2 GET, 1 PUT) and nothing else", () => {
-    expect(postMock).toHaveBeenCalledTimes(2); 
-    expect(getMock).toHaveBeenCalledTimes(2);  
-    expect(putMock).toHaveBeenCalledTimes(1);
+test("registers GET / with correct middlewares and handler (getTransfers)", () => {
+  const call = findCall(getMock, "/");
+  expect(call).toBeDefined();
 
-    const postPaths = postMock.mock.calls.map((c: any[]) => c[0]);
-    const getPaths = getMock.mock.calls.map((c: any[]) => c[0]);
-    const putPaths = putMock.mock.calls.map((c: any[]) => c[0]);
+  const [
+    path,
+    requireAuthMw,
+    validateParamsMw,
+    validateQueryMw,
+    handler
+  ] = call;
 
-    expect(postPaths).toEqual(expect.arrayContaining(["/", "/:id/close"]));
-    expect(getPaths).toEqual(expect.arrayContaining(["/", "/:id"]));
-    expect(putPaths).toEqual(["/:id"]);
-  });
+  expect(path).toBe("/");
+  expect(typeof requireAuthMw).toBe("function");
+  expect(typeof validateParamsMw).toBe("function");
+  expect(typeof validateQueryMw).toBe("function");
+  expect(handler).toBe(mockGetTransfers);
+
+  expect(validateMock).toHaveBeenCalledWith(accountIdParamsSchema, "params");
+  expect(validateMock).toHaveBeenCalledWith(getTransfersQuerySchema, "query");
 });
