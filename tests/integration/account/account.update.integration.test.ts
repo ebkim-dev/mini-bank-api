@@ -1,7 +1,7 @@
 import request from "supertest";
 import { createApp } from "../../../src/app";
 import { Prisma } from "../../../src/generated/client";
-import { AccountStatus, UserRole } from "../../../src/generated/enums";
+import { AccountStatus } from "../../../src/generated/enums";
 import { buildAccountRecord } from "../../accountMock";
 import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
 import { 
@@ -44,17 +44,18 @@ beforeEach(() => {
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
+async function updateAccountRequest(
+  body: any,
+  accountId: string = mockAccountId1,
+  sessionId: string = mockSessionId
+) {
+  return request(app)
+    .put(`/accounts/${accountId}`)
+    .set("x-session-id", sessionId)
+    .send(body);
+}
+  
 describe("PUT /accounts/:accountId", () => {
-  async function updateAccountRequest(
-    body: any,
-    accountId: string = mockAccountId1,
-    sessionId: string = mockSessionId
-  ) {
-    return request(app)
-      .put(`/accounts/${accountId}`)
-      .set("x-session-id", sessionId)
-      .send(body);
-  }
 
   test("nickname and status are both given => 200, account is updated and returned", async () => {
     const toUpdate = { nickname: "newNick", status: AccountStatus.CLOSED };

@@ -19,7 +19,6 @@ jest.mock("bcrypt", () => ({
     return Promise.resolve(false);
   }),
 }));
-import bcrypt from "bcrypt";
 
 const mockUserCreate = jest.fn();
 const mockCustomerCreate = jest.fn();
@@ -35,7 +34,6 @@ jest.mock("../../../src/db/prismaClient", () => ({
     }),
   },
 }));
-import prismaClient from "../../../src/db/prismaClient";
 
 const app = createApp();
 
@@ -47,13 +45,15 @@ beforeEach(() => {
   mockUserCreate.mockResolvedValue(buildUserRecord());
 });
 
-describe("POST /auth/register", () => {
-  async function registerRequest(
-    registerInput: Partial<RegisterInput> = {},
-  ) {
-    return request(app).post("/auth/register").send(registerInput);
-  }
 
+async function registerRequest(
+  registerInput: Partial<RegisterInput> = {},
+){
+  return request(app).post("/auth/register").send(registerInput);
+}
+
+describe("POST /auth/register", () => {
+ 
   test("Correct input => 201, new user is created and id is returned", async () => {
     const res = await registerRequest(buildRegisterInput());
 
