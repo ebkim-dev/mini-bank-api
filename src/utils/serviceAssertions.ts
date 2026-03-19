@@ -1,6 +1,6 @@
 import { Decimal } from "@prisma/client/runtime/client";
 import { AuthInput } from "../auth/user";
-import { ConflictError, ForbiddenError, NotFoundError } from "../error/error";
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../error/error";
 import { Account, AccountStatus, Transfer, UserRole } from "../generated/client";
 import { EventCode } from "../types/eventCodes";
 
@@ -61,11 +61,11 @@ export function throwIfNotTransferOwner(
 }
 
 export function throwIfSelfTransfer(
-  fromAccount: Account,
-  toAccount: Account,
+  fromAccountId: string,
+  toAccountId: string,
 ): void {
-  if (fromAccount.id === toAccount.id) {
-    throw ConflictError(
+  if (fromAccountId === toAccountId) {
+    throw BadRequestError(
       EventCode.NO_SELF_TRANSFER_ALLOWED,
       "Self-transfers are not allowed"
     );
@@ -76,7 +76,7 @@ export function throwIfAccountNotActive(
   account: Account,
 ): void {
   if (account.status !== AccountStatus.ACTIVE) {
-    throw ConflictError(
+    throw ForbiddenError(
       EventCode.ACCOUNT_NOT_ACTIVE,
       "Account is not active"
     );
@@ -88,7 +88,7 @@ export function throwIfInsufficientFunds(
   amount: Decimal,
 ): void {
   if (account.balance.lt(amount)) {
-    throw ConflictError(
+    throw BadRequestError(
       EventCode.INSUFFICIENT_FUNDS,
       "Insufficient funds"
     );

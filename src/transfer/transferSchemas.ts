@@ -3,7 +3,6 @@ import { z } from "zod";
 
 export const createTransferBodySchema = z
   .object({
-    fromAccountId: z.uuid(),
     toAccountId: z.uuid(),
     amount: z
       .string()
@@ -31,8 +30,22 @@ export const getTransfersQuerySchema = z
       .refine((val) => val >= 0, {
         message: "offset must be 0 or greater",
       }),
-    from: z.iso.datetime({ message: "from must be a valid ISO date" }).optional(),
-    to: z.iso.datetime({ message: "to must be a valid ISO date" }).optional(),
+    from: z
+      .iso
+      .datetime({ message: "from must be a valid ISO date" })
+      .transform((val) => new Date(val))
+      .refine((date) => !isNaN(date.getTime()), {
+        message: "from must be a valid date"
+      })
+      .optional(),
+    to: z
+      .iso
+      .datetime({ message: "to must be a valid ISO date" })
+      .transform((val) => new Date(val))
+      .refine((date) => !isNaN(date.getTime()), {
+        message: "to must be a valid date"
+      })
+      .optional(),
   })
   .strict();
 
@@ -40,3 +53,9 @@ export const getTransferParamsSchema = z.object({
   accountId: z.uuid(),
   transferId: z.uuid(),
 }).strict();
+
+export const accountIdParamsSchema = z
+  .object({
+    accountId: z.uuid("accountId must be a valid UUID"),
+  })
+  .strict();

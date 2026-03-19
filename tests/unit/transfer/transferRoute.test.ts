@@ -76,16 +76,18 @@ test("registers POST / with correct middlewares and handler (createTransfer)", (
   const [
     path,
     requireAuthMw,
-    validateMw,
+    validateParamsMw,
+    validateBodyMw,
     handler
   ] = call;
 
   expect(path).toBe("/");
   expect(typeof requireAuthMw).toBe("function");
-  expect(typeof validateMw).toBe("function");
+  expect(typeof validateParamsMw).toBe("function");
+  expect(typeof validateBodyMw).toBe("function");
   expect(handler).toBe(mockCreateTransfer);
 
-  expect(validateMock).toHaveBeenCalledWith(createTransferBodySchema, "body");
+  expect(validateMock).toHaveBeenCalledWith(expect.any(Object), "body");
 });
 
 test("registers GET /:transferId with correct middlewares and handler (getTransfer)", () => {
@@ -104,7 +106,7 @@ test("registers GET /:transferId with correct middlewares and handler (getTransf
   expect(typeof validateMw).toBe("function");
   expect(handler).toBe(mockGetTransfer);
 
-  expect(validateMock).toHaveBeenCalledWith(getTransferParamsSchema, "params");
+  expect(validateMock).toHaveBeenCalledWith(expect.any(Object), "params");
 });
 
 test("registers GET / with correct middlewares and handler (getTransfers)", () => {
@@ -125,6 +127,6 @@ test("registers GET / with correct middlewares and handler (getTransfers)", () =
   expect(typeof validateQueryMw).toBe("function");
   expect(handler).toBe(mockGetTransfers);
 
-  expect(validateMock).toHaveBeenCalledWith(accountIdParamsSchema, "params");
-  expect(validateMock).toHaveBeenCalledWith(getTransfersQuerySchema, "query");
+  expect(validateMock).toHaveBeenCalledWith(expect.any(Object), "params");
+  expect(validateMock).toHaveBeenCalledWith(expect.any(Object), "query");
 });

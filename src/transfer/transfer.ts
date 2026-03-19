@@ -1,7 +1,6 @@
 import { Decimal } from "@prisma/client/runtime/client";
 
 export type TransferCreateInput = {
-  fromAccountId: string;
   toAccountId: string;
   amount: Decimal;
   memo?: string;

@@ -7,9 +7,10 @@ export async function createTransfer(
   next: NextFunction
 ): Promise<void> {
   try {
+    const { accountId } = (req as any).validated.params;
     const body = (req as any).validated.body;
     const authInput = req.user;
-    const newTransfer = await transferService.insertTransfer(body, authInput);
+    const newTransfer = await transferService.insertTransfer(accountId, body, authInput);
     res.status(201).json(newTransfer);
   } catch (err) {
     next(err);
@@ -37,10 +38,10 @@ export async function getTransfers(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { id } = (req as any).validated.params;
+    const { accountId } = (req as any).validated.params;
     const query = (req as any).validated.query;
     const authInput = req.user;
-    const transfers = await transferService.fetchTransfers(id, query, authInput);
+    const transfers = await transferService.fetchTransfers(accountId, query, authInput);
     res.status(200).json(transfers);
   } catch (err) {
     next(err);

@@ -35,7 +35,10 @@ function buildReq(
 describe("createTransfer controller", () => {
   const req: any = buildReq({ 
     body: buildAccountCreateInput(),
-    user: buildAuthInput()
+    user: buildAuthInput(),
+    params: {
+      accountId: mockAccountId1,
+    },
   });
 
   it("should call insertTransfer and return 201 with serialized transfer", async () => {
@@ -45,6 +48,7 @@ describe("createTransfer controller", () => {
     await transferController.createTransfer(req, res, next);
 
     expect(transferService.insertTransfer).toHaveBeenCalledWith(
+      req.validated.params.accountId,
       req.validated.body,
       buildAuthInput()
     );
@@ -58,7 +62,8 @@ describe("createTransfer controller", () => {
     await transferController.createTransfer(req, res, next);
 
     expect(transferService.insertTransfer).toHaveBeenCalledWith(
-      req.validated.params.transferId,
+      req.validated.params.accountId,
+      req.validated.body,
       buildAuthInput()
     );
 
@@ -105,7 +110,7 @@ describe("getTransfer controller", () => {
 
 describe("getTransfers controller", () => {
   const req: any = buildReq({
-    params: { id: mockAccountId1 },
+    params: { accountId: mockAccountId1 },
     query: { customer_id: mockCustomerId1 },
     user: buildAuthInput()
   });
@@ -115,7 +120,7 @@ describe("getTransfers controller", () => {
     await transferController.getTransfers(req, res, next);
 
     expect(transferService.fetchTransfers).toHaveBeenCalledWith(
-      req.validated.params.id,
+      req.validated.params.accountId,
       req.validated.query,
       buildAuthInput()
     );
@@ -132,7 +137,7 @@ describe("getTransfers controller", () => {
     await transferController.getTransfers(req, res, next);
 
     expect(transferService.fetchTransfers).toHaveBeenCalledWith(
-      req.validated.params.id,
+      req.validated.params.accountId,
       req.validated.query,
       buildAuthInput()
     );
@@ -149,7 +154,7 @@ describe("getTransfers controller", () => {
     await transferController.getTransfers(req, res, next);
 
     expect(transferService.fetchTransfers).toHaveBeenCalledWith(
-      req.validated.params.id,
+      req.validated.params.accountId,
       req.validated.query,
       buildAuthInput()
     );

@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { validate } from "../middleware/validationMiddleware";
 import { requireAuth } from "../auth/authMiddleware";
-import { accountIdParamsSchema } from "../account/accountSchemas";
 import {
+  accountIdParamsSchema,
   createTransferBodySchema,
   getTransferParamsSchema,
   getTransfersQuerySchema
@@ -13,11 +13,12 @@ import {
   getTransfers
 } from "./transferController";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 router.post(
   "/",
   requireAuth(),
+  validate(accountIdParamsSchema, "params"),
   validate(createTransferBodySchema, "body"),
   createTransfer
 );

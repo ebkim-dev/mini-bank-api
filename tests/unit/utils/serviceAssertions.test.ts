@@ -138,20 +138,12 @@ describe("throwIfNotTransferOwner", () => {
 
 describe("throwIfSelfTransfer", () => {
   it("does not throw if source and destination accounts are different", () => {
-    const from_account = buildAccountRecord();
-    const to_account = buildAccountRecord({
-      id: mockAccountId2,
-    });
-
-    expect(() => throwIfSelfTransfer(from_account, to_account)).not.toThrow();
+    expect(() => throwIfSelfTransfer(mockAccountId1, mockAccountId2)).not.toThrow();
   });
 
   it("throws ConflictError if self transfer is attempted", () => {
-    const from_account = buildAccountRecord();
-    const to_account = buildAccountRecord();
-
     try {
-      throwIfSelfTransfer(from_account, to_account);
+      throwIfSelfTransfer(mockAccountId1, mockAccountId1);
     } catch (err) {
       expect(err).toBeInstanceOf(AppError);
       const appError = err as AppError;

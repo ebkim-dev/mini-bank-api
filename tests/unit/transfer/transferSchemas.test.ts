@@ -14,7 +14,6 @@ import {
 
 describe("createTransferBodySchema", () => {
   const validTransferBody = {
-    fromAccountId: mockAccountId1,
     toAccountId: mockAccountId2,
     amount: `${mockAmount}`,
   };
@@ -25,17 +24,9 @@ describe("createTransferBodySchema", () => {
       memo: "mockMemo",
     });
 
-    expect(parsed.fromAccountId).toBe(mockAccountId1);
     expect(parsed.toAccountId).toBe(mockAccountId2);
     expect(parsed.amount.toString()).toBe(mockAmount.toString());
     expect(parsed.memo).toBe("mockMemo");
-  });
-
-  it("rejects invalid source account ID", () => {
-    expect(() => createTransferBodySchema.parse({
-      ...validTransferBody,
-      fromAccountId: "not-uuid",
-    })).toThrow();
   });
 
   it("rejects invalid destination account ID", () => {
@@ -72,14 +63,14 @@ describe("getTransfersQuerySchema", () => {
     const parsed = getTransfersQuerySchema.parse({
       limit: "20",
       offset: "0",
-      from: mockFromDate,
-      to: mockToDate,
+      from: mockFromDate.toISOString(),
+      to: mockToDate.toISOString(),
     });
 
     expect(parsed.limit).toBe(20);
     expect(parsed.offset).toBe(0);
-    expect(parsed.from).toBe(mockFromDate);
-    expect(parsed.to).toBe(mockToDate);
+    expect(parsed.from!.toISOString()).toBe(mockFromDate.toISOString());
+    expect(parsed.to!.toISOString()).toBe(mockToDate.toISOString());
   });
 
   it("accepts empty body and generates default fields", () => {

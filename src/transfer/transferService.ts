@@ -28,29 +28,31 @@ import {
 
 
 export async function insertTransfer(
+  fromAccountId: string,
   data: TransferCreateInput,
   authInput: AuthInput
 ): Promise<TransferOutput> {
   const start = process.hrtime.bigint();
 
   try {
+    throwIfSelfTransfer(fromAccountId, data.toAccountId);
+    
     const transferResult = await prismaClient.$transaction(async (tx) => {
       const fromAccount = await tx.account.findUnique({
-        where: { id: data.fromAccountId },
+        where: { id: fromAccountId },
       });
 
       throwIfAccountNotFound(fromAccount);
       throwIfNotAccountOwner(authInput, fromAccount);
+      throwIfAccountNotActive(fromAccount);
+      throwIfInsufficientFunds(fromAccount, data.amount);
 
       const toAccount = await tx.account.findUnique({
         where: { id: data.toAccountId },
       });
 
       throwIfAccountNotFound(toAccount);
-      throwIfSelfTransfer(fromAccount, toAccount);
-      throwIfAccountNotActive(fromAccount);
       throwIfAccountNotActive(toAccount);
-      throwIfInsufficientFunds(fromAccount, data.amount);
 
       const transfer = await tx.transfer.create({
         data: {
@@ -104,7 +106,7 @@ export async function insertTransfer(
         start,
         authInput,
         err.code as EventCode,
-        data.fromAccountId,
+        fromAccountId,
         data.toAccountId,
         data.amount
       ));
@@ -178,12 +180,12 @@ export async function fetchTransfers(
 
     if (query.from) {
       where.created_at ??= {};
-      where.created_at.gte = new Date(query.from);
+      where.created_at.gte = query.from;
     }
 
     if (query.to) {
       where.created_at ??= {};
-      where.created_at.lte = new Date(query.to);
+      where.created_at.lte = query.to;
     }
 
     const transferRecords: Transfer[] = await prismaClient.transfer.findMany({
