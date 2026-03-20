@@ -201,10 +201,10 @@ export async function fetchMe(
       executionStatus: ExecutionStatus.FAILURE,
       durationMs: getDurationMs(startTime),
       userId: authInput.actorId,
-      errorCode: EventCode.INTERNAL_SERVER_ERROR,
+      errorCode: EventCode.USER_NOT_FOUND,
     };
-    logger.info(EventCode.INTERNAL_SERVER_ERROR, event);
-    throw NotFoundError(EventCode.INTERNAL_SERVER_ERROR, "User not found");
+    logger.info(EventCode.USER_NOT_FOUND, event);
+    throw NotFoundError(EventCode.USER_NOT_FOUND, "User not found");
   }
  
   const event: MeSuccessEvent = {
