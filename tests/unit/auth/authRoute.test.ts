@@ -1,102 +1,144 @@
 import type { RequestHandler } from "express";
 
-describe("authRouter.ts", () => {
-  let postMock: jest.Mock;
+let postMock: jest.Mock;
+let getMock: jest.Mock;
 
-  let mockRegister: jest.Mock;
-  let mockLogin: jest.Mock;
+let mockRegister: jest.Mock;
+let mockLogin: jest.Mock;
+let mockLogout: jest.Mock;
+let mockMe: jest.Mock;
 
-  let validateMock: jest.Mock;
+let validateMock: jest.Mock;
+let requireAuthMock: jest.Mock;
 
-  beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+const makeMw = (name: string): RequestHandler => {
+  const mw: RequestHandler = (_req, _res, next) => next();
+  (mw as any)._mwName = name;
+  return mw;
+};
 
-    postMock = jest.fn();
+beforeEach(() => {
+  jest.resetModules();
+  jest.clearAllMocks();
 
-    mockRegister = jest.fn() as any;
-    mockLogin = jest.fn() as any;
+  postMock = jest.fn();
+  getMock = jest.fn();
 
-    validateMock = jest.fn(() => {
-      const mw: RequestHandler = (_req, _res, next) => next();
-      return mw;
-    });
+  mockRegister = jest.fn();
+  mockLogin = jest.fn();
+  mockLogout = jest.fn();
+  mockMe = jest.fn();
 
-    jest.doMock("express", () => {
-      return {
-        Router: () => ({
-          post: postMock
-        })
-      };
-    });
+  validateMock = jest.fn((_schema: unknown, _source: unknown) =>
+    makeMw("validate")
+  );
+  requireAuthMock = jest.fn(() => makeMw("requireAuth"));
 
-    jest.doMock("../../../src/auth/authController", () => {
-      return {
-        register: mockRegister,
-        login: mockLogin
-      };
-    });
+  jest.doMock("express", () => ({
+    Router: () => ({ post: postMock, get: getMock }),
+  }));
 
-    jest.doMock("../../../src/middleware/validationMiddleware", () => {
-      return {
-        validate: validateMock
-      };
-    });
+  jest.doMock("../../../src/auth/authController", () => ({
+    register: mockRegister,
+    login: mockLogin,
+    logout: mockLogout,
+    me: mockMe,
+  }));
 
-    require("../../../src/auth/authRouter");
-  });
+  jest.doMock("../../../src/middleware/validationMiddleware", () => ({
+    validate: validateMock,
+  }));
 
-  test("registers POST /register with validate(registerBodySchema,'body') then register controller", () => {
-    
-    const { registerBodySchema } = require("../../../src/auth/userSchemas");
-    expect(validateMock).toHaveBeenCalledWith(registerBodySchema, "body");
+  jest.doMock("../../../src/auth/authMiddleware", () => ({
+    requireAuth: requireAuthMock,
+  }));
 
-    const registerCall = postMock.mock.calls.find((c: any[]) => c[0] === "/register");
-    expect(registerCall).toBeDefined();
+  require("../../../src/auth/authRouter");
+});
 
-    const [path, mw, handler] = registerCall as any[];
+const findCall = (mockFn: jest.Mock, path: string) =>
+  mockFn.mock.calls.find((c: any[]) => c[0] === path);
 
-    expect(path).toBe("/register");
-    expect(typeof mw).toBe("function"); // middleware returns validate()
-    expect(handler).toBe(mockRegister);
-  });
+test("registers POST /register with validate(registerBodySchema) then register handler", () => {
+  const { registerBodySchema } = require("../../../src/auth/userSchemas");
 
-  test("registers POST /login with validate(loginBodySchema,'body') then login controller", () => {
-    const { loginBodySchema } = require("../../../src/auth/userSchemas");
+  const call = findCall(postMock, "/register");
+  expect(call).toBeDefined();
 
-    expect(validateMock).toHaveBeenCalledWith(loginBodySchema, "body");
+  const [path, mw, handler] = call as any[];
 
-    const loginCall = postMock.mock.calls.find((c: any[]) => c[0] === "/login");
-    expect(loginCall).toBeDefined();
+  expect(path).toBe("/register");
+  expect(typeof mw).toBe("function");
+  expect(handler).toBe(mockRegister);
+  expect(validateMock).toHaveBeenCalledWith(registerBodySchema, "body");
+});
 
-    const [path, mw, handler] = loginCall as any[];
+test("registers POST /login with validate(loginBodySchema) then login handler", () => {
+  const { loginBodySchema } = require("../../../src/auth/userSchemas");
 
-    expect(path).toBe("/login");
-    expect(typeof mw).toBe("function");
-    expect(handler).toBe(mockLogin);
-  });
+  const call = findCall(postMock, "/login");
+  expect(call).toBeDefined();
 
-  test("registers exactly two routes (register + login) and nothing else", () => {
-    expect(postMock).toHaveBeenCalledTimes(2);
+  const [path, mw, handler] = call as any[];
 
-    const paths = postMock.mock.calls.map((c: any[]) => c[0]);
-    expect(paths).toEqual(expect.arrayContaining(["/register", "/login"]));
-  });
+  expect(path).toBe("/login");
+  expect(typeof mw).toBe("function");
+  expect(handler).toBe(mockLogin);
+  expect(validateMock).toHaveBeenCalledWith(loginBodySchema, "body");
+});
 
-  test("uses the middleware retured by validate() for each route", () => {
+test("registers POST /logout with requireAuth then logout handler — no validate middleware", () => {
+  const call = findCall(postMock, "/logout");
+  expect(call).toBeDefined();
 
-    const registerCall = postMock.mock.calls.find((c: any[]) => c[0] === "/register");
-    const loginCall = postMock.mock.calls.find((c: any[]) => c[0] === "/login");
+  const [path, authMw, handler] = call as any[];
 
-    expect(registerCall).toBeDefined();
-    expect(loginCall).toBeDefined();
+  expect(path).toBe("/logout");
+  expect(typeof authMw).toBe("function");
+  expect(handler).toBe(mockLogout);
 
-    expect(validateMock).toHaveBeenCalledTimes(2);
+  const requireAuthReturnedMw = requireAuthMock.mock.results[0]?.value;
+  expect(authMw).toBe(requireAuthReturnedMw);
 
-    const firstReturnedMw = validateMock.mock.results[0]!.value; // middleware for /register
-    const secondReturnedMw = validateMock.mock.results[1]!.value; // middleware for /login
+  const validateCallArgs = validateMock.mock.calls;
+  expect(validateCallArgs.every(([, source]: any[]) => source !== "logout")).toBe(true);
+});
 
-    expect(registerCall![1]).toBe(firstReturnedMw);
-    expect(loginCall![1]).toBe(secondReturnedMw);
-  });
+test("registers GET /me with requireAuth then me handler — no validate middleware", () => {
+  const call = findCall(getMock, "/me");
+  expect(call).toBeDefined();
+
+  const [path, authMw, handler] = call as any[];
+
+  expect(path).toBe("/me");
+  expect(typeof authMw).toBe("function");
+  expect(handler).toBe(mockMe);
+
+
+  const requireAuthReturnedMws = requireAuthMock.mock.results.map((r: any) => r.value);
+  expect(requireAuthReturnedMws).toContain(authMw);
+
+  const validateReturnedMws = validateMock.mock.results.map((r: any) => r.value);
+  expect(validateReturnedMws).not.toContain(authMw);
+});
+
+test("registers exactly 3 POST routes and 1 GET route", () => {
+  expect(postMock).toHaveBeenCalledTimes(3);
+  expect(getMock).toHaveBeenCalledTimes(1);
+
+  const postPaths = postMock.mock.calls.map((c: any[]) => c[0]);
+  expect(postPaths).toEqual(
+    expect.arrayContaining(["/register", "/login", "/logout"])
+  );
+
+  const getPaths = getMock.mock.calls.map((c: any[]) => c[0]);
+  expect(getPaths).toEqual(expect.arrayContaining(["/me"]));
+});
+
+test("validate is called exactly twice — only for /register and /login", () => {
+  const { registerBodySchema, loginBodySchema } = require("../../../src/auth/userSchemas");
+
+  expect(validateMock).toHaveBeenCalledTimes(2);
+  expect(validateMock).toHaveBeenCalledWith(registerBodySchema, "body");
+  expect(validateMock).toHaveBeenCalledWith(loginBodySchema, "body");
 });
