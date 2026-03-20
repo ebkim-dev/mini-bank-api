@@ -14,7 +14,8 @@ import {
   AuthSuccessEvent, 
   AuthFailureEvent,
   MeSuccessEvent,
-  LogoutSuccessEvent
+  LogoutSuccessEvent,
+  MeFailureEvent
 } from '../logging/logSchemas';
 import type {
   RegisterInput,
@@ -196,6 +197,13 @@ export async function fetchMe(
   });
  
   if (!userRecord) {
+    const event: MeFailureEvent = {
+      executionStatus: ExecutionStatus.FAILURE,
+      durationMs: getDurationMs(startTime),
+      userId: authInput.actorId,
+      errorCode: EventCode.INTERNAL_SERVER_ERROR,
+    };
+    logger.info(EventCode.INTERNAL_SERVER_ERROR, event);
     throw NotFoundError(EventCode.INTERNAL_SERVER_ERROR, "User not found");
   }
  

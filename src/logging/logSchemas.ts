@@ -34,6 +34,11 @@ export interface MeSuccessEvent extends BaseEvent {
   customerId: string;
 }
 
+export interface MeFailureEvent extends BaseEvent {
+  userId: string;
+  errorCode: EventCode;
+}
+
 export interface AccountBaseEvent extends BaseEvent {
   actorId: string;
   actorRole: UserRole;
