@@ -114,7 +114,7 @@ export function buildMeOutput(
     username: mockUsername,
     role: UserRole.STANDARD,
     customer: {
-      id: mockCustomerId,
+      id: mockCustomerId1,
       firstName: mockFirstName,
       lastName: mockLastName,
       email: mockEmail,
@@ -128,14 +128,14 @@ export function buildUserWithCustomer() {
   const mockDate = new Date();
   return {
     id: mockUserId,
-    customer_id: mockCustomerId,
+    customer_id: mockCustomerId1,
     username: mockUsername,
     password_hash: mockHashedPassword,
     role: UserRole.STANDARD,
     created_at: mockDate,
     updated_at: mockDate,
     customer: {
-      id: mockCustomerId,
+      id: mockCustomerId1,
       first_name: mockFirstName,
       last_name: mockLastName,
       email: mockEmail,

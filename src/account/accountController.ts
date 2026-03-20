@@ -6,7 +6,6 @@ import type {
 } from "./account";
 import * as accountService from "./accountService";
 import type { AuthInput } from '../auth/user';
-import { TransactionOutput, TransactionQueryInput } from "../transaction/transaction";
 
 export async function createAccount(
   req: Request,
@@ -15,7 +14,7 @@ export async function createAccount(
 ): Promise<void> {
   try {
     const body: AccountCreateInput = (req as any).validated.body;
-    const authInput: AuthInput = req.user;
+    const authInput: AuthInput = req.user!;
     const newAccount: AccountOutput = await accountService.insertAccount(
       body, 
       authInput
@@ -32,7 +31,7 @@ export async function getAccountsByCustomerId(
   next: NextFunction
 ): Promise<void> {
   try {
-    const authInput: AuthInput = req.user;
+    const authInput: AuthInput = req.user!;
     const accounts: AccountOutput[] = await accountService.fetchAccountsByCustomerId(
       authInput
     );
@@ -49,7 +48,7 @@ export async function getAccount(
 ): Promise<void> {
   try {
     const { id } = (req as any).validated.params;
-    const authInput: AuthInput = req.user;
+    const authInput: AuthInput = req.user!;
     const account: AccountOutput = await accountService.fetchAccountById(
       id,
       authInput
@@ -68,7 +67,7 @@ export async function updateAccount(
   try {
     const { id } = (req as any).validated.params;
     const body: AccountUpdateInput = (req as any).validated.body;
-    const authInput: AuthInput = req.user;
+    const authInput: AuthInput = req.user!;
     const updated: AccountOutput = await accountService.updateAccountById(
       id,
       body,
@@ -87,7 +86,7 @@ export async function deleteAccount(
 ): Promise<void> {
   try {
     const { id } = (req as any).validated.params;
-    const authInput: AuthInput = req.user;
+    const authInput: AuthInput = req.user!;
     const closed: AccountOutput = await accountService.deleteAccountById(
       id,
       authInput
@@ -105,7 +104,7 @@ export async function getAccountSummary(
 ): Promise<void> {
   try {
     const { id } = (req as any).validated.params;
-    const authInput: AuthInput = req.user;
+    const authInput: AuthInput = req.user!;
     const summary = await accountService.fetchAccountSummary(id, authInput);
     res.status(200).json(summary);
   } catch (err) {

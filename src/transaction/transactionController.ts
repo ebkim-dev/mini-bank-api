@@ -15,7 +15,7 @@ export async function createTransaction(
   try {
     const { accountId } = (req as any).validated.params;
     const body: TransactionCreateInput = (req as any).validated.body;
-    const authInput: AuthInput = req.user;
+    const authInput: AuthInput = req.user!;
 
     const newTransaction: TransactionOutput =
       await transactionService.insertTransaction(accountId, body, authInput);
@@ -33,7 +33,7 @@ export async function getTransactions(
   try {
     const { accountId } = (req as any).validated.params;
     const query: TransactionQueryInput = (req as any).validated.query;
-    const authInput: AuthInput = req.user;
+    const authInput: AuthInput = req.user!;
 
     const transactions: TransactionOutput[] =
       await transactionService.fetchTransactions(accountId, query, authInput);
@@ -50,7 +50,7 @@ export async function getTransactionById(
 ): Promise<void> {
   try {
     const { transactionId } = (req as any).validated.params;
-    const authInput: AuthInput = req.user;
+    const authInput: AuthInput = req.user!;
     const transaction: TransactionOutput =
       await transactionService.fetchTransactionById(transactionId, authInput);
     res.status(200).json(transaction);
