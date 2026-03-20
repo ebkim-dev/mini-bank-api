@@ -45,3 +45,35 @@ paths:
           description: Validation error (invalid input)
         '401':
           description: Invalid credentials
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      summary: Logout the current user
+      description: Invalidates the current session by deleting it from Redis. After logout, the session ID can no longer be used to access protected endpoints.
+      security:
+        - sessionAuth: []
+      responses:
+        '204':
+          description: Logout successful, session invalidated
+        '401':
+          description: Authentication failed
+  /auth/me:
+    get:
+      tags:
+        - auth
+      summary: Get current user profile
+      description: Returns the authenticated user's profile including their linked customer information. Requires a valid session.
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          description: Authentication failed
+        '404':
+          description: User not found 

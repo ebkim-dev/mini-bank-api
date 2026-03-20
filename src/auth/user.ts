@@ -27,3 +27,15 @@ export type AuthInput = {
   role: UserRole;
   customerId: string;
 };
+
+export type MeOutput = {
+  username: string;
+  role: UserRole;
+  customer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string | null;
+  };
+};

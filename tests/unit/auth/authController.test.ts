@@ -1,11 +1,12 @@
-
 import * as authService from "../../../src/auth/authService";
 import * as authController from "../../../src/auth/authController";
-import { buildLoginOutput, buildRegisterInput, buildRegisterOutput } from "../../authMock";
+import { buildAuthInput, buildLoginOutput, buildMeOutput, buildRegisterInput, buildRegisterOutput } from "../../authMock";
+import { mockSessionId } from "../../commonMock";
 
 let next: jest.Mock;
 let jsonMock: jest.Mock;
 let statusMock: jest.Mock;
+let sendMock: jest.Mock;
 let res: any;
 const req: any = { validated: { body: { ...buildRegisterInput() } } };
 
@@ -13,7 +14,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   next = jest.fn();
   jsonMock = jest.fn();
-  statusMock = jest.fn(() => ({ json: jsonMock }));
+  sendMock = jest.fn();
+  statusMock = jest.fn(() => ({ json: jsonMock, send: sendMock }));
   res = { status: statusMock };
 });
 
@@ -57,6 +59,65 @@ describe("user login controller", () => {
     jest.spyOn(authService, "loginUser").mockRejectedValue(error);
 
     await authController.login(req, res, next);
+
+    expect(statusMock).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("logout controller", () => {
+  const logoutReq: any = {
+    sessionId: mockSessionId,
+    user: buildAuthInput(),
+  };
+
+  it("should call logoutUser and return 204 with no body", async () => {
+    jest.spyOn(authService, "logoutUser").mockResolvedValue(undefined);
+
+    await authController.logout(logoutReq, res, next);
+
+    expect(authService.logoutUser).toHaveBeenCalledWith(
+      mockSessionId,
+      buildAuthInput()
+    );
+    expect(statusMock).toHaveBeenCalledWith(204);
+    expect(sendMock).toHaveBeenCalledWith();
+    expect(jsonMock).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("should call next when service throws", async () => {
+    const error = new Error("Service encountered an error");
+    jest.spyOn(authService, "logoutUser").mockRejectedValue(error);
+
+    await authController.logout(logoutReq, res, next);
+
+    expect(statusMock).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("me controller", () => {
+  const meReq: any = {
+    user: buildAuthInput(),
+  };
+
+  it("should call fetchMe and return 200 with user profile", async () => {
+    jest.spyOn(authService, "fetchMe").mockResolvedValue(buildMeOutput());
+
+    await authController.me(meReq, res, next);
+
+    expect(authService.fetchMe).toHaveBeenCalledWith(buildAuthInput());
+    expect(statusMock).toHaveBeenCalledWith(200);
+    expect(jsonMock).toHaveBeenCalledWith(buildMeOutput());
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("should call next when service throws", async () => {
+    const error = new Error("Service encountered an error");
+    jest.spyOn(authService, "fetchMe").mockRejectedValue(error);
+
+    await authController.me(meReq, res, next);
 
     expect(statusMock).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalledTimes(1);

@@ -1,6 +1,5 @@
-import { ForbiddenError, UnauthorizedError } from "../error/error";
+import { UnauthorizedError } from "../error/error";
 import { EventCode } from "../types/eventCodes";
-import { UserRole } from "../generated/enums";
 import { redisClient } from "../redis/redisClient";
 import { AuthInput } from "./user";
 import { decrypt } from "../utils/encryption";
@@ -39,6 +38,7 @@ export function requireAuth(): RequestHandler {
       }
       const session: AuthInput = JSON.parse(decrypt(raw));
       req.user = session;
+      req.sessionId = sessionId;
 
       return next();
     } catch (err) {
