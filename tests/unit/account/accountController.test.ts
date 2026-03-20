@@ -2,7 +2,7 @@ import * as accountService from "../../../src/account/accountService";
 import * as accountController from "../../../src/account/accountController";
 import { AccountStatus } from "../../../src/generated/enums";
 import { AccountOutput } from "../../../src/account/account";
-import { mockAccountId1, mockCustomerId, mockMissingAccountId } from "../../commonMock";
+import { mockAccountId1, mockCustomerId1, mockMissingAccountId } from "../../commonMock";
 import { buildAuthInput } from "../../authMock";
 import { buildAccountCreateInput, buildAccountOutput } from "../../accountMock";
 
@@ -65,7 +65,7 @@ describe("createAccount controller", () => {
 
 describe("getAccountsByCustomerId controller", () => {
   const req: any = buildReq({ 
-    query: { customer_id: mockCustomerId },
+    query: { customer_id: mockCustomerId1 },
     user: buildAuthInput()
   });
 

@@ -6,7 +6,6 @@ import { TransactionType, UserRole } from "../../../src/generated/enums";
 import {
   buildTransactionOutput,
   buildTransactionRecord,
-  mockTransactionId2,
 } from "../../transactionMock";
 import { buildAccountRecord } from "../../accountMock";
 import {
@@ -15,6 +14,7 @@ import {
   mockMissingCustomerId,
   mockRedisKey,
   mockSessionId,
+  mockTransactionId2,
 } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({

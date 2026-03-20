@@ -4,10 +4,8 @@ import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
 import {
   buildTransactionOutput,
   buildTransactionRecord,
-  mockMissingTransactionId,
-  mockTransactionId1,
 } from "../../transactionMock";
-import { mockAccountId1, mockRedisKey, mockSessionId } from "../../commonMock";
+import { mockAccountId1, mockMissingTransactionId, mockRedisKey, mockSessionId, mockTransactionId1 } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn() }

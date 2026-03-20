@@ -6,7 +6,7 @@ import {
 } from "../../../src/account/accountSchemas";
 
 import { AccountStatus, AccountType } from "../../../src/generated/enums";
-import { mockAccountId1, mockCustomerId } from "../../commonMock";
+import { mockAccountId1, mockCustomerId1 } from "../../commonMock";
 
 describe("accountIdParamsSchema", () => {
   test("accepts UUID id", () => {
