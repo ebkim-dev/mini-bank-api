@@ -80,21 +80,34 @@ export async function registerUser(
         username: data.username,
         errorCode: EventCode.UNKNOWN_CONFLICT
       };
-      if (!Array.isArray(err.meta?.target)) {
+      const target = err.meta?.target;
+      const driverMessage: string | undefined =
+        (err.meta as any)?.driverAdapterError?.cause?.originalMessage;
+ 
+      let field: string | undefined;
+      if (Array.isArray(target)) {
+        field = target[0];
+      } else if (typeof target === "string") {
+        if (target.includes("username")) field = "username";
+        else if (target.includes("email")) field = "email";
+      }
+ 
+      if (!field && driverMessage) {
+        if (driverMessage.includes("username")) field = "username";
+        else if (driverMessage.includes("email")) field = "email";
+      }
+ 
+      if (!field || (field !== "username" && field !== "email")) {
         logger.info(event.errorCode, event);
         throw err;
       }
-      
-      const field = err.meta.target[0];
+ 
       if (field === "username") {
         event.errorCode = EventCode.USERNAME_ALREADY_EXISTS;
-      } else if (field === "email") {
-        event.errorCode = EventCode.EMAIL_ALREADY_EXISTS;
       } else {
-        logger.info(event.errorCode, event);
-        throw err;
+        event.errorCode = EventCode.EMAIL_ALREADY_EXISTS;
       }
-
+ 
       logger.info(event.errorCode, event);
       throw ConflictError(event.errorCode, `${field} already exists`);
     }
@@ -196,7 +209,6 @@ export async function fetchMe(
   logger.info(EventCode.ME_FETCHED, event);
  
   return {
-    id: userRecord.id,
     username: userRecord.username,
     role: userRecord.role,
     customer: {

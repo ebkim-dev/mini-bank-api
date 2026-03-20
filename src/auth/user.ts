@@ -29,7 +29,6 @@ export type AuthInput = {
 };
 
 export type MeOutput = {
-  id: string;
   username: string;
   role: UserRole;
   customer: {

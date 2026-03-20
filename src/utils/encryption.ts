@@ -2,7 +2,7 @@ import crypto from "crypto";
 
 const IV_LENGTH = 16;
 const TAG_LENGTH = 16;
-const UFT8_FORMAT = "utf8";
+const UTF8_FORMAT = "utf8";
 const BASE64_FORMAT = "base64";
 const AES_256_GCM = "aes-256-gcm";
 
@@ -23,7 +23,7 @@ export function encrypt(text: string): string {
   );
 
   const encrypted = Buffer.concat([
-    cipher.update(text, UFT8_FORMAT),
+    cipher.update(text, UTF8_FORMAT),
     cipher.final()
   ]);
   const tag = cipher.getAuthTag();
@@ -49,5 +49,5 @@ export function decrypt(encryptedText: string): string {
     decipher.final()
   ]);
 
-  return decrypted.toString(UFT8_FORMAT);
+  return decrypted.toString(UTF8_FORMAT);
 }

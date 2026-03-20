@@ -111,7 +111,6 @@ export function buildMeOutput(
   overrides: Partial<MeOutput> = {}
 ): MeOutput {
   return {
-    id: mockUserId,
     username: mockUsername,
     role: UserRole.STANDARD,
     customer: {

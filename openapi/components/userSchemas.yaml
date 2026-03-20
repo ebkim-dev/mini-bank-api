@@ -81,16 +81,11 @@ components:
         sessionId: "ae712543-3271-4dab-97f8-a075fdd0eaee"
     MeResponse:
       required:
-        - id
         - username
         - role
         - customer
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          description: UUID of the user
         username:
           type: string
         role:
@@ -120,7 +115,6 @@ components:
               type: string
               nullable: true
       example:
-        id: "550e8400-e29b-41d4-a716-446655440042"
         username: "alice1234"
         role: "STANDARD"
         customer:
