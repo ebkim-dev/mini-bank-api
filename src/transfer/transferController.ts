@@ -9,7 +9,7 @@ export async function createTransfer(
   try {
     const { accountId } = (req as any).validated.params;
     const body = (req as any).validated.body;
-    const authInput = req.user;
+    const authInput = req.user!;
     const newTransfer = await transferService.insertTransfer(accountId, body, authInput);
     res.status(201).json(newTransfer);
   } catch (err) {
@@ -25,7 +25,7 @@ export async function getTransfers(
   try {
     const { accountId } = (req as any).validated.params;
     const query = (req as any).validated.query;
-    const authInput = req.user;
+    const authInput = req.user!;
     const transfers = await transferService.fetchTransfers(accountId, query, authInput);
     res.status(200).json(transfers);
   } catch (err) {
@@ -39,8 +39,8 @@ export async function getTransfer(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { accountId, transferId } = (req as any).validated.params;
-    const authInput = req.user;
+    const { transferId } = (req as any).validated.params;
+    const authInput = req.user!;
     const transfer = await transferService.fetchTransferById(transferId, authInput);
     res.status(200).json(transfer);
   } catch (err) {
