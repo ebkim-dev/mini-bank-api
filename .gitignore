@@ -13,5 +13,6 @@ coverage/
 .env.local
 .env.test
 
+sqlscripts/
 npm-debug.log
 .DS_Store

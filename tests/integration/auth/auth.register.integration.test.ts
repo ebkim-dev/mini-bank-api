@@ -2,7 +2,7 @@ import request from "supertest";
 import { createApp } from "../../../src/app";
 import { Prisma } from "../../../src/generated/client";
 import { RegisterInput } from "../../../src/auth/user";
-import { mockCustomerId } from "../../commonMock";
+import { mockCustomerId1 } from "../../commonMock";
 import { 
   buildCustomerRecord,
   buildRegisterInput, 
@@ -40,7 +40,7 @@ const app = createApp();
 beforeEach(() => {
   jest.clearAllMocks();
   mockCustomerCreate.mockResolvedValue(
-    buildCustomerRecord({ id: mockCustomerId })
+    buildCustomerRecord({ id: mockCustomerId1 })
   );
   mockUserCreate.mockResolvedValue(buildUserRecord());
 });

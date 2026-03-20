@@ -1,0 +1,49 @@
+components:
+  schemas:
+    TransferCreateRequest:
+      required:
+        - toAccountId
+        - amount
+      type: object
+      properties:
+        toAccountId:
+          type: string
+          format: uuid
+          description: UUID of the destination account
+        amount:
+          type: string
+          description: Positive amount as a string (e.g. "100.00")
+        memo:
+          type: string
+          description: (Optional) Human-readable description of the transfer
+      example:
+        toAccountId: "550e8400-e29b-41d4-a716-446655440021"
+        amount: "11.00"
+        memo: "Pay back Bob"
+    TransferResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID of the transfer
+        fromAccountId:
+          type: string
+          format: uuid
+          description: UUID of the source account
+        toAccountId:
+          type: string
+          format: uuid
+          description: UUID of the destination account
+        amount:
+          type: string
+          description: Positive amount as a string (e.g. "100.00")
+        memo:
+          type: string
+          description: Human-readable description of the transfer
+      example:
+        id: "550e8400-e29b-41d4-a716-446655440040"
+        fromAccountId: "550e8400-e29b-41d4-a716-446655440020"
+        toAccountId: "550e8400-e29b-41d4-a716-446655440021"
+        amount: "11.00"
+        memo: "Pay back Bob"
