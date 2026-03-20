@@ -20,7 +20,7 @@ import {
 import { 
   mockAccountId1,
   mockAccountId2,
-  mockCustomerId,
+  mockCustomerId1,
   mockMissingAccountId,
   mockMissingCustomerId
 } from "../../commonMock";

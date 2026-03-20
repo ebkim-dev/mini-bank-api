@@ -6,14 +6,7 @@ import type {
   TransactionOutput,
   TransactionQueryInput,
 } from "../src/transaction/transaction";
-import { mockAccountId1 } from "./commonMock";
-
-export const mockTransactionId1 = "550e8400-e29b-41d4-a716-446655440030";
-export const mockTransactionId2 = "550e8400-e29b-41d4-a716-446655440031";
-export const mockMissingTransactionId = "550e8400-e29b-41d4-a716-44665544003f";
-export const mockRelatedTransferId = "550e8400-e29b-41d4-a716-446655440040";
-
-export const mockTransactionDate = new Date("2026-01-15T10:00:00.000Z");
+import { mockAccountId1, mockTransactionDate, mockTransactionId1 } from "./commonMock";
 
 export interface TransactionCreateRequestBody {
   type: TransactionType;

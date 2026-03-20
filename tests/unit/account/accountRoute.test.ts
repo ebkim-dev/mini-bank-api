@@ -13,7 +13,6 @@ describe("accountRouter.ts (pure unit)", () => {
   let mockGetAccountSummary: jest.Mock;
 
   let requireAuthMock: jest.Mock;
-  let requireRoleMock: jest.Mock;
   let validateMock: jest.Mock;
 
   
@@ -39,7 +38,6 @@ describe("accountRouter.ts (pure unit)", () => {
     mockGetAccountSummary = jest.fn();
 
     requireAuthMock = jest.fn(() => makeMw("requireAuth"));
-    requireRoleMock = jest.fn((_role: unknown) => makeMw("requireRole"));
     validateMock = jest.fn((_schema: unknown, _source: unknown) =>
       makeMw("validate")
     );
@@ -74,7 +72,6 @@ describe("accountRouter.ts (pure unit)", () => {
     jest.doMock("../../../src/auth/authMiddleware", () => {
       return {
         requireAuth: requireAuthMock,
-        requireRole: requireRoleMock,
       };
     });
 

@@ -7,7 +7,7 @@ import {
   RegisterOutput
 } from "../src/auth/user";
 import {
-  mockCustomerId,
+  mockCustomerId1,
   mockEmail,
   mockFirstName,
   mockHashedPassword,
@@ -68,7 +68,7 @@ export function buildUserRecord(
   const mockDate = new Date();
   return {
     id: mockUserId,
-    customer_id: mockCustomerId,
+    customer_id: mockCustomerId1,
     username: mockUsername,
     password_hash: mockHashedPassword,
     role: UserRole.STANDARD,
@@ -84,7 +84,7 @@ export function buildAuthInput(
   return {
     actorId: mockUserId,
     role: UserRole.STANDARD,
-    customerId: mockCustomerId,
+    customerId: mockCustomerId1,
     ...overrides,
   };
 }
@@ -94,7 +94,7 @@ export function buildCustomerRecord(
 ): Customer {
   const mockDate = new Date();
   return {
-    id: mockCustomerId,
+    id: mockCustomerId1,
     first_name: mockFirstName,
     last_name: mockLastName,
     email: mockEmail,
