@@ -2,7 +2,7 @@ tags:
   - name: health
     description: Simple API health check
   - name: auth
-    description: Register and login
+    description: Register, login and logout
   - name: accounts
     description: Access to accounts data
   - name: transactions

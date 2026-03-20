@@ -26,6 +26,7 @@ describe("requireAuth middleware", () => {
     await authMiddleware.requireAuth()(req, res, next);
 
     expect(req.user).toEqual(buildAuthInput());
+    expect(req.sessionId).toBe(mockSessionId);
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(next).toHaveBeenCalledTimes(1);
     expect(next).toHaveBeenCalledWith();
@@ -37,6 +38,7 @@ describe("requireAuth middleware", () => {
     await authMiddleware.requireAuth()(req, res, next);
 
     expect(req.user).toEqual(buildAuthInput());
+    expect(req.sessionId).toBe(mockSessionId);
     expect(next).toHaveBeenCalledTimes(1);
     expect(next).toHaveBeenCalledWith();
   });

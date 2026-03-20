@@ -23,6 +23,17 @@ export interface AuthFailureEvent extends BaseEvent {
   errorCode: EventCode;
 }
 
+export interface LogoutSuccessEvent extends BaseEvent {
+  userId: string;
+  userRole: UserRole;
+}
+ 
+export interface MeSuccessEvent extends BaseEvent {
+  userId: string;
+  userRole: UserRole;
+  customerId: string;
+}
+
 export interface AccountBaseEvent extends BaseEvent {
   actorId: string;
   actorRole: UserRole;

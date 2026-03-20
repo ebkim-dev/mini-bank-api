@@ -9,7 +9,7 @@ jest.mock("crypto", () => ({
 import { randomUUID } from "crypto";
 
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: { set: jest.fn() }
+  redisClient: { set: jest.fn(), del: jest.fn() }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -21,6 +21,7 @@ import bcrypt from "bcrypt";
 
 const mockUserCreate = jest.fn();
 const mockCustomerCreate = jest.fn();
+const mockUserFindUnique = jest.fn();
 
 jest.mock("../../../src/db/prismaClient", () => ({
   __esModule: true,
@@ -32,7 +33,7 @@ jest.mock("../../../src/db/prismaClient", () => ({
       });
     }),
     user: {
-      findUnique: jest.fn(),
+      findUnique: mockUserFindUnique,
     }
   },
 }));
@@ -43,9 +44,11 @@ import {
   buildCustomerRecord,
   buildLoginInput,
   buildLoginOutput,
+  buildMeOutput,
   buildRegisterInput,
   buildRegisterOutput,
   buildUserRecord,
+  buildUserWithCustomer,
   mockEncryptedRedisPayload
 } from "../../authMock";
 import { 
@@ -63,9 +66,11 @@ import { LoginOutput } from "../../../src/auth/user";
 const mockFindUnique = prismaClient.user.findUnique as jest.Mock;
 const mockRandomUUID = randomUUID as jest.Mock;
 const mockRedisSet = redisClient.set as jest.Mock;
+const mockRedisDel = redisClient.del as jest.Mock;
 const mockEncrypt = encrypt as jest.Mock;
 const mockHash = bcrypt.hash as jest.Mock;
 const mockCompare = bcrypt.compare as jest.Mock;
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockHash.mockResolvedValue(mockHashedPassword);
@@ -179,5 +184,51 @@ describe("loginUser service", () => {
     await expect(
       authService.loginUser(buildLoginInput())
     ).rejects.toThrow("Invalid credentials");
+  });
+});
+
+describe("logoutUser service", () => {
+  it("should call redisClient.del with the correct session key", async () => {
+    mockRedisDel.mockResolvedValue(1);
+
+    await authService.logoutUser(mockSessionId, buildAuthInput());
+
+    expect(mockRedisDel).toHaveBeenCalledWith(mockRedisKey);
+    expect(mockRedisDel).toHaveBeenCalledTimes(1);
+  });
+
+  it("should resolve without error if session does not exist (idempotent)", async () => {
+    mockRedisDel.mockResolvedValue(0);
+
+    await expect(
+      authService.logoutUser(mockSessionId, buildAuthInput())
+    ).resolves.toBeUndefined();
+
+    expect(mockRedisDel).toHaveBeenCalledWith(mockRedisKey);
+  });
+});
+
+describe("fetchMe service", () => {
+  it("should return MeOutput given a valid actorId", async () => {
+    mockFindUnique.mockResolvedValue(buildUserWithCustomer());
+
+    const result = await authService.fetchMe(buildAuthInput());
+
+    expect(result).toMatchObject(buildMeOutput());
+    expect(mockFindUnique).toHaveBeenCalledWith({
+      where: { id: buildAuthInput().actorId },
+      include: { customer: true },
+    });
+  });
+
+  it("should throw NotFoundError if user record does not exist", async () => {
+    mockFindUnique.mockResolvedValue(null);
+
+    await expect(
+      authService.fetchMe(buildAuthInput())
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      message: "User not found",
+    });
   });
 });

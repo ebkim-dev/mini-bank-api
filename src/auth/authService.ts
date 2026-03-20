@@ -4,7 +4,7 @@ import { UserRole } from "../generated/enums";
 import { Prisma } from "../generated/client";
 import { EventCode } from '../types/eventCodes';
 import { getDurationMs } from '../utils/calculateDuration';
-import { ConflictError, UnauthorizedError } from "../error/error";
+import { ConflictError, NotFoundError, UnauthorizedError } from "../error/error";
 import { redisClient } from '../redis/redisClient';
 import { randomUUID } from "crypto";
 import { encrypt } from "../utils/encryption";
@@ -12,7 +12,9 @@ import { logger } from '../logging/logger';
 import { 
   ExecutionStatus, 
   AuthSuccessEvent, 
-  AuthFailureEvent
+  AuthFailureEvent,
+  MeSuccessEvent,
+  LogoutSuccessEvent
 } from '../logging/logSchemas';
 import type {
   RegisterInput,
@@ -20,6 +22,7 @@ import type {
   RegisterOutput,
   LoginOutput,
   AuthInput,
+  MeOutput,
 } from './user';
 
 export const REDIS_SESSION_TTL_SEC = 900; // 15min
@@ -149,4 +152,59 @@ export async function loginUser(
   logger.info(EventCode.LOGIN_SUCCESS, event);
 
   return { sessionId };
+}
+
+
+export async function logoutUser(
+  sessionId: string,
+  authInput: AuthInput
+): Promise<void> {
+  const startTime = process.hrtime.bigint();
+ 
+  await redisClient.del(`session:${sessionId}`);
+ 
+  const event: LogoutSuccessEvent = {
+    executionStatus: ExecutionStatus.SUCCESS,
+    durationMs: getDurationMs(startTime),
+    userId: authInput.actorId,
+    userRole: authInput.role,
+  };
+  logger.info(EventCode.LOGOUT_SUCCESS, event);
+}
+ 
+export async function fetchMe(
+  authInput: AuthInput
+): Promise<MeOutput> {
+  const startTime = process.hrtime.bigint();
+ 
+  const userRecord = await prismaClient.user.findUnique({
+    where: { id: authInput.actorId },
+    include: { customer: true },
+  });
+ 
+  if (!userRecord) {
+    throw NotFoundError(EventCode.INTERNAL_SERVER_ERROR, "User not found");
+  }
+ 
+  const event: MeSuccessEvent = {
+    executionStatus: ExecutionStatus.SUCCESS,
+    durationMs: getDurationMs(startTime),
+    userId: userRecord.id,
+    userRole: userRecord.role,
+    customerId: userRecord.customer_id,
+  };
+  logger.info(EventCode.ME_FETCHED, event);
+ 
+  return {
+    id: userRecord.id,
+    username: userRecord.username,
+    role: userRecord.role,
+    customer: {
+      id: userRecord.customer.id,
+      firstName: userRecord.customer.first_name,
+      lastName: userRecord.customer.last_name,
+      email: userRecord.customer.email,
+      phone: userRecord.customer.phone,
+    },
+  };
 }

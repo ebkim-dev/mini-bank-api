@@ -2,15 +2,10 @@ components:
   schemas:
     TransactionCreateRequest:
       required:
-        - account_id
         - type
         - amount
       type: object
       properties:
-        account_id:
-          type: string
-          format: uuid
-          description: UUID of the account
         type:
           type: string
           enum:
@@ -29,7 +24,6 @@ components:
           maxLength: 100
           description: Optional category (e.g. FOOD, CASH, DEPOSIT)
       example:
-        account_id: "550e8400-e29b-41d4-a716-446655440001"
         type: CREDIT
         amount: "500.00"
         description: "Initial deposit"
@@ -71,4 +65,3 @@ components:
         category: "DEPOSIT"
         related_transfer_id: ""
         created_at: "2026-03-05T22:45:45.741Z"
-    
