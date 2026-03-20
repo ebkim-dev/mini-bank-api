@@ -90,25 +90,6 @@ test("registers POST / with correct middlewares and handler (createTransfer)", (
   expect(validateMock).toHaveBeenCalledWith(expect.any(Object), "body");
 });
 
-test("registers GET /:transferId with correct middlewares and handler (getTransfer)", () => {
-  const call = findCall(getMock, "/:transferId");
-  expect(call).toBeDefined();
-
-  const [
-    path,
-    requireAuthMw,
-    validateMw,
-    handler
-  ] = call;
-
-  expect(path).toBe("/:transferId");
-  expect(typeof requireAuthMw).toBe("function");
-  expect(typeof validateMw).toBe("function");
-  expect(handler).toBe(mockGetTransfer);
-
-  expect(validateMock).toHaveBeenCalledWith(expect.any(Object), "params");
-});
-
 test("registers GET / with correct middlewares and handler (getTransfers)", () => {
   const call = findCall(getMock, "/");
   expect(call).toBeDefined();
@@ -129,4 +110,23 @@ test("registers GET / with correct middlewares and handler (getTransfers)", () =
 
   expect(validateMock).toHaveBeenCalledWith(expect.any(Object), "params");
   expect(validateMock).toHaveBeenCalledWith(expect.any(Object), "query");
+});
+
+test("registers GET /:transferId with correct middlewares and handler (getTransfer)", () => {
+  const call = findCall(getMock, "/:transferId");
+  expect(call).toBeDefined();
+
+  const [
+    path,
+    requireAuthMw,
+    validateMw,
+    handler
+  ] = call;
+
+  expect(path).toBe("/:transferId");
+  expect(typeof requireAuthMw).toBe("function");
+  expect(typeof validateMw).toBe("function");
+  expect(handler).toBe(mockGetTransfer);
+
+  expect(validateMock).toHaveBeenCalledWith(expect.any(Object), "params");
 });

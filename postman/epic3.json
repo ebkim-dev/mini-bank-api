@@ -1,0 +1,397 @@
+{
+  "info": {
+    "name": "MiniBankAPI - Epic 3 Transfers",
+    "_postman_id": "minibank-epic3-collection",
+    "description": "Epic 3 APIs - Transfers",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "(200) Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.sessionId) {",
+              "  pm.environment.set('sessionId1', res.sessionId);",
+              "  console.log('Session ID saved');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"standard1\",\n  \"password\": \"user1234\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "(200) Login (Other User)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.sessionId) {",
+              "  pm.environment.set('sessionId2', res.sessionId);",
+              "  console.log('Other session ID saved');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"standard2\",\n  \"password\": \"user1234\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "(201) Create Account1",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.id) {",
+              "  pm.environment.set('accountId1', res.id);",
+              "  console.log('accountId1 saved');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId1}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"SAVINGS\",\n  \"currency\": \"USD\",\n  \"nickname\": \"AccountForTransfer1\",\n  \"balance\": \"1000\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/accounts",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts"]
+        }
+      }
+    },
+    {
+      "name": "(201) Create Account2",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.id) {",
+              "  pm.environment.set('accountId2', res.id);",
+              "  console.log('accountId2 saved');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId1}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"SAVINGS\",\n  \"currency\": \"USD\",\n  \"nickname\": \"AccountForTransfer2\",\n  \"balance\": \"1000\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/accounts",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts"]
+        }
+      }
+    },
+    {
+      "name": "(200) Get Accounts",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId1}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/accounts",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts"]
+        }
+      }
+    },
+    {
+      "name": "(200) Get Transactions by Account",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId1}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId1}}/transactions?limit=10&offset=0",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId1}}", "transactions"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "10"
+            },
+            {
+              "key": "offset",
+              "value": "0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "(201) Create Transfer1",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.id) {",
+              "  pm.environment.set('transferId1', res.id);",
+              "  console.log('transferId1 saved');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId1}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"toAccountId\": \"{{accountId2}}\",\n  \"amount\": \"11.00\",\n  \"memo\": \"Transfer1\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId1}}/transfers",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId1}}", "transfers"]
+        }
+      }
+    },
+    {
+      "name": "(201) Create Transfer2",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.id) {",
+              "  pm.environment.set('transferId2', res.id);",
+              "  console.log('transferId2 saved');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId1}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"toAccountId\": \"{{accountId1}}\",\n  \"amount\": \"22.00\",\n  \"memo\": \"Transfer2\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId2}}/transfers",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId2}}", "transfers"]
+        }
+      }
+    },
+    {
+      "name": "(200) List Transfers For Account1",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId1}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId1}}/transfers?limit=10&offset=0",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId1}}", "transfers"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "10"
+            },
+            {
+              "key": "offset",
+              "value": "0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "(200) Get Transfer1",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId1}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId2}}/transfers/{{transferId1}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId2}}", "transfers", "{{transferId1}}"]
+        }
+      }
+    },
+    {
+      "name": "(400) Attempt Self-Transfer",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId1}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"toAccountId\": \"{{accountId1}}\",\n  \"amount\": \"11.00\",\n  \"memo\": \"Self-Transfer\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId1}}/transfers",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId1}}", "transfers"]
+        }
+      }
+    },
+    {
+      "name": "(409) Insufficient Funds",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId1}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"toAccountId\": \"{{accountId2}}\",\n  \"amount\": \"99999.00\",\n  \"memo\": \"Insufficient Funds\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId1}}/transfers",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId1}}", "transfers"]
+        }
+      }
+    },
+    {
+      "name": "(403) Get Transfer1 As Unauthorized User",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-session-id",
+            "value": "{{sessionId2}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/accounts/{{accountId1}}/transfers/{{transferId1}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["accounts", "{{accountId1}}", "transfers", "{{transferId1}}"]
+        }
+      }
+    }
+  ]
+}

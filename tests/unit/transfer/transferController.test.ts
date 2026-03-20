@@ -72,42 +72,6 @@ describe("createTransfer controller", () => {
   });
 });
 
-describe("getTransfer controller", () => {
-  const req: any = buildReq({ 
-    params: {
-      accountId: mockAccountId1,
-      transferId: mockTransferId1,
-    },
-    user: buildAuthInput()
-  });
-
-  it("should call fetchTransferById and return 200 with serialized account", async () => {
-    jest.spyOn(transferService, "fetchTransferById").mockResolvedValue(mockTransferOutput1);
-    await transferController.getTransfer(req, res, next);
-
-    expect(transferService.fetchTransferById).toHaveBeenCalledWith(
-      req.validated.params.transferId,
-      buildAuthInput()
-    );
-    expect(statusMock).toHaveBeenCalledWith(200);
-    expect(jsonMock).toHaveBeenCalledWith(mockTransferOutput1);
-    expect(next).not.toHaveBeenCalled();
-  });
-
-  it("should call next when service throws", async () => {
-    jest.spyOn(transferService, "fetchTransferById").mockRejectedValue(serviceError);
-    await transferController.getTransfer(req, res, next);
-
-    expect(transferService.fetchTransferById).toHaveBeenCalledWith(
-      req.validated.params.transferId,
-      buildAuthInput()
-    );
-
-    expect(statusMock).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalledTimes(1);
-  });
-});
-
 describe("getTransfers controller", () => {
   const req: any = buildReq({
     params: { accountId: mockAccountId1 },
@@ -156,6 +120,42 @@ describe("getTransfers controller", () => {
     expect(transferService.fetchTransfers).toHaveBeenCalledWith(
       req.validated.params.accountId,
       req.validated.query,
+      buildAuthInput()
+    );
+
+    expect(statusMock).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("getTransfer controller", () => {
+  const req: any = buildReq({ 
+    params: {
+      accountId: mockAccountId1,
+      transferId: mockTransferId1,
+    },
+    user: buildAuthInput()
+  });
+
+  it("should call fetchTransferById and return 200 with serialized account", async () => {
+    jest.spyOn(transferService, "fetchTransferById").mockResolvedValue(mockTransferOutput1);
+    await transferController.getTransfer(req, res, next);
+
+    expect(transferService.fetchTransferById).toHaveBeenCalledWith(
+      req.validated.params.transferId,
+      buildAuthInput()
+    );
+    expect(statusMock).toHaveBeenCalledWith(200);
+    expect(jsonMock).toHaveBeenCalledWith(mockTransferOutput1);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("should call next when service throws", async () => {
+    jest.spyOn(transferService, "fetchTransferById").mockRejectedValue(serviceError);
+    await transferController.getTransfer(req, res, next);
+
+    expect(transferService.fetchTransferById).toHaveBeenCalledWith(
+      req.validated.params.transferId,
       buildAuthInput()
     );
 

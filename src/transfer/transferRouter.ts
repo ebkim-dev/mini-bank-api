@@ -24,18 +24,18 @@ router.post(
 );
 
 router.get(
-  "/:transferId",
-  requireAuth(),
-  validate(getTransferParamsSchema, "params"),
-  getTransfer
-);
-
-router.get(
   "/",
   requireAuth(),
   validate(accountIdParamsSchema, "params"),
   validate(getTransfersQuerySchema, "query"),
   getTransfers
+);
+
+router.get(
+  "/:transferId",
+  requireAuth(),
+  validate(getTransferParamsSchema, "params"),
+  getTransfer
 );
 
 export default router;

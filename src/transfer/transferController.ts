@@ -17,21 +17,6 @@ export async function createTransfer(
   }
 }
 
-export async function getTransfer(
-  req: Request, 
-  res: Response, 
-  next: NextFunction
-): Promise<void> {
-  try {
-    const { accountId, transferId } = (req as any).validated.params;
-    const authInput = req.user;
-    const transfer = await transferService.fetchTransferById(transferId, authInput);
-    res.status(200).json(transfer);
-  } catch (err) {
-    next(err);
-  }
-}
-
 export async function getTransfers(
   req: Request,
   res: Response,
@@ -43,6 +28,21 @@ export async function getTransfers(
     const authInput = req.user;
     const transfers = await transferService.fetchTransfers(accountId, query, authInput);
     res.status(200).json(transfers);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getTransfer(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { accountId, transferId } = (req as any).validated.params;
+    const authInput = req.user;
+    const transfer = await transferService.fetchTransferById(transferId, authInput);
+    res.status(200).json(transfer);
   } catch (err) {
     next(err);
   }

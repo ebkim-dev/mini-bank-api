@@ -4,7 +4,7 @@ import { Decimal } from "@prisma/client/runtime/client";
 import { logger } from "../../../src/logging/logger";
 import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
 import { AccountStatus, TransactionType } from "../../../src/generated/enums";
-import { buildTransactionRecord, mockTransactionId2 } from "../../transactionMock";
+import { buildTransactionRecord } from "../../transactionMock";
 import { buildTransferCreateRequestBody, buildTransferOutput, buildTransferRecord, TransferCreateRequestBody } from "../../transferMock";
 import { 
   buildAccountRecord,
@@ -15,7 +15,8 @@ import {
   mockCustomerId2,
   mockMissingCustomerId,
   mockRedisKey,
-  mockSessionId
+  mockSessionId,
+  mockTransactionId2
 } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
@@ -223,7 +224,7 @@ describe("POST /accounts/:accountId/transfers", () => {
     expect(mockTx.transfer.create).not.toHaveBeenCalled();
   });
 
-  it("should return 400 if source account is out of funds", async () => {
+  it("should return 409 if source account is out of funds", async () => {
     mockTx.account.findUnique.mockReset();
     mockTx.account.findUnique.mockResolvedValueOnce(
       buildAccountRecord({ balance: new Decimal(0) })
@@ -231,7 +232,7 @@ describe("POST /accounts/:accountId/transfers", () => {
 
     const res = await postTransferRequest(buildTransferCreateRequestBody());
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(409);
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockTx.transfer.create).not.toHaveBeenCalled();
   });

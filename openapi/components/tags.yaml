@@ -7,3 +7,5 @@ tags:
     description: Access to accounts data
   - name: transactions
     description: Financial transactions (deposits and withdrawals)
+  - name: transfers
+    description: Cross-Account Transactions

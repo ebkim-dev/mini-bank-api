@@ -116,46 +116,6 @@ export async function insertTransfer(
 }
 
 
-export async function fetchTransferById(
-  transferId: string,
-  authInput: AuthInput
-): Promise<TransferOutput> {
-  const start = process.hrtime.bigint();
-
-  try {
-    const transfer = await prismaClient.transfer.findUnique({
-      where: { id: transferId },
-      include: { 
-        from_account: true,
-        to_account: true
-      },
-    });
-
-    throwIfTransferNotFound(transfer);
-    throwIfNotTransferOwner(authInput, transfer);
-
-    logger.info(
-      EventCode.TRANSFER_FETCHED,
-      buildSingleTransferSuccessEvent(
-        start, authInput, transfer
-      )
-    );
-
-    return serializeTransfer(transfer);
-  } catch (err) {
-    if (err instanceof AppError) {
-      logger.info(buildTransferFailureEvent(
-        start,
-        authInput,
-        err.code as EventCode,
-        transferId
-      ));
-    }
-    throw err;
-  }
-}
-
-
 export async function fetchTransfers(
   accountId: string,
   query: TransferQueryInput,
@@ -210,6 +170,46 @@ export async function fetchTransfers(
         authInput,
         err.code as EventCode,
         accountId
+      ));
+    }
+    throw err;
+  }
+}
+
+
+export async function fetchTransferById(
+  transferId: string,
+  authInput: AuthInput
+): Promise<TransferOutput> {
+  const start = process.hrtime.bigint();
+
+  try {
+    const transfer = await prismaClient.transfer.findUnique({
+      where: { id: transferId },
+      include: { 
+        from_account: true,
+        to_account: true
+      },
+    });
+
+    throwIfTransferNotFound(transfer);
+    throwIfNotTransferOwner(authInput, transfer);
+
+    logger.info(
+      EventCode.TRANSFER_FETCHED,
+      buildSingleTransferSuccessEvent(
+        start, authInput, transfer
+      )
+    );
+
+    return serializeTransfer(transfer);
+  } catch (err) {
+    if (err instanceof AppError) {
+      logger.info(buildTransferFailureEvent(
+        start,
+        authInput,
+        err.code as EventCode,
+        transferId
       ));
     }
     throw err;

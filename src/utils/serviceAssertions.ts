@@ -88,7 +88,7 @@ export function throwIfInsufficientFunds(
   amount: Decimal,
 ): void {
   if (account.balance.lt(amount)) {
-    throw BadRequestError(
+    throw ConflictError(
       EventCode.INSUFFICIENT_FUNDS,
       "Insufficient funds"
     );
