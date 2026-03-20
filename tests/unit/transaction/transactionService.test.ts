@@ -18,16 +18,13 @@ import { AccountStatus, TransactionType } from "../../../src/generated/enums";
 import * as transactionService from "../../../src/transaction/transactionService";
 import { buildAccountRecord } from "../../accountMock";
 import { buildAuthInput } from "../../authMock";
-import { mockAccountId1 } from "../../commonMock";
+import { mockAccountId1, mockMissingTransactionId, mockTransactionId1, mockTransactionId2 } from "../../commonMock";
 import {
   buildTransactionCreateInput,
   buildTransactionCreateInputWithoutOptionalFields,
   buildTransactionOutput,
   buildTransactionQueryInput,
   buildTransactionRecord,
-  mockMissingTransactionId,
-  mockTransactionId1,
-  mockTransactionId2,
 } from "../../transactionMock";
 
 const mockPrismaTransaction = prismaClient.$transaction as jest.Mock;

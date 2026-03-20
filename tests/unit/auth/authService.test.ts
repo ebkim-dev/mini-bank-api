@@ -54,10 +54,16 @@ import {
   CONFLICT_ERROR_MESSAGE,
   UNKNOWN_ERROR_MESSAGE,
 } from "../../errorMock";
+import {
+  mockCustomerId1,
+  mockHashedPassword,
+  mockPhone,
+  mockRedisKey,
+  mockSessionId
+} from "../../commonMock";
 
 import * as authService from "../../../src/auth/authService";
 import { REDIS_SESSION_TTL_SEC } from "../../../src/auth/authService";
-import { mockCustomerId, mockHashedPassword, mockPhone, mockRedisKey, mockSessionId } from "../../commonMock";
 import { LoginOutput } from "../../../src/auth/user";
 
 const mockFindUnique = prismaClient.user.findUnique as jest.Mock;
@@ -70,7 +76,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockHash.mockResolvedValue(mockHashedPassword);
   mockCustomerCreate.mockResolvedValue(
-    buildCustomerRecord({ id: mockCustomerId })
+    buildCustomerRecord({ id: mockCustomerId1 })
   );
   mockUserCreate.mockResolvedValue(buildUserRecord());
 });

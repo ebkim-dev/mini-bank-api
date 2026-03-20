@@ -11,7 +11,6 @@ describe("app.ts - createApp", () => {
   let expressJsonMock: jest.Mock;
   let jsonMw: RequestHandler;
 
-  // Middleware/routers mocks
   const traceIdMw: RequestHandler = (_req, _res, next) => next();
   const requestLoggerMw: RequestHandler = (_req, _res, next) => next();
   const notFoundHandlerMw: RequestHandler = (_req, _res, next) => next();
@@ -19,10 +18,10 @@ describe("app.ts - createApp", () => {
 
   const healthRouterMock: any = { _router: "health" };
   const accountRouterMock: any = { _router: "accounts" };
+  const transferRouterMock: any = { _router: "transfers" };
   const authRouterMock: any = { _router: "auth" };
   const transactionRouterMock: any = { _router: "transactions" };
 
-  // Swagger mocks
   const swaggerSpecMock: any = { openapi: "3.0.0" };
   const swaggerServeMw: RequestHandler = (_req, _res, next) => next();
   const swaggerSetupMw: RequestHandler = (_req, _res, next) => next();
@@ -32,16 +31,12 @@ describe("app.ts - createApp", () => {
     jest.clearAllMocks();
     process.env = { ...ORIGINAL_ENV };
 
-    // App mock
     appUseMock = jest.fn();
     mockApp = { use: appUseMock };
 
-    // express mocks
     jsonMw = (_req, _res, next) => next();
     expressJsonMock = jest.fn(() => jsonMw);
 
-    
-    // 1) Mock express
     jest.doMock("express", () => {
         mockExpress = jest.fn(() => mockApp);
         mockExpress.json = expressJsonMock;
@@ -51,7 +46,6 @@ describe("app.ts - createApp", () => {
         };
     });
 
-    // 2) Mock middlewares
     jest.doMock("../../src/middleware/traceIdMiddleware", () => {
       return { traceIdMiddleware: traceIdMw };
     });
@@ -67,7 +61,6 @@ describe("app.ts - createApp", () => {
       };
     });
 
-    // 3) Mock routers
     jest.doMock("../../src/health/healthRouter", () => ({
       __esModule: true,
       default: healthRouterMock,
@@ -76,6 +69,11 @@ describe("app.ts - createApp", () => {
     jest.doMock("../../src/account/accountRouter", () => ({
       __esModule: true,
       default: accountRouterMock,
+    }));
+
+    jest.doMock("../../src/transfer/transferRouter", () => ({
+      __esModule: true,
+      default: transferRouterMock,
     }));
 
     jest.doMock("../../src/auth/authRouter", () => ({
@@ -119,20 +117,16 @@ describe("app.ts - createApp", () => {
     process.env.ENCRYPTION_KEY = "test-encryption-key";
 
     const { createApp } = require("../../src/app");
-
     const app = createApp();
 
     expect(app).toBe(mockApp);
-
     expect(mockExpress).toHaveBeenCalledTimes(1);
-
     expect(expressJsonMock).toHaveBeenCalledTimes(1);
 
     const swaggerUi = require("swagger-ui-express").default;
     expect(swaggerUi.setup).toHaveBeenCalledWith(swaggerSpecMock);
 
     const calls = appUseMock.mock.calls;
-
     expect(calls).toEqual([
       [jsonMw],
       [traceIdMw],
@@ -141,6 +135,7 @@ describe("app.ts - createApp", () => {
       ["/health", healthRouterMock],
       ["/accounts", accountRouterMock],
       ["/accounts/:accountId/transactions", transactionRouterMock],
+      ["/accounts/:accountId/transfers", transferRouterMock],
       ["/docs", swaggerServeMw, swaggerSetupMw],
       [notFoundHandlerMw],
       [errorHandlerMw],

@@ -6,8 +6,7 @@ import {
 } from "../../../src/transaction/transactionSchemas";
 
 import { TransactionType } from "../../../src/generated/enums";
-import { mockAccountId1 } from "../../commonMock";
-import { mockTransactionId1 } from "../../transactionMock";
+import { mockAccountId1, mockTransactionId1 } from "../../commonMock";
 
 describe("accountIdParamsSchema", () => {
   test("accepts valid UUID accountId", () => {
