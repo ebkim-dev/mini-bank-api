@@ -20,8 +20,8 @@ import {
   throwIfAccountNotActive,
   throwIfAccountNotFound,
   throwIfInsufficientFunds,
-  throwIfNotAccountOwner,
-  throwIfNotTransactionOwner,
+  throwIfAccountNotOwned,
+  throwIfTransactionNotOwned,
   throwIfTransactionNotFound
 } from "../utils/serviceAssertions";
 
@@ -39,7 +39,7 @@ export async function insertTransaction(
       });
 
       throwIfAccountNotFound(account);
-      throwIfNotAccountOwner(account, authInput);
+      throwIfAccountNotOwned(account, authInput);
       throwIfAccountNotActive(account);
 
       if (data.type === TransactionType.DEBIT) {
@@ -105,7 +105,7 @@ export async function fetchTransactions(
     });
 
     throwIfAccountNotFound(account);
-    throwIfNotAccountOwner(account, authInput);
+    throwIfAccountNotOwned(account, authInput);
 
     const where: any = {
       account_id: accountId,
@@ -171,7 +171,7 @@ export async function fetchTransactionById(
     });
 
     throwIfTransactionNotFound(transaction);
-    throwIfNotTransactionOwner(transaction, authInput);
+    throwIfTransactionNotOwned(transaction, authInput);
 
     logger.info(
       EventCode.TRANSACTION_FETCHED,

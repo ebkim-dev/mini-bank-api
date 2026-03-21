@@ -19,8 +19,8 @@ import {
 import {
   throwIfAccountNotActive,
   throwIfAccountNotFound,
-  throwIfNotAccountOwner,
-  throwIfNotTransferOwner,
+  throwIfAccountNotOwned,
+  throwIfTransferNotOwned,
   throwIfInsufficientFunds,
   throwIfSelfTransfer,
   throwIfTransferNotFound,
@@ -43,7 +43,7 @@ export async function insertTransfer(
       });
 
       throwIfAccountNotFound(fromAccount);
-      throwIfNotAccountOwner(fromAccount, authInput);
+      throwIfAccountNotOwned(fromAccount, authInput);
       throwIfAccountNotActive(fromAccount);
       throwIfInsufficientFunds(fromAccount, data.amount, {
         current_balance: fromAccount.balance.toString(),
@@ -132,7 +132,7 @@ export async function fetchTransfers(
     });
 
     throwIfAccountNotFound(account);
-    throwIfNotAccountOwner(account, authInput);
+    throwIfAccountNotOwned(account, authInput);
 
     const where: any = {
       OR: [
@@ -196,7 +196,7 @@ export async function fetchTransferById(
     });
 
     throwIfTransferNotFound(transfer);
-    throwIfNotTransferOwner(transfer, authInput);
+    throwIfTransferNotOwned(transfer, authInput);
 
     logger.info(
       EventCode.TRANSFER_FETCHED,

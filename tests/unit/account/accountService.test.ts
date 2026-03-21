@@ -39,6 +39,7 @@ import { buildAuthInput } from '../../authMock';
 import { buildPrismaError, NOT_FOUND_ERROR_CODE, NOT_FOUND_ERROR_MESSAGE, UNKNOWN_ERROR_CODE, UNKNOWN_ERROR_MESSAGE } from "../../errorMock";
 import { buildTransactionRecord } from "../../transactionMock";
 import { Decimal } from "@prisma/client/runtime/client";
+import { ErrorMessages } from "../../../src/error/errorMessages";
 
 const mockCreate = prismaClient.account.create as jest.Mock;
 const mockFindMany = prismaClient.account.findMany as jest.Mock;
@@ -133,7 +134,7 @@ describe("fetchAccountById service", () => {
     await expect(accountService.fetchAccountById(
       mockAccountId1,
       buildAuthInput({ customerId: mockMissingCustomerId })
-    )).rejects.toThrow("Only account owners can read accounts");
+    )).rejects.toThrow(ErrorMessages.ACCOUNT_NOT_OWNED);
 
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
   });
@@ -193,7 +194,7 @@ describe("updateAccountById service", () => {
       mockAccountId1,
       buildAccountUpdateInput(), 
       buildAuthInput({ customerId: mockMissingCustomerId })
-    )).rejects.toThrow("Only account owners can update accounts");
+    )).rejects.toThrow(ErrorMessages.ACCOUNT_NOT_OWNED);
 
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
     expect(mockUpdate).toHaveBeenCalledTimes(0);
@@ -250,7 +251,7 @@ describe("deleteAccountById service", () => {
     await expect(accountService.deleteAccountById(
       mockAccountId1,
       buildAuthInput({ customerId: mockMissingCustomerId })
-    )).rejects.toThrow("Only account owners can close accounts");
+    )).rejects.toThrow(ErrorMessages.ACCOUNT_NOT_OWNED);
 
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
     expect(mockUpdate).toHaveBeenCalledTimes(0);

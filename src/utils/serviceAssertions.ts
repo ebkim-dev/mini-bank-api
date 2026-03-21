@@ -3,6 +3,7 @@ import { AuthInput } from "../auth/user";
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../error/error";
 import { Account, AccountStatus, Transaction, Transfer, UserRole } from "../generated/client";
 import { EventCode } from "../types/eventCodes";
+import { ErrorMessages } from "../error/errorMessages";
 
 export function throwIfAccountNotFound(
   account: Account | null
@@ -10,7 +11,7 @@ export function throwIfAccountNotFound(
   if (!account) {
     throw NotFoundError(
       EventCode.ACCOUNT_NOT_FOUND,
-      "Account not found"
+      ErrorMessages.ACCOUNT_NOT_FOUND,
     );
   }
 }
@@ -21,7 +22,7 @@ export function throwIfTransactionNotFound(
   if (!transaction) {
     throw NotFoundError(
       EventCode.TRANSACTION_NOT_FOUND,
-      "Transaction not found"
+      ErrorMessages.TRANSACTION_NOT_FOUND,
     );
   }
 }
@@ -32,12 +33,12 @@ export function throwIfTransferNotFound(
   if (!transfer) {
     throw NotFoundError(
       EventCode.TRANSFER_NOT_FOUND,
-      "Transfer not found"
+      ErrorMessages.TRANSFER_NOT_FOUND,
     );
   }
 }
 
-export function throwIfNotAccountOwner(
+export function throwIfAccountNotOwned(
   account: Account,
   authInput: AuthInput,
 ): void {
@@ -47,12 +48,12 @@ export function throwIfNotAccountOwner(
   ) {
     throw ForbiddenError(
       EventCode.FORBIDDEN,
-      "Account not owned by caller"
+      ErrorMessages.ACCOUNT_NOT_OWNED,
     );
   }
 }
 
-export function throwIfNotTransactionOwner(
+export function throwIfTransactionNotOwned(
   transaction: Transaction & {
     account: Account,
   },
@@ -64,12 +65,12 @@ export function throwIfNotTransactionOwner(
   ) {
     throw ForbiddenError(
       EventCode.FORBIDDEN,
-      "Transaction not owned by caller"
+      ErrorMessages.TRANSACTION_NOT_OWNED,
     );
   }
 }
 
-export function throwIfNotTransferOwner(
+export function throwIfTransferNotOwned(
   transfer: Transfer & {
     from_account: Account,
     to_account: Account,
@@ -83,7 +84,7 @@ export function throwIfNotTransferOwner(
   ) {
     throw ForbiddenError(
       EventCode.FORBIDDEN,
-      "Transfer not owned by caller"
+      ErrorMessages.TRANSFER_NOT_OWNED,
     );
   }
 }
@@ -95,7 +96,7 @@ export function throwIfSelfTransfer(
   if (fromAccountId === toAccountId) {
     throw BadRequestError(
       EventCode.NO_SELF_TRANSFER_ALLOWED,
-      "Self-transfers are not allowed"
+      ErrorMessages.SELF_TRANSFER_NOT_ALLOWED,
     );
   }
 }
@@ -106,7 +107,7 @@ export function throwIfAccountNotActive(
   if (account.status !== AccountStatus.ACTIVE) {
     throw ConflictError(
       EventCode.ACCOUNT_NOT_ACTIVE,
-      "Account is not active"
+      ErrorMessages.ACCOUNT_NOT_ACTIVE,
     );
   }
 }
@@ -119,7 +120,7 @@ export function throwIfInsufficientFunds(
   if (account.balance.lt(amount)) {
     throw ConflictError(
       EventCode.INSUFFICIENT_FUNDS,
-      "Insufficient funds",
+      ErrorMessages.INSUFFICIENT_FUNDS,
       details
     );
   }

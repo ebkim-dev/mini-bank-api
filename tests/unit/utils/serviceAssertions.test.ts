@@ -4,13 +4,13 @@ import { AccountStatus, UserRole } from "../../../src/generated/client";
 import {
   throwIfAccountNotFound,
   throwIfTransferNotFound,
-  throwIfNotAccountOwner,
-  throwIfNotTransferOwner,
+  throwIfAccountNotOwned,
+  throwIfTransferNotOwned,
   throwIfSelfTransfer,
   throwIfAccountNotActive,
   throwIfInsufficientFunds,
   throwIfTransactionNotFound,
-  throwIfNotTransactionOwner,
+  throwIfTransactionNotOwned,
 } from "../../../src/utils/serviceAssertions";
 import { buildAuthInput } from "../../authMock";
 import { mockAccountId1, mockAccountId2, mockCustomerId1, mockCustomerId2, mockMissingCustomerId } from "../../commonMock";
@@ -18,6 +18,7 @@ import { AppError, NotFoundError } from "../../../src/error/error";
 import { EventCode } from "../../../src/types/eventCodes";
 import { Decimal } from "@prisma/client/runtime/client";
 import { buildTransactionRecord } from "../../transactionMock";
+import { ErrorMessages } from "../../../src/error/errorMessages";
 
 describe("throwIfAccountNotFound", () => {
   it("does not throw if account exists", () => {
@@ -32,7 +33,7 @@ describe("throwIfAccountNotFound", () => {
       expect(err).toBeInstanceOf(AppError);
       const appError = err as AppError;
       expect(appError.code).toBe(EventCode.ACCOUNT_NOT_FOUND);
-      expect(appError.message).toBe("Account not found");
+      expect(appError.message).toBe(ErrorMessages.ACCOUNT_NOT_FOUND);
     }
   });
 });
@@ -50,7 +51,7 @@ describe("throwIfTransactionNotFound", () => {
       expect(err).toBeInstanceOf(AppError);
       const appError = err as AppError;
       expect(appError.code).toBe(EventCode.TRANSACTION_NOT_FOUND);
-      expect(appError.message).toBe("Transaction not found");
+      expect(appError.message).toBe(ErrorMessages.TRANSACTION_NOT_FOUND);
     }
   });
 });
@@ -68,7 +69,7 @@ describe("throwIfTransferNotFound", () => {
       expect(err).toBeInstanceOf(AppError);
       const appError = err as AppError;
       expect(appError.code).toBe(EventCode.TRANSFER_NOT_FOUND);
-      expect(appError.message).toBe("Transfer not found");
+      expect(appError.message).toBe(ErrorMessages.TRANSFER_NOT_FOUND);
     }
   });
 });
@@ -86,8 +87,8 @@ describe("throwIfNotAccountOwner", () => {
       customerId: mockCustomerId1,
     });
 
-    expect(() => throwIfNotAccountOwner(account, authAdmin)).not.toThrow();
-    expect(() => throwIfNotAccountOwner(account, authOwner)).not.toThrow();
+    expect(() => throwIfAccountNotOwned(account, authAdmin)).not.toThrow();
+    expect(() => throwIfAccountNotOwned(account, authOwner)).not.toThrow();
   });
 
   it("throws ForbiddenError if neither owner or admin", () => {
@@ -97,12 +98,12 @@ describe("throwIfNotAccountOwner", () => {
     });
 
     try {
-      throwIfNotAccountOwner(account, authForbidden);
+      throwIfAccountNotOwned(account, authForbidden);
     } catch (err) {
       expect(err).toBeInstanceOf(AppError);
       const appError = err as AppError;
       expect(appError.code).toBe(EventCode.FORBIDDEN);
-      expect(appError.message).toBe("Account not owned by caller");
+      expect(appError.message).toBe(ErrorMessages.ACCOUNT_NOT_OWNED);
     }
   });
 });
@@ -121,8 +122,8 @@ describe("throwIfNotTransactionOwner", () => {
       customerId: mockCustomerId1,
     });
 
-    expect(() => throwIfNotTransactionOwner(transaction, authAdmin)).not.toThrow();
-    expect(() => throwIfNotTransactionOwner(transaction, authOwner)).not.toThrow();
+    expect(() => throwIfTransactionNotOwned(transaction, authAdmin)).not.toThrow();
+    expect(() => throwIfTransactionNotOwned(transaction, authOwner)).not.toThrow();
   });
 
   it("throws ForbiddenError if not owner and not admin", () => {
@@ -136,12 +137,12 @@ describe("throwIfNotTransactionOwner", () => {
     });
 
     try {
-      throwIfNotTransactionOwner(transaction, authForbidden);
+      throwIfTransactionNotOwned(transaction, authForbidden);
     } catch (err) {
       expect(err).toBeInstanceOf(AppError);
       const appError = err as AppError;
       expect(appError.code).toBe(EventCode.FORBIDDEN);
-      expect(appError.message).toBe("Transaction not owned by caller");
+      expect(appError.message).toBe(ErrorMessages.TRANSACTION_NOT_OWNED);
     }
   });
 });
@@ -165,8 +166,8 @@ describe("throwIfNotTransferOwner", () => {
       customerId: mockCustomerId1,
     });
 
-    expect(() => throwIfNotTransferOwner(transfer, authAdmin)).not.toThrow();
-    expect(() => throwIfNotTransferOwner(transfer, authOwner)).not.toThrow();
+    expect(() => throwIfTransferNotOwned(transfer, authAdmin)).not.toThrow();
+    expect(() => throwIfTransferNotOwned(transfer, authOwner)).not.toThrow();
   });
 
   it("throws ForbiddenError if not owner and not admin", () => {
@@ -185,12 +186,12 @@ describe("throwIfNotTransferOwner", () => {
     });
 
     try {
-      throwIfNotTransferOwner(transfer, authForbidden);
+      throwIfTransferNotOwned(transfer, authForbidden);
     } catch (err) {
       expect(err).toBeInstanceOf(AppError);
       const appError = err as AppError;
       expect(appError.code).toBe(EventCode.FORBIDDEN);
-      expect(appError.message).toBe("Transfer not owned by caller");
+      expect(appError.message).toBe(ErrorMessages.TRANSFER_NOT_OWNED);
     }
   });
 });
@@ -207,7 +208,7 @@ describe("throwIfSelfTransfer", () => {
       expect(err).toBeInstanceOf(AppError);
       const appError = err as AppError;
       expect(appError.code).toBe(EventCode.NO_SELF_TRANSFER_ALLOWED);
-      expect(appError.message).toBe("Self-transfers are not allowed");
+      expect(appError.message).toBe(ErrorMessages.SELF_TRANSFER_NOT_ALLOWED);
     }
   });
 });
@@ -230,7 +231,7 @@ describe("throwIfAccountNotActive", () => {
       expect(err).toBeInstanceOf(AppError);
       const appError = err as AppError;
       expect(appError.code).toBe(EventCode.ACCOUNT_NOT_ACTIVE);
-      expect(appError.message).toBe("Account is not active");
+      expect(appError.message).toBe(ErrorMessages.ACCOUNT_NOT_ACTIVE);
     }
   });
 });
@@ -255,7 +256,7 @@ describe("throwIfInsufficientFunds", () => {
       expect(err).toBeInstanceOf(AppError);
       const appError = err as AppError;
       expect(appError.code).toBe(EventCode.INSUFFICIENT_FUNDS);
-      expect(appError.message).toBe("Insufficient funds");
+      expect(appError.message).toBe(ErrorMessages.INSUFFICIENT_FUNDS);
     }
   });
 });

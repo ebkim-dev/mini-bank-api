@@ -10,8 +10,8 @@ import {
   throwIfAccountNotActive,
   throwIfAccountNotFound,
   throwIfInsufficientFunds,
-  throwIfNotAccountOwner,
-  throwIfNotTransferOwner,
+  throwIfAccountNotOwned,
+  throwIfTransferNotOwned,
   throwIfSelfTransfer,
   throwIfTransferNotFound
 } from "../../../src/utils/serviceAssertions";
@@ -115,7 +115,7 @@ describe("insertTransfer service", () => {
       }));
 
     jest.spyOn(serviceAssertions, "throwIfAccountNotFound").mockImplementation(() => {});
-    jest.spyOn(serviceAssertions, "throwIfNotAccountOwner").mockImplementation(() => {});
+    jest.spyOn(serviceAssertions, "throwIfAccountNotOwned").mockImplementation(() => {});
     jest.spyOn(serviceAssertions, "throwIfSelfTransfer").mockImplementation(() => {});
     jest.spyOn(serviceAssertions, "throwIfAccountNotActive").mockImplementation(() => {});
     jest.spyOn(serviceAssertions, "throwIfInsufficientFunds").mockImplementation(() => {});
@@ -184,7 +184,7 @@ describe("insertTransfer service", () => {
   });
 
   it("should throw 403 if account ownership check fails", async () => {
-    (throwIfNotAccountOwner as jest.Mock).mockImplementation(() => {
+    (throwIfAccountNotOwned as jest.Mock).mockImplementation(() => {
       throw ForbiddenError(
         EventCode.FORBIDDEN,
         "Transfers can only be made by account owners"
@@ -307,7 +307,7 @@ describe("fetchTransfers service", () => {
     ]);
 
     jest.spyOn(serviceAssertions, "throwIfAccountNotFound").mockImplementation(() => {});
-    jest.spyOn(serviceAssertions, "throwIfNotAccountOwner").mockImplementation(() => {});
+    jest.spyOn(serviceAssertions, "throwIfAccountNotOwned").mockImplementation(() => {});
   });
 
   it("should return list of transfers given populated query", async () => {
@@ -351,7 +351,7 @@ describe("fetchTransfers service", () => {
   });
 
   it("should throw 403 if caller is not account owner", async () => {
-    (throwIfNotAccountOwner as jest.Mock).mockImplementation(() => {
+    (throwIfAccountNotOwned as jest.Mock).mockImplementation(() => {
       throw ForbiddenError(
         EventCode.FORBIDDEN,
         "Transfers can only be read by account owners"
@@ -391,7 +391,7 @@ describe("fetchTransferById service", () => {
     mockFindUnique.mockResolvedValueOnce(buildTransferRecord());
 
     jest.spyOn(serviceAssertions, "throwIfTransferNotFound").mockImplementation(() => {});
-    jest.spyOn(serviceAssertions, "throwIfNotTransferOwner").mockImplementation(() => {});
+    jest.spyOn(serviceAssertions, "throwIfTransferNotOwned").mockImplementation(() => {});
   });
 
   it("should return transfer given correct input", async () => {
@@ -427,7 +427,7 @@ describe("fetchTransferById service", () => {
   });
 
   it("should throw 403 if caller is not transfer owner", async () => {
-    (throwIfNotTransferOwner as jest.Mock).mockImplementation(() => {
+    (throwIfTransferNotOwned as jest.Mock).mockImplementation(() => {
       throw ForbiddenError(
         EventCode.FORBIDDEN,
         "Transfers can only be read by account owners"
