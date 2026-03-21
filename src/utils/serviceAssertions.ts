@@ -1,7 +1,7 @@
 import { Decimal } from "@prisma/client/runtime/client";
 import { AuthInput } from "../auth/user";
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../error/error";
-import { Account, AccountStatus, Transfer, UserRole } from "../generated/client";
+import { Account, AccountStatus, Transaction, Transfer, UserRole } from "../generated/client";
 import { EventCode } from "../types/eventCodes";
 
 export function throwIfAccountNotFound(
@@ -11,6 +11,17 @@ export function throwIfAccountNotFound(
     throw NotFoundError(
       EventCode.ACCOUNT_NOT_FOUND,
       "Account not found"
+    );
+  }
+}
+
+export function throwIfTransactionNotFound(
+  transaction: Transaction | null
+): asserts transaction is Transaction {
+  if (!transaction) {
+    throw NotFoundError(
+      EventCode.TRANSACTION_NOT_FOUND,
+      "Transaction not found"
     );
   }
 }
@@ -27,8 +38,8 @@ export function throwIfTransferNotFound(
 }
 
 export function throwIfNotAccountOwner(
-  authInput: AuthInput,
   account: Account,
+  authInput: AuthInput,
 ): void {
   if (
     authInput.role !== UserRole.ADMIN &&
@@ -36,17 +47,34 @@ export function throwIfNotAccountOwner(
   ) {
     throw ForbiddenError(
       EventCode.FORBIDDEN,
-      "Transfers can only be made by account owners"
+      "Account not owned by caller"
+    );
+  }
+}
+
+export function throwIfNotTransactionOwner(
+  transaction: Transaction & {
+    account: Account,
+  },
+  authInput: AuthInput,
+): void {
+  if (
+    authInput.role !== UserRole.ADMIN &&
+    authInput.customerId !== transaction.account.customer_id
+  ) {
+    throw ForbiddenError(
+      EventCode.FORBIDDEN,
+      "Transaction not owned by caller"
     );
   }
 }
 
 export function throwIfNotTransferOwner(
-  authInput: AuthInput,
   transfer: Transfer & {
     from_account: Account,
     to_account: Account,
   },
+  authInput: AuthInput,
 ): void {
   if (
     authInput.role !== UserRole.ADMIN &&
@@ -55,7 +83,7 @@ export function throwIfNotTransferOwner(
   ) {
     throw ForbiddenError(
       EventCode.FORBIDDEN,
-      "Transfers can only be read by account owners"
+      "Transfer not owned by caller"
     );
   }
 }
@@ -76,7 +104,7 @@ export function throwIfAccountNotActive(
   account: Account,
 ): void {
   if (account.status !== AccountStatus.ACTIVE) {
-    throw ForbiddenError(
+    throw ConflictError(
       EventCode.ACCOUNT_NOT_ACTIVE,
       "Account is not active"
     );
@@ -86,11 +114,13 @@ export function throwIfAccountNotActive(
 export function throwIfInsufficientFunds(
   account: Account,
   amount: Decimal,
+  details?: unknown,
 ): void {
   if (account.balance.lt(amount)) {
     throw ConflictError(
       EventCode.INSUFFICIENT_FUNDS,
-      "Insufficient funds"
+      "Insufficient funds",
+      details
     );
   }
 }

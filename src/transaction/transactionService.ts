@@ -6,13 +6,24 @@ import type {
 import type { Transaction } from "../generated/client";
 import type { AuthInput } from "../auth/user";
 import prismaClient from "../db/prismaClient";
-import { Decimal } from "@prisma/client/runtime/client";
-import { AccountStatus, TransactionType, UserRole } from "../generated/enums";
-import { ConflictError, ForbiddenError, NotFoundError } from "../error/error";
+import { TransactionType } from "../generated/enums";
+import { AppError } from "../error/error";
 import { EventCode } from "../types/eventCodes";
 import { serializeTransaction } from "./transactionUtils";
-import { buildManyTransactionSuccessEvent, buildTransactionFailureEvent, buildTransactionSuccessEvent } from "../logging/eventFactories";
 import { logger } from "../logging/logger";
+import {
+  buildManyTransactionSuccessEvent,
+  buildTransactionFailureEvent,
+  buildTransactionSuccessEvent
+} from "../logging/eventFactories";
+import {
+  throwIfAccountNotActive,
+  throwIfAccountNotFound,
+  throwIfInsufficientFunds,
+  throwIfNotAccountOwner,
+  throwIfNotTransactionOwner,
+  throwIfTransactionNotFound
+} from "../utils/serviceAssertions";
 
 export async function insertTransaction(
   accountId: string,
@@ -21,105 +32,63 @@ export async function insertTransaction(
 ): Promise<TransactionOutput> {
   const start = process.hrtime.bigint();
 
-  const result = await prismaClient.$transaction(async (tx) => {
-    // 1. Fetch the account and validate
-    const account = await tx.account.findUnique({
-      where: { id: accountId },
-    });
+  try {
+    const result = await prismaClient.$transaction(async (tx) => {
+      const account = await tx.account.findUnique({
+        where: { id: accountId },
+      });
 
-    if (!account) {
-      logger.info(
-        EventCode.ACCOUNT_NOT_FOUND,
-        buildTransactionFailureEvent(
-          start,
-          authInput,
-          EventCode.ACCOUNT_NOT_FOUND,
-          undefined,
-          accountId
-        )
-      );
-      throw NotFoundError(
-        EventCode.ACCOUNT_NOT_FOUND,
-        "Account not found",
-        { account_id: accountId }
-      );
-    }
+      throwIfAccountNotFound(account);
+      throwIfNotAccountOwner(account, authInput);
+      throwIfAccountNotActive(account);
 
-    if (account.status !== AccountStatus.ACTIVE) {
-      logger.info(
-        EventCode.ACCOUNT_NOT_ACTIVE,
-        buildTransactionFailureEvent(
-          start,
-          authInput,
-          EventCode.ACCOUNT_NOT_ACTIVE,
-          undefined,
-          accountId
-        )
-      );
-      throw ConflictError(
-        EventCode.ACCOUNT_NOT_ACTIVE,
-        "Account is not active",
-        { account_id: accountId, status: account.status }
-      );
-    }
-
-    // 2. Calculate new balance
-    const amount = new Decimal(data.amount);
-    let newBalance: Decimal;
-
-    if (data.type === TransactionType.DEBIT) {
-      newBalance = account.balance.minus(amount);
-      if (newBalance.lessThan(0)) {
-        logger.info(
-          EventCode.INSUFFICIENT_FUNDS,
-          buildTransactionFailureEvent(
-            start,
-            authInput,
-            EventCode.INSUFFICIENT_FUNDS,
-            undefined,
-            accountId
-          )
-        );
-        throw ConflictError(
-          EventCode.INSUFFICIENT_FUNDS,
-          "Insufficient funds",
-          {
-            account_id: accountId,
-            current_balance: account.balance.toString(),
-            requested_amount: data.amount,
-          }
-        );
+      if (data.type === TransactionType.DEBIT) {
+        throwIfInsufficientFunds(account, data.amount, {
+          current_balance: account.balance.toString(),
+          requested_amount: data.amount,
+        })
       }
-    } else {
-      newBalance = account.balance.plus(amount);
+      
+      const transactionRecord: Transaction = await tx.transaction.create({
+        data: {
+          account_id: accountId,
+          type: data.type,
+          amount: data.amount,
+          description: data.description ?? null,
+          category: data.category ?? null,
+        },
+      });
+
+      await tx.account.update({
+        where: { id: accountId },
+        data: {
+          balance: data.type === TransactionType.DEBIT
+            ? account.balance.minus(data.amount)
+            : account.balance.plus(data.amount)
+        },
+      });
+
+      return transactionRecord;
+    });
+
+    logger.info(
+      EventCode.TRANSACTION_CREATED,
+      buildTransactionSuccessEvent(start, authInput, result)
+    );
+
+    return serializeTransaction(result);
+  } catch (err) {
+    if (err instanceof AppError) {
+      logger.info(buildTransactionFailureEvent(
+        start,
+        authInput,
+        err.code as EventCode,
+        undefined,
+        accountId
+      ));
     }
-
-    // 3. Create transaction record
-    const transactionRecord: Transaction = await tx.transaction.create({
-      data: {
-        account_id: accountId,
-        type: data.type,
-        amount,
-        description: data.description ?? null,
-        category: data.category ?? null,
-      },
-    });
-
-    // 4. Update account balance
-    await tx.account.update({
-      where: { id: accountId },
-      data: { balance: newBalance },
-    });
-
-    return transactionRecord;
-  });
-
-  logger.info(
-    EventCode.TRANSACTION_CREATED,
-    buildTransactionSuccessEvent(start, authInput, result)
-  );
-
-  return serializeTransaction(result);
+    throw err;
+  }
 }
 
 
@@ -130,117 +99,95 @@ export async function fetchTransactions(
 ): Promise<TransactionOutput[]> {
   const start = process.hrtime.bigint();
 
-  const where: any = {
-    account_id: accountId,
-  };
-
-  if (query.type) {
-    where.type = query.type;
-  }
-
-  if (query.from || query.to) {
-    where.created_at = {};
-    if (query.from) {
-      where.created_at.gte = new Date(query.from);
-    }
-    if (query.to) {
-      where.created_at.lte = new Date(query.to);
-    }
-  }
-
-  const account = await prismaClient.account.findUnique({
-    where: { id: accountId },
-  });
-
-  if (!account) {
-    logger.info(
-      EventCode.ACCOUNT_NOT_FOUND,
-      buildTransactionFailureEvent(
-        start,
-        authInput,
-        EventCode.ACCOUNT_NOT_FOUND,
-        undefined,
-        accountId
-      )
-    );
-    throw NotFoundError(EventCode.ACCOUNT_NOT_FOUND, "Account not found", {
-      id: accountId,
+  try {
+    const account = await prismaClient.account.findUnique({
+      where: { id: accountId },
     });
-  }
 
-  if (
-    authInput.role !== UserRole.ADMIN &&
-    authInput.customerId !== account.customer_id
-  ) {
+    throwIfAccountNotFound(account);
+    throwIfNotAccountOwner(account, authInput);
+
+    const where: any = {
+      account_id: accountId,
+    };
+
+    if (query.type) {
+      where.type = query.type;
+    }
+
+    if (query.from) {
+      where.created_at ??= {};
+      where.created_at.gte = query.from;
+    }
+
+    if (query.to) {
+      where.created_at ??= {};
+      where.created_at.lte = query.to;
+    }
+
+    const transactionRecords = await prismaClient.transaction.findMany({
+      where,
+      orderBy: { created_at: "desc" },
+      take: query.limit,
+      skip: query.offset,
+    });
+
     logger.info(
-      EventCode.FORBIDDEN,
-      buildTransactionFailureEvent(
+      EventCode.TRANSACTION_FETCHED,
+      buildManyTransactionSuccessEvent(
         start,
         authInput,
-        EventCode.FORBIDDEN,
-        undefined,
-        accountId
+        accountId,
+        transactionRecords.length
       )
     );
-    throw ForbiddenError(
-      EventCode.FORBIDDEN,
-      "Only account owners can read account transactions"
-    );
+
+    return transactionRecords.map(serializeTransaction);
+  } catch (err) {
+    if (err instanceof AppError) {
+      logger.info(buildTransactionFailureEvent(
+        start,
+        authInput,
+        err.code as EventCode,
+        undefined,
+        accountId
+      ));
+    }
+    throw err;
   }
-
-  const records: Transaction[] = await prismaClient.transaction.findMany({
-    where,
-    orderBy: { created_at: "desc" },
-    take: query.limit,
-    skip: query.offset,
-  });
-
-  logger.info(
-    EventCode.TRANSACTION_FETCHED,
-    buildManyTransactionSuccessEvent(
-      start,
-      authInput,
-      accountId,
-      records.length
-    )
-  );
-
-  return records.map(serializeTransaction);
 }
 
 
-
 export async function fetchTransactionById(
-  id: string,
+  transactionId: string,
   authInput: AuthInput
 ): Promise<TransactionOutput> {
   const start = process.hrtime.bigint();
 
-  const record: Transaction | null =
-    await prismaClient.transaction.findUnique({ where: { id } });
+  try {
+    const transaction = await prismaClient.transaction.findUnique({
+      where: { id: transactionId },
+      include: { account: true },
+    });
 
-  if (!record) {
+    throwIfTransactionNotFound(transaction);
+    throwIfNotTransactionOwner(transaction, authInput);
+
     logger.info(
-      EventCode.TRANSACTION_NOT_FOUND,
-      buildTransactionFailureEvent(
+      EventCode.TRANSACTION_FETCHED,
+      buildTransactionSuccessEvent(start, authInput, transaction)
+    );
+
+    return serializeTransaction(transaction);
+  } catch (err) {
+    if (err instanceof AppError) {
+      logger.info(buildTransactionFailureEvent(
         start,
         authInput,
-        EventCode.TRANSACTION_NOT_FOUND,
-        id
-      )
-    );
-
-    throw NotFoundError(
-      EventCode.TRANSACTION_NOT_FOUND,
-      "Transaction not found",
-      { id }
-    );
+        err.code as EventCode,
+        transactionId
+      ));
+    }
+    throw err;
   }
-
-  logger.info(
-    EventCode.TRANSACTION_FETCHED,
-    buildTransactionSuccessEvent(start, authInput, record)
-  );
-
-  return serializeTransaction(record);
 }

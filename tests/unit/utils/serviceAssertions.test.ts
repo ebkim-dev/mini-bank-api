@@ -1,6 +1,5 @@
 import { buildAccountRecord } from "../../accountMock";
 import { buildTransferRecord } from "../../transferMock";
-import { AuthInput } from "../../../src/auth/user";
 import { AccountStatus, UserRole } from "../../../src/generated/client";
 import {
   throwIfAccountNotFound,
@@ -10,12 +9,15 @@ import {
   throwIfSelfTransfer,
   throwIfAccountNotActive,
   throwIfInsufficientFunds,
+  throwIfTransactionNotFound,
+  throwIfNotTransactionOwner,
 } from "../../../src/utils/serviceAssertions";
 import { buildAuthInput } from "../../authMock";
 import { mockAccountId1, mockAccountId2, mockCustomerId1, mockCustomerId2, mockMissingCustomerId } from "../../commonMock";
 import { AppError, NotFoundError } from "../../../src/error/error";
 import { EventCode } from "../../../src/types/eventCodes";
 import { Decimal } from "@prisma/client/runtime/client";
+import { buildTransactionRecord } from "../../transactionMock";
 
 describe("throwIfAccountNotFound", () => {
   it("does not throw if account exists", () => {
@@ -31,6 +33,24 @@ describe("throwIfAccountNotFound", () => {
       const appError = err as AppError;
       expect(appError.code).toBe(EventCode.ACCOUNT_NOT_FOUND);
       expect(appError.message).toBe("Account not found");
+    }
+  });
+});
+
+describe("throwIfTransactionNotFound", () => {
+  it("does not throw if transaction exists", () => {
+    const transaction = buildTransactionRecord();
+    expect(() => throwIfTransactionNotFound(transaction)).not.toThrow();
+  });
+
+  it("throws NotFoundError if transaction is null", () => {
+    try {
+      throwIfTransactionNotFound(null);
+    } catch (err) {
+      expect(err).toBeInstanceOf(AppError);
+      const appError = err as AppError;
+      expect(appError.code).toBe(EventCode.TRANSACTION_NOT_FOUND);
+      expect(appError.message).toBe("Transaction not found");
     }
   });
 });
@@ -66,8 +86,8 @@ describe("throwIfNotAccountOwner", () => {
       customerId: mockCustomerId1,
     });
 
-    expect(() => throwIfNotAccountOwner(authAdmin, account)).not.toThrow();
-    expect(() => throwIfNotAccountOwner(authOwner, account)).not.toThrow();
+    expect(() => throwIfNotAccountOwner(account, authAdmin)).not.toThrow();
+    expect(() => throwIfNotAccountOwner(account, authOwner)).not.toThrow();
   });
 
   it("throws ForbiddenError if neither owner or admin", () => {
@@ -77,12 +97,51 @@ describe("throwIfNotAccountOwner", () => {
     });
 
     try {
-      throwIfNotAccountOwner(authForbidden, account);
+      throwIfNotAccountOwner(account, authForbidden);
     } catch (err) {
       expect(err).toBeInstanceOf(AppError);
       const appError = err as AppError;
       expect(appError.code).toBe(EventCode.FORBIDDEN);
-      expect(appError.message).toBe("Transfers can only be made by account owners");
+      expect(appError.message).toBe("Account not owned by caller");
+    }
+  });
+});
+
+describe("throwIfNotTransactionOwner", () => {
+  it("does not throw if admin or owner", () => {
+    const account = buildAccountRecord();
+    const transaction = {
+      ...buildTransactionRecord(),
+      account: account,
+    };
+    const authAdmin = buildAuthInput({
+      role: UserRole.ADMIN,
+    });
+    const authOwner = buildAuthInput({
+      customerId: mockCustomerId1,
+    });
+
+    expect(() => throwIfNotTransactionOwner(transaction, authAdmin)).not.toThrow();
+    expect(() => throwIfNotTransactionOwner(transaction, authOwner)).not.toThrow();
+  });
+
+  it("throws ForbiddenError if not owner and not admin", () => {
+    const account = buildAccountRecord();
+    const transaction = {
+      ...buildTransactionRecord(),
+      account: account,
+    };
+    const authForbidden = buildAuthInput({
+      customerId: mockMissingCustomerId,
+    });
+
+    try {
+      throwIfNotTransactionOwner(transaction, authForbidden);
+    } catch (err) {
+      expect(err).toBeInstanceOf(AppError);
+      const appError = err as AppError;
+      expect(appError.code).toBe(EventCode.FORBIDDEN);
+      expect(appError.message).toBe("Transaction not owned by caller");
     }
   });
 });
@@ -106,8 +165,8 @@ describe("throwIfNotTransferOwner", () => {
       customerId: mockCustomerId1,
     });
 
-    expect(() => throwIfNotTransferOwner(authAdmin, transfer)).not.toThrow();
-    expect(() => throwIfNotTransferOwner(authOwner, transfer)).not.toThrow();
+    expect(() => throwIfNotTransferOwner(transfer, authAdmin)).not.toThrow();
+    expect(() => throwIfNotTransferOwner(transfer, authOwner)).not.toThrow();
   });
 
   it("throws ForbiddenError if not owner and not admin", () => {
@@ -126,12 +185,12 @@ describe("throwIfNotTransferOwner", () => {
     });
 
     try {
-      throwIfNotTransferOwner(authForbidden, transfer);
+      throwIfNotTransferOwner(transfer, authForbidden);
     } catch (err) {
       expect(err).toBeInstanceOf(AppError);
       const appError = err as AppError;
       expect(appError.code).toBe(EventCode.FORBIDDEN);
-      expect(appError.message).toBe("Transfers can only be read by account owners");
+      expect(appError.message).toBe("Transfer not owned by caller");
     }
   });
 });

@@ -18,10 +18,15 @@ import { AccountStatus, TransactionType } from "../../../src/generated/enums";
 import * as transactionService from "../../../src/transaction/transactionService";
 import { buildAccountRecord } from "../../accountMock";
 import { buildAuthInput } from "../../authMock";
-import { mockAccountId1, mockMissingTransactionId, mockTransactionId1, mockTransactionId2 } from "../../commonMock";
+import {
+  mockAccountId1,
+  mockAmount,
+  mockMissingTransactionId,
+  mockTransactionId1,
+  mockTransactionId2
+} from "../../commonMock";
 import {
   buildTransactionCreateInput,
-  buildTransactionCreateInputWithoutOptionalFields,
   buildTransactionOutput,
   buildTransactionQueryInput,
   buildTransactionRecord,
@@ -73,13 +78,16 @@ describe("insertTransaction service", () => {
     );
     txMock.transaction.create.mockResolvedValue(buildTransactionRecord());
     txMock.account.update.mockResolvedValue(
-      buildAccountRecord({ balance: new Decimal("350.00") })
+      buildAccountRecord({ balance: new Decimal("300.00") })
     );
 
     await expect(
       transactionService.insertTransaction(
         mockAccountId1,
-        buildTransactionCreateInput(),
+        buildTransactionCreateInput({
+          category: "mock category",
+          description: "mock transaction description"
+        }),
         buildAuthInput()
       )
     ).resolves.toMatchObject(buildTransactionOutput());
@@ -92,7 +100,7 @@ describe("insertTransaction service", () => {
       data: {
         account_id: mockAccountId1,
         type: TransactionType.CREDIT,
-        amount: new Decimal("100.00"),
+        amount: mockAmount,
         description: "mock transaction description",
         category: "mock category",
       },
@@ -100,7 +108,7 @@ describe("insertTransaction service", () => {
 
     expect(txMock.account.update).toHaveBeenCalledWith({
       where: { id: mockAccountId1 },
-      data: { balance: new Decimal("350.00") },
+      data: { balance: new Decimal("300.00") },
     });
   });
 
@@ -123,9 +131,8 @@ describe("insertTransaction service", () => {
     await expect(
       transactionService.insertTransaction(
         mockAccountId1,
-        buildTransactionCreateInputWithoutOptionalFields({
+        buildTransactionCreateInput({
           type: TransactionType.DEBIT,
-          amount: "50.00",
         }),
         buildAuthInput()
       )
@@ -196,7 +203,7 @@ describe("insertTransaction service", () => {
         mockAccountId1,
         buildTransactionCreateInput({
           type: TransactionType.DEBIT,
-          amount: "50.00",
+          amount: new Decimal("50.00"),
         }),
         buildAuthInput()
       )
@@ -258,8 +265,8 @@ describe("fetchTransactions service", () => {
       mockAccountId1,
       buildTransactionQueryInput({
         type: TransactionType.DEBIT,
-        from: "2026-01-01T00:00:00.000Z",
-        to: "2026-01-31T23:59:59.999Z",
+        from: new Date("2026-01-01T00:00:00.000Z"),
+        to: new Date("2026-01-31T23:59:59.999Z"),
         limit: 5,
         offset: 10,
       }),
@@ -286,7 +293,9 @@ describe("fetchTransactions service", () => {
 
     await transactionService.fetchTransactions(
       mockAccountId1,
-      buildTransactionQueryInput({ from: "2026-02-01T00:00:00.000Z" }),
+      buildTransactionQueryInput({
+        from: new Date("2026-02-01T00:00:00.000Z")
+      }),
       buildAuthInput()
     );
 
@@ -308,7 +317,9 @@ describe("fetchTransactions service", () => {
 
     await transactionService.fetchTransactions(
       mockAccountId1,
-      buildTransactionQueryInput({ to: "2026-02-28T23:59:59.999Z" }),
+      buildTransactionQueryInput({
+        to: new Date("2026-02-28T23:59:59.999Z")
+      }),
       buildAuthInput()
     );
 
@@ -341,7 +352,10 @@ describe("fetchTransactions service", () => {
 
 describe("fetchTransactionById service", () => {
   it("should return the fetched transaction given a valid transaction ID", async () => {
-    mockFindUnique.mockResolvedValue(buildTransactionRecord());
+    mockFindUnique.mockResolvedValue({
+      ...buildTransactionRecord(),
+      account: buildAccountRecord({ id: mockAccountId1 })
+    });
 
     await expect(
       transactionService.fetchTransactionById(
@@ -352,6 +366,7 @@ describe("fetchTransactionById service", () => {
 
     expect(mockFindUnique).toHaveBeenCalledWith({
       where: { id: mockTransactionId1 },
+      include: { account: true },
     });
   });
 

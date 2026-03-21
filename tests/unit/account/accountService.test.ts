@@ -15,14 +15,17 @@ jest.mock('../../../src/db/prismaClient', () => ({
 }));
 import { 
   AccountStatus,
+  TransactionType,
   UserRole
 } from "../../../src/generated/enums";
 import { 
   mockAccountId1,
   mockAccountId2,
+  mockAmount,
   mockCustomerId1,
   mockMissingAccountId,
-  mockMissingCustomerId
+  mockMissingCustomerId,
+  mockTransactionId2
 } from "../../commonMock";
 import { 
   buildAccountCreateInput,
@@ -271,11 +274,12 @@ describe("deleteAccountById service", () => {
 describe("fetchAccountSummary service", () => {
   it("should return account summary with recent transactions and counts", async () => {
     const mockAccount = buildAccountRecord({ balance: new Decimal("450.00") });
-    const mockTransaction1 = buildTransactionRecord();
+    const mockTransaction1 = buildTransactionRecord({
+      amount: new Decimal(100),
+    });
     const mockTransaction2 = buildTransactionRecord({
-      id: "550e8400-e29b-41d4-a716-446655440031",
-      type: "DEBIT" as any,
-      amount: new Decimal("50.00"),
+      id: mockTransactionId2,
+      type: TransactionType.DEBIT,
       description: "ATM withdrawal",
     });
 

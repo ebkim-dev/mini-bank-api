@@ -43,9 +43,12 @@ export async function insertTransfer(
       });
 
       throwIfAccountNotFound(fromAccount);
-      throwIfNotAccountOwner(authInput, fromAccount);
+      throwIfNotAccountOwner(fromAccount, authInput);
       throwIfAccountNotActive(fromAccount);
-      throwIfInsufficientFunds(fromAccount, data.amount);
+      throwIfInsufficientFunds(fromAccount, data.amount, {
+        current_balance: fromAccount.balance.toString(),
+        requested_amount: data.amount.toString()
+      });
 
       const toAccount = await tx.account.findUnique({
         where: { id: data.toAccountId },
@@ -129,7 +132,7 @@ export async function fetchTransfers(
     });
 
     throwIfAccountNotFound(account);
-    throwIfNotAccountOwner(authInput, account);
+    throwIfNotAccountOwner(account, authInput);
 
     const where: any = {
       OR: [
@@ -193,7 +196,7 @@ export async function fetchTransferById(
     });
 
     throwIfTransferNotFound(transfer);
-    throwIfNotTransferOwner(authInput, transfer);
+    throwIfNotTransferOwner(transfer, authInput);
 
     logger.info(
       EventCode.TRANSFER_FETCHED,

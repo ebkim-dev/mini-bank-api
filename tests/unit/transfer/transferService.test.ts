@@ -314,8 +314,8 @@ describe("fetchTransfers service", () => {
     await expect(transferService.fetchTransfers(
       mockAccountId1,
       buildTransferQueryInput({
-        to: mockToDate.toISOString(),
-        from: mockFromDate.toISOString(),
+        to: mockToDate,
+        from: mockFromDate,
       }),
       buildAuthInput()
     )).resolves.toMatchObject([
