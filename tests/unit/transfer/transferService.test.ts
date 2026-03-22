@@ -1,29 +1,26 @@
 import * as transferService from "../../../src/transfer/transferService";
+import * as accountAssertions from "../../../src/account/accountAssertions";
+import * as transferAssertions from "../../../src/transfer/transferAssertions";
 import { buildAuthInput } from '../../authMock';
 import { buildTransactionRecord } from "../../transactionMock";
 import { Decimal } from "@prisma/client/runtime/client";
-import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../../../src/error/error";
 import { EventCode } from "../../../src/types/eventCodes";
 import { logger } from "../../../src/logging/logger";
-import * as serviceAssertions from "../../../src/utils/serviceAssertions";
-import { 
-  throwIfAccountNotActive,
-  throwIfAccountNotFound,
-  throwIfInsufficientFunds,
-  throwIfNotAccountOwner,
-  throwIfNotTransferOwner,
-  throwIfSelfTransfer,
-  throwIfTransferNotFound
-} from "../../../src/utils/serviceAssertions";
+import { TransactionType } from "../../../src/generated/enums";
+import { buildAccountRecord } from '../../accountMock';
 import { 
   buildTransferCreateInput,
   buildTransferOutput,
   buildTransferQueryInput,
   buildTransferRecord
 } from "../../transferMock";
-import { 
-  TransactionType,
-} from "../../../src/generated/enums";
+import {
+  AppError,
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError
+} from "../../../src/error/error";
 import { 
   mockAccountId1,
   mockAccountId2,
@@ -37,9 +34,17 @@ import {
   mockTransferId1,
   mockTransferId2,
 } from "../../commonMock";
-import { 
-  buildAccountRecord,
-} from '../../accountMock';
+import {
+  throwIfSelfTransfer,
+  throwIfTransferNotFound,
+  throwIfTransferNotOwned
+} from "../../../src/transfer/transferAssertions";
+import {
+  throwIfAccountNotActive,
+  throwIfAccountNotFound,
+  throwIfAccountNotOwned,
+  throwIfInsufficientFunds
+} from "../../../src/account/accountAssertions";
 
 jest.mock("../../../src/db/prismaClient", () => ({
   __esModule: true,
@@ -55,6 +60,8 @@ jest.mock("../../../src/db/prismaClient", () => ({
   }
 }));
 import prismaClient from "../../../src/db/prismaClient";
+import { ErrorMessages } from "../../../src/error/errorMessages";
+import { buildTransferFailureEvent } from "../../../src/transfer/transferEventFactories";
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -114,11 +121,11 @@ describe("insertTransfer service", () => {
         account_id: mockAccountId2,
       }));
 
-    jest.spyOn(serviceAssertions, "throwIfAccountNotFound").mockImplementation(() => {});
-    jest.spyOn(serviceAssertions, "throwIfNotAccountOwner").mockImplementation(() => {});
-    jest.spyOn(serviceAssertions, "throwIfSelfTransfer").mockImplementation(() => {});
-    jest.spyOn(serviceAssertions, "throwIfAccountNotActive").mockImplementation(() => {});
-    jest.spyOn(serviceAssertions, "throwIfInsufficientFunds").mockImplementation(() => {});
+    jest.spyOn(accountAssertions, "throwIfAccountNotFound").mockImplementation(() => {});
+    jest.spyOn(accountAssertions, "throwIfAccountNotOwned").mockImplementation(() => {});
+    jest.spyOn(transferAssertions, "throwIfSelfTransfer").mockImplementation(() => {});
+    jest.spyOn(accountAssertions, "throwIfAccountNotActive").mockImplementation(() => {});
+    jest.spyOn(accountAssertions, "throwIfInsufficientFunds").mockImplementation(() => {});
   });
 
   it("should return new transfer record given valid inputs", async () => {
@@ -143,7 +150,7 @@ describe("insertTransfer service", () => {
     (throwIfSelfTransfer as jest.Mock).mockImplementation(() => {
       throw BadRequestError(
         EventCode.NO_SELF_TRANSFER_ALLOWED,
-        "Self-transfers are not allowed"
+        ErrorMessages.NO_SELF_TRANSFER_ALLOWED
       )
     });
 
@@ -162,11 +169,13 @@ describe("insertTransfer service", () => {
   });
 
   it("should throw 404 if source account is not found", async () => {
+    const err: AppError = NotFoundError(
+      EventCode.ACCOUNT_NOT_FOUND,
+      ErrorMessages.ACCOUNT_NOT_FOUND
+    );
+    
     (throwIfAccountNotFound as jest.Mock).mockImplementation(() => {
-      throw NotFoundError(
-        EventCode.ACCOUNT_NOT_FOUND,
-        "Account not found"
-      )
+      throw err;
     });
 
     await expect(transferService.insertTransfer(
@@ -184,10 +193,10 @@ describe("insertTransfer service", () => {
   });
 
   it("should throw 403 if account ownership check fails", async () => {
-    (throwIfNotAccountOwner as jest.Mock).mockImplementation(() => {
+    (throwIfAccountNotOwned as jest.Mock).mockImplementation(() => {
       throw ForbiddenError(
         EventCode.FORBIDDEN,
-        "Transfers can only be made by account owners"
+        ErrorMessages.ACCOUNT_NOT_OWNED
       )
     });
 
@@ -209,7 +218,7 @@ describe("insertTransfer service", () => {
     (throwIfAccountNotActive as jest.Mock).mockImplementation(() => {
       throw ForbiddenError(
         EventCode.ACCOUNT_NOT_ACTIVE,
-        "Account is not active"
+        ErrorMessages.ACCOUNT_NOT_ACTIVE
       )
     });
 
@@ -231,7 +240,7 @@ describe("insertTransfer service", () => {
     (throwIfInsufficientFunds as jest.Mock).mockImplementation(() => {
       throw ConflictError(
         EventCode.INSUFFICIENT_FUNDS,
-        "Insufficient funds"
+        ErrorMessages.INSUFFICIENT_FUNDS
       )
     });
 
@@ -253,7 +262,7 @@ describe("insertTransfer service", () => {
     (throwIfAccountNotFound as jest.Mock).mockImplementation(() => {
       throw NotFoundError(
         EventCode.ACCOUNT_NOT_FOUND,
-        "Account not found"
+        ErrorMessages.ACCOUNT_NOT_FOUND
       )
     });
 
@@ -275,7 +284,7 @@ describe("insertTransfer service", () => {
     (throwIfAccountNotActive as jest.Mock).mockImplementation(() => {
       throw ForbiddenError(
         EventCode.ACCOUNT_NOT_ACTIVE,
-        "Account is not active"
+        ErrorMessages.ACCOUNT_NOT_ACTIVE
       )
     });
 
@@ -292,6 +301,21 @@ describe("insertTransfer service", () => {
     expect(mockTx.account.update).not.toHaveBeenCalled();
     expect(mockTx.transaction.create).not.toHaveBeenCalled();
   });
+
+  it("should throw 500 if prisma throws", async () => {
+    mockTx.transfer.create.mockReset();
+    mockTx.transfer.create.mockRejectedValue(
+      new Error("DB failure")
+    );
+
+    await expect(transferService.insertTransfer(
+      mockAccountId1,
+      buildTransferCreateInput(),
+      buildAuthInput()
+    )).rejects.toThrow();
+
+    expect(mockTx.transfer.create).toHaveBeenCalled();
+  });
 });
 
 
@@ -306,16 +330,54 @@ describe("fetchTransfers service", () => {
       buildTransferRecord({ id: mockTransferId2 })
     ]);
 
-    jest.spyOn(serviceAssertions, "throwIfAccountNotFound").mockImplementation(() => {});
-    jest.spyOn(serviceAssertions, "throwIfNotAccountOwner").mockImplementation(() => {});
+    jest.spyOn(accountAssertions, "throwIfAccountNotFound").mockImplementation(() => {});
+    jest.spyOn(accountAssertions, "throwIfAccountNotOwned").mockImplementation(() => {});
   });
 
   it("should return list of transfers given populated query", async () => {
     await expect(transferService.fetchTransfers(
       mockAccountId1,
       buildTransferQueryInput({
-        to: mockToDate.toISOString(),
-        from: mockFromDate.toISOString(),
+        to: mockToDate,
+        from: mockFromDate,
+      }),
+      buildAuthInput()
+    )).resolves.toMatchObject([
+      buildTransferOutput(),
+      buildTransferOutput({ id: mockTransferId2 }),
+    ]);
+
+    expect(mockFindMany).toHaveBeenCalled();
+
+    expect(logger.info).toHaveBeenCalledWith(
+      EventCode.TRANSFER_FETCHED,
+      expect.any(Object)
+    );
+  });
+
+  it("should return list of transfers given empty query", async () => {
+    await expect(transferService.fetchTransfers(
+      mockAccountId1,
+      buildTransferQueryInput(),
+      buildAuthInput()
+    )).resolves.toMatchObject([
+      buildTransferOutput(),
+      buildTransferOutput({ id: mockTransferId2 }),
+    ]);
+
+    expect(mockFindMany).toHaveBeenCalled();
+
+    expect(logger.info).toHaveBeenCalledWith(
+      EventCode.TRANSFER_FETCHED,
+      expect.any(Object)
+    );
+  });
+
+  it("should return list of transfers given query with only `to` field", async () => {
+    await expect(transferService.fetchTransfers(
+      mockAccountId1,
+      buildTransferQueryInput({
+        to: mockToDate
       }),
       buildAuthInput()
     )).resolves.toMatchObject([
@@ -335,7 +397,7 @@ describe("fetchTransfers service", () => {
     (throwIfAccountNotFound as jest.Mock).mockImplementation(() => {
       throw NotFoundError(
         EventCode.ACCOUNT_NOT_FOUND,
-        "Account not found"
+        ErrorMessages.ACCOUNT_NOT_FOUND
       )
     });
 
@@ -351,10 +413,10 @@ describe("fetchTransfers service", () => {
   });
 
   it("should throw 403 if caller is not account owner", async () => {
-    (throwIfNotAccountOwner as jest.Mock).mockImplementation(() => {
+    (throwIfAccountNotOwned as jest.Mock).mockImplementation(() => {
       throw ForbiddenError(
         EventCode.FORBIDDEN,
-        "Transfers can only be read by account owners"
+        ErrorMessages.ACCOUNT_NOT_OWNED
       )
     });
 
@@ -390,8 +452,8 @@ describe("fetchTransferById service", () => {
   beforeEach(() => {
     mockFindUnique.mockResolvedValueOnce(buildTransferRecord());
 
-    jest.spyOn(serviceAssertions, "throwIfTransferNotFound").mockImplementation(() => {});
-    jest.spyOn(serviceAssertions, "throwIfNotTransferOwner").mockImplementation(() => {});
+    jest.spyOn(transferAssertions, "throwIfTransferNotFound").mockImplementation(() => {});
+    jest.spyOn(transferAssertions, "throwIfTransferNotOwned").mockImplementation(() => {});
   });
 
   it("should return transfer given correct input", async () => {
@@ -412,7 +474,7 @@ describe("fetchTransferById service", () => {
     (throwIfTransferNotFound as jest.Mock).mockImplementation(() => {
       throw NotFoundError(
         EventCode.TRANSFER_NOT_FOUND,
-        "Transfer not found"
+        ErrorMessages.TRANSFER_NOT_FOUND
       )
     });
 
@@ -427,10 +489,10 @@ describe("fetchTransferById service", () => {
   });
 
   it("should throw 403 if caller is not transfer owner", async () => {
-    (throwIfNotTransferOwner as jest.Mock).mockImplementation(() => {
+    (throwIfTransferNotOwned as jest.Mock).mockImplementation(() => {
       throw ForbiddenError(
         EventCode.FORBIDDEN,
-        "Transfers can only be read by account owners"
+        ErrorMessages.TRANSFER_NOT_OWNED
       )
     });
 

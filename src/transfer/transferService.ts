@@ -7,24 +7,26 @@ import { AppError } from "../error/error";
 import { TransactionType } from "../generated/enums";
 import { serializeTransfer } from "./transferUtils";
 import {
-  buildManyTransferSuccessEvent,
-  buildSingleTransferSuccessEvent,
-  buildTransferFailureEvent
-} from "../logging/eventFactories";
-import {
   TransferCreateInput,
   TransferOutput,
   TransferQueryInput
 } from "./transfer";
 import {
-  throwIfAccountNotActive,
-  throwIfAccountNotFound,
-  throwIfNotAccountOwner,
-  throwIfNotTransferOwner,
-  throwIfInsufficientFunds,
   throwIfSelfTransfer,
   throwIfTransferNotFound,
-} from "../utils/serviceAssertions"
+  throwIfTransferNotOwned
+} from "./transferAssertions";
+import {
+  throwIfAccountNotActive,
+  throwIfAccountNotFound,
+  throwIfAccountNotOwned,
+  throwIfInsufficientFunds
+} from "../account/accountAssertions";
+import {
+  buildManyTransferSuccessEvent,
+  buildSingleTransferSuccessEvent,
+  buildTransferFailureEvent
+} from "./transferEventFactories";
 
 
 export async function insertTransfer(
@@ -43,9 +45,12 @@ export async function insertTransfer(
       });
 
       throwIfAccountNotFound(fromAccount);
-      throwIfNotAccountOwner(authInput, fromAccount);
+      throwIfAccountNotOwned(fromAccount, authInput);
       throwIfAccountNotActive(fromAccount);
-      throwIfInsufficientFunds(fromAccount, data.amount);
+      throwIfInsufficientFunds(fromAccount, data.amount, {
+        current_balance: fromAccount.balance.toString(),
+        requested_amount: data.amount.toString()
+      });
 
       const toAccount = await tx.account.findUnique({
         where: { id: data.toAccountId },
@@ -129,7 +134,7 @@ export async function fetchTransfers(
     });
 
     throwIfAccountNotFound(account);
-    throwIfNotAccountOwner(authInput, account);
+    throwIfAccountNotOwned(account, authInput);
 
     const where: any = {
       OR: [
@@ -193,7 +198,7 @@ export async function fetchTransferById(
     });
 
     throwIfTransferNotFound(transfer);
-    throwIfNotTransferOwner(authInput, transfer);
+    throwIfTransferNotOwned(transfer, authInput);
 
     logger.info(
       EventCode.TRANSFER_FETCHED,

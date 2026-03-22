@@ -1,7 +1,7 @@
 import request from "supertest";
 import { Decimal } from "@prisma/client/runtime/client";
 import { createApp } from "../../../src/app";
-import { AccountStatus } from "../../../src/generated/enums";
+import { AccountStatus, AccountType } from "../../../src/generated/enums";
 import { buildAccountRecord } from "../../accountMock";
 import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
 import {
@@ -96,9 +96,10 @@ describe("GET /accounts/:accountId/summary", () => {
 
     expect(res.body).toEqual({
       account_id: mockAccountId1,
-      balance: "450",
+      type: AccountType.SAVINGS,
       currency: "USD",
       status: AccountStatus.ACTIVE,
+      balance: "450",
       total_credits: 1,
       total_debits: 1,
       recent_transactions: [
@@ -137,9 +138,10 @@ describe("GET /accounts/:accountId/summary", () => {
 
     expect(res.body).toEqual({
       account_id: mockAccountId1,
-      balance: "0",
+      type: AccountType.SAVINGS,
       currency: "USD",
       status: AccountStatus.ACTIVE,
+      balance: "0",
       total_credits: 0,
       total_debits: 0,
       recent_transactions: [],

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TransactionType } from "../generated/enums";
+import { Decimal } from "@prisma/client/runtime/client";
 
 export const accountIdParamsSchema = z
   .object({
@@ -19,10 +20,10 @@ export const createTransactionBodySchema = z
     type: z.enum(TransactionType),
     amount: z
       .string()
-      .refine((val) => {
-        const num = Number(val);
-        return !Number.isNaN(num) && num > 0;
-      }, { message: "amount must be a positive number" }),
+      .transform((val) => new Decimal(val))
+      .refine((val) => val.isFinite() && val.gt(0), {
+        message: "amount must be a positive decimal"
+      }),
     description: z.string().max(255).optional(),
     category: z.string().max(100).optional(),
   })
@@ -47,7 +48,21 @@ export const getTransactionsQuerySchema = z
         message: "offset must be 0 or greater",
       }),
     type: z.enum(TransactionType).optional(),
-    from: z.string().datetime({ message: "from must be a valid ISO date" }).optional(),
-    to: z.string().datetime({ message: "to must be a valid ISO date" }).optional(),
+    from: z
+      .iso
+      .datetime({ message: "from must be a valid ISO date" })
+      .transform((val) => new Date(val))
+      .refine((date) => !isNaN(date.getTime()), {
+        message: "from must be a valid date"
+      })
+      .optional(),
+    to: z
+      .iso
+      .datetime({ message: "to must be a valid ISO date" })
+      .transform((val) => new Date(val))
+      .refine((date) => !isNaN(date.getTime()), {
+        message: "to must be a valid date"
+      })
+      .optional(),
   })
   .strict();

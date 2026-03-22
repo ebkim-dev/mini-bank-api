@@ -1,24 +1,29 @@
+import type { Account } from '../generated/client';
+import type { AuthInput } from '../auth/user';
+import prismaClient from '../db/prismaClient'
+import { AccountStatus } from "../generated/enums";
+import { AppError } from "../error/error";
+import { EventCode } from "../types/eventCodes";
+import { logger } from '../logging/logger';
 import type {
   AccountCreateInput,
   AccountOutput,
   AccountUpdateInput,
   AccountSummaryOutput
 } from './account';
-import type { Account } from '../generated/client';
-import type { AuthInput } from '../auth/user';
-import prismaClient from '../db/prismaClient'
-import { AccountStatus, UserRole } from "../generated/enums";
-import { ForbiddenError, NotFoundError } from "../error/error";
-import { EventCode } from "../types/eventCodes";
-import { serializeAccount } from './accountUtils';
-import { logger } from '../logging/logger';
+import {
+  serializeAccount,
+  serializeAccountSummary
+} from './accountUtils';
+import {
+  throwIfAccountNotFound,
+  throwIfAccountNotOwned
+} from './accountAssertions';
 import { 
-  buildAccountFailEvent,
+  buildAccountFailureEvent,
   buildManyAccountSuccessEvent,
   buildSingleAccountSuccessEvent,
-} from '../logging/eventFactories';
-
-
+} from './accountEventFactories';
 
 
 export async function insertAccount(
@@ -66,184 +71,166 @@ export async function fetchAccountsByCustomerId(
 
 
 export async function fetchAccountById(
-  id: string,
+  accountId: string,
   authInput: AuthInput
 ): Promise<AccountOutput> {
   const start = process.hrtime.bigint();
 
-  const account = await prismaClient.account.findUnique({ where: { id } });
-  if (!account) {
-    logger.info(
-      EventCode.ACCOUNT_NOT_FOUND,
-      buildAccountFailEvent(start, authInput, id, EventCode.ACCOUNT_NOT_FOUND)
+  try {
+    const account = await prismaClient.account.findUnique(
+      { where: { id: accountId } }
     );
-    throw NotFoundError(EventCode.ACCOUNT_NOT_FOUND, "Account not found", { id });
-  }
 
-  if ( authInput.role !== UserRole.ADMIN
-    && authInput.customerId !== account.customer_id ) {  
-    const forbiddenErrorMessage = "Only account owners can read accounts";
+    throwIfAccountNotFound(account);
+    throwIfAccountNotOwned(account, authInput);
+
     logger.info(
-      EventCode.FORBIDDEN,
-      buildAccountFailEvent(start, authInput, id, EventCode.FORBIDDEN)
+      EventCode.ACCOUNT_FETCHED, 
+      buildSingleAccountSuccessEvent(start, authInput, account)
     );
-    throw ForbiddenError(EventCode.FORBIDDEN, forbiddenErrorMessage);
+
+    return serializeAccount(account);
+  } catch (err) {
+    if (err instanceof AppError) {
+      logger.info(buildAccountFailureEvent(
+        start,
+        authInput,
+        accountId,
+        err.code as EventCode,
+      ));
+    }
+    throw err;
   }
-
-  logger.info(EventCode.ACCOUNT_FETCHED, buildSingleAccountSuccessEvent(
-    start, authInput, account
-  ));
-
-  return serializeAccount(account);
 }
 
 
 export async function updateAccountById(
-  id: string, 
+  accountId: string, 
   data: AccountUpdateInput,
   authInput: AuthInput
 ): Promise<AccountOutput> {
   const start = process.hrtime.bigint();
 
-  const account = await prismaClient.account.findUnique({ where: { id } });
-  if (!account) {
-    logger.info(
-      EventCode.ACCOUNT_NOT_FOUND,
-      buildAccountFailEvent(start, authInput, id, EventCode.ACCOUNT_NOT_FOUND, data)
+  try {
+    const account = await prismaClient.account.findUnique(
+      { where: { id: accountId } }
     );
-    throw NotFoundError(EventCode.ACCOUNT_NOT_FOUND, "Account not found", { id });
-  }
 
-  if ( authInput.role !== UserRole.ADMIN 
-    && authInput.customerId !== account.customer_id ) {
-    const forbiddenErrorMessage = "Only account owners can update accounts";
-    logger.info(
-      EventCode.FORBIDDEN,
-      buildAccountFailEvent(start, authInput, id, EventCode.FORBIDDEN, data)
+    throwIfAccountNotFound(account);
+    throwIfAccountNotOwned(account, authInput);
+
+    const updatedAccount = await prismaClient.account.update(
+      { where: { id: accountId }, data }
     );
-    throw ForbiddenError(EventCode.FORBIDDEN, forbiddenErrorMessage);
+      
+    logger.info(
+      EventCode.ACCOUNT_UPDATED, 
+      buildSingleAccountSuccessEvent(start, authInput, updatedAccount)
+    );
+
+    return serializeAccount(updatedAccount);
+  } catch (err) {
+    if (err instanceof AppError) {
+      logger.info(buildAccountFailureEvent(
+        start,
+        authInput,
+        accountId,
+        err.code as EventCode,
+        data
+      ));
+    }
+    throw err;
   }
-
-  const updatedAccount: Account = await prismaClient.account.update({
-    where: { id }, data
-  });
-    
-  logger.info(
-    EventCode.ACCOUNT_UPDATED, 
-    buildSingleAccountSuccessEvent(start, authInput, updatedAccount)
-  );
-
-  return serializeAccount(updatedAccount);
 }
 
 
 export async function deleteAccountById(
-  id: string,
+  accountId: string,
   authInput: AuthInput
 ): Promise<AccountOutput> {
   const start = process.hrtime.bigint();
 
-  const account = await prismaClient.account.findUnique({ where: { id } });
-  if (!account) {
+  try {
+    const account = await prismaClient.account.findUnique({
+      where: { id: accountId }
+    });
+
+    throwIfAccountNotFound(account);
+    throwIfAccountNotOwned(account, authInput);
+
+    const closedAccount: Account = await prismaClient.account.update({
+      where: { id: accountId }, data: { status: AccountStatus.CLOSED }
+    });
+
     logger.info(
-      EventCode.ACCOUNT_NOT_FOUND,
-      buildAccountFailEvent(start, authInput, id, EventCode.ACCOUNT_NOT_FOUND)
+      EventCode.ACCOUNT_CLOSED, 
+      buildSingleAccountSuccessEvent(start, authInput, closedAccount)
     );
-    throw NotFoundError(EventCode.ACCOUNT_NOT_FOUND, "Account not found", { id });
+
+    return serializeAccount(closedAccount);
+  } catch (err) {
+    if (err instanceof AppError) {
+      logger.info(buildAccountFailureEvent(
+        start,
+        authInput,
+        accountId,
+        err.code as EventCode,
+      ));
+    }
+    throw err;
   }
-
-  if ( authInput.role !== UserRole.ADMIN 
-    && authInput.customerId !== account.customer_id ) {
-    const forbiddenErrorMessage = "Only account owners can close accounts";
-    logger.info(
-      EventCode.FORBIDDEN,
-      buildAccountFailEvent(start, authInput, id, EventCode.FORBIDDEN)
-    );
-    throw ForbiddenError(EventCode.FORBIDDEN, forbiddenErrorMessage);
-  }
-
-  const closedAccount: Account = await prismaClient.account.update({
-    where: { id }, data: { status: AccountStatus.CLOSED }
-  });
-
-  logger.info(
-    EventCode.ACCOUNT_CLOSED, 
-    buildSingleAccountSuccessEvent(start, authInput, closedAccount)
-  );
-
-  return serializeAccount(closedAccount);
-
 }
 
 
 export async function fetchAccountSummary(
-  id: string,
+  accountId: string,
   authInput: AuthInput
 ): Promise<AccountSummaryOutput> {
   const start = process.hrtime.bigint();
 
-  const account = await prismaClient.account.findUnique({
-    where: { id },
-  });
-
-  if (!account) {
-    logger.info(
-      EventCode.ACCOUNT_NOT_FOUND,
-      buildAccountFailEvent(start, authInput, id, EventCode.ACCOUNT_NOT_FOUND)
-    );
-    throw NotFoundError(EventCode.ACCOUNT_NOT_FOUND, "Account not found", {
-      id,
+  try {
+    const account = await prismaClient.account.findUnique({
+      where: { id: accountId },
     });
+
+    throwIfAccountNotFound(account);
+    throwIfAccountNotOwned(account, authInput);
+
+    const recentTransactions = await prismaClient.transaction.findMany({
+      where: { account_id: accountId },
+      orderBy: { created_at: "desc" },
+      take: 10,
+    });
+
+    const counts = await prismaClient.transaction.groupBy({
+      by: ["type"],
+      where: { account_id: accountId },
+      _count: { type: true },
+    });
+
+    const totalCredits =
+      counts.find((c) => c.type === "CREDIT")?._count.type ?? 0;
+    const totalDebits =
+      counts.find((c) => c.type === "DEBIT")?._count.type ?? 0;
+
+    logger.info(EventCode.ACCOUNT_FETCHED, buildSingleAccountSuccessEvent(
+      start,
+      authInput,
+      account
+    ));
+
+    return serializeAccountSummary(
+      account, totalCredits, totalDebits, recentTransactions
+    )
+  } catch (err) {
+    if (err instanceof AppError) {
+      logger.info(buildAccountFailureEvent(
+        start,
+        authInput,
+        accountId,
+        err.code as EventCode,
+      ));
+    }
+    throw err;
   }
-
-  if (
-    authInput.role !== UserRole.ADMIN &&
-    authInput.customerId !== account.customer_id
-  ){
-    const forbiddenErrorMessage = "Only account owners can read account summaries";
-    logger.info(
-      EventCode.FORBIDDEN,
-      buildAccountFailEvent(start, authInput, id, EventCode.FORBIDDEN)
-    );
-    throw ForbiddenError(EventCode.FORBIDDEN, forbiddenErrorMessage);
-  }
-
-  const recentTransactions = await prismaClient.transaction.findMany({
-    where: { account_id: id },
-    orderBy: { created_at: "desc" },
-    take: 10,
-  });
-
-  const counts = await prismaClient.transaction.groupBy({
-    by: ["type"],
-    where: { account_id: id },
-    _count: { type: true },
-  });
-
-  const totalCredits =
-    counts.find((c) => c.type === "CREDIT")?._count.type ?? 0;
-  const totalDebits =
-    counts.find((c) => c.type === "DEBIT")?._count.type ?? 0;
-
-  logger.info(EventCode.ACCOUNT_FETCHED, buildSingleAccountSuccessEvent(
-    start,
-    authInput,
-    account
-  ));
-
-  return {
-    account_id: account.id,
-    balance: account.balance.toString(),
-    currency: account.currency,
-    status: account.status,
-    total_credits: totalCredits,
-    total_debits: totalDebits,
-    recent_transactions: recentTransactions.map((t) => ({
-      id: t.id,
-      type: t.type,
-      amount: t.amount.toString(),
-      description: t.description ?? "",
-      created_at: t.created_at,
-    })),
-  };
 }

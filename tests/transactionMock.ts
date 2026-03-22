@@ -6,7 +6,12 @@ import type {
   TransactionOutput,
   TransactionQueryInput,
 } from "../src/transaction/transaction";
-import { mockAccountId1, mockTransactionDate, mockTransactionId1 } from "./commonMock";
+import {
+  mockAccountId1,
+  mockAmount,
+  mockTransactionDate,
+  mockTransactionId1
+} from "./commonMock";
 
 export interface TransactionCreateRequestBody {
   type: TransactionType;
@@ -20,7 +25,7 @@ export function buildTransactionCreateRequestBody(
 ): TransactionCreateRequestBody {
   return {
     type: TransactionType.CREDIT,
-    amount: "100.00",
+    amount: mockAmount.toString(),
     description: "mock transaction description",
     category: "mock category",
     ...overrides,
@@ -31,17 +36,8 @@ export function buildTransactionCreateInput(
   overrides: Partial<TransactionCreateInput> = {}
 ): TransactionCreateInput {
   return {
-    ...buildTransactionCreateRequestBody(),
-    ...overrides,
-  };
-}
-
-export function buildTransactionCreateInputWithoutOptionalFields(
-  overrides: Partial<Omit<TransactionCreateInput, "description" | "category">> = {}
-): TransactionCreateInput {
-  return {
     type: TransactionType.CREDIT,
-    amount: "100.00",
+    amount: mockAmount,
     ...overrides,
   };
 }
@@ -53,7 +49,7 @@ export function buildTransactionRecord(
     id: mockTransactionId1,
     account_id: mockAccountId1,
     type: TransactionType.CREDIT,
-    amount: new Decimal("100.00"),
+    amount: mockAmount,
     description: "mock transaction description",
     category: "mock category",
     related_transfer_id: null,
@@ -69,7 +65,7 @@ export function buildTransactionOutput(
     id: mockTransactionId1,
     account_id: mockAccountId1,
     type: TransactionType.CREDIT,
-    amount: "100",
+    amount: mockAmount.toString(),
     description: "mock transaction description",
     category: "mock category",
     related_transfer_id: "",

@@ -209,7 +209,7 @@ describe("POST /accounts/:accountId/transfers", () => {
     expect(mockTx.transfer.create).not.toHaveBeenCalled();
   });
 
-  it("should return 403 if source account is not active", async () => {
+  it("should return 409 if source account is not active", async () => {
     mockTx.account.findUnique.mockReset();
     mockTx.account.findUnique
       .mockResolvedValueOnce(buildAccountRecord({
@@ -219,7 +219,7 @@ describe("POST /accounts/:accountId/transfers", () => {
 
     const res = await postTransferRequest(buildTransferCreateRequestBody());
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(409);
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockTx.transfer.create).not.toHaveBeenCalled();
   });
@@ -252,7 +252,7 @@ describe("POST /accounts/:accountId/transfers", () => {
     expect(mockTx.transfer.create).not.toHaveBeenCalled();
   });
 
-  it("should return 403 if destination account is not active", async () => {
+  it("should return 409 if destination account is not active", async () => {
     mockTx.account.findUnique.mockReset();
     mockTx.account.findUnique
       .mockResolvedValueOnce(buildAccountRecord({
@@ -265,7 +265,7 @@ describe("POST /accounts/:accountId/transfers", () => {
 
     const res = await postTransferRequest(buildTransferCreateRequestBody());
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(409);
     expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockTx.transfer.create).not.toHaveBeenCalled();
   });

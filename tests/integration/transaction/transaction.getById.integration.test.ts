@@ -5,7 +5,13 @@ import {
   buildTransactionOutput,
   buildTransactionRecord,
 } from "../../transactionMock";
-import { mockAccountId1, mockMissingTransactionId, mockRedisKey, mockSessionId, mockTransactionId1 } from "../../commonMock";
+import {
+  mockAccountId1,
+  mockMissingTransactionId,
+  mockRedisKey,
+  mockSessionId,
+  mockTransactionId1
+} from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn() }
@@ -24,6 +30,7 @@ jest.mock("../../../src/utils/encryption", () => ({
   decrypt: jest.fn()
 }));
 import { decrypt } from "../../../src/utils/encryption";
+import { buildAccountRecord } from "../../accountMock";
 
 const app = createApp();
 
@@ -48,7 +55,10 @@ async function getTransactionRequest(
 
 describe("GET /accounts/:accountId/transactions/:transactionId", () => {
   test("Transaction found => 200, transaction is returned", async () => {
-    mockFindUnique.mockResolvedValue(buildTransactionRecord());
+    mockFindUnique.mockResolvedValue({
+      ...buildTransactionRecord(),
+      account: buildAccountRecord({ id: mockAccountId1 })
+    });
 
     const res = await getTransactionRequest(mockAccountId1, mockTransactionId1);
 

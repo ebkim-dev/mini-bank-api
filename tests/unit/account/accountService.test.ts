@@ -15,14 +15,17 @@ jest.mock('../../../src/db/prismaClient', () => ({
 }));
 import { 
   AccountStatus,
+  TransactionType,
   UserRole
 } from "../../../src/generated/enums";
 import { 
   mockAccountId1,
   mockAccountId2,
+  mockAmount,
   mockCustomerId1,
   mockMissingAccountId,
-  mockMissingCustomerId
+  mockMissingCustomerId,
+  mockTransactionId2
 } from "../../commonMock";
 import { 
   buildAccountCreateInput,
@@ -36,6 +39,7 @@ import { buildAuthInput } from '../../authMock';
 import { buildPrismaError, NOT_FOUND_ERROR_CODE, NOT_FOUND_ERROR_MESSAGE, UNKNOWN_ERROR_CODE, UNKNOWN_ERROR_MESSAGE } from "../../errorMock";
 import { buildTransactionRecord } from "../../transactionMock";
 import { Decimal } from "@prisma/client/runtime/client";
+import { ErrorMessages } from "../../../src/error/errorMessages";
 
 const mockCreate = prismaClient.account.create as jest.Mock;
 const mockFindMany = prismaClient.account.findMany as jest.Mock;
@@ -130,7 +134,7 @@ describe("fetchAccountById service", () => {
     await expect(accountService.fetchAccountById(
       mockAccountId1,
       buildAuthInput({ customerId: mockMissingCustomerId })
-    )).rejects.toThrow("Only account owners can read accounts");
+    )).rejects.toThrow(ErrorMessages.ACCOUNT_NOT_OWNED);
 
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
   });
@@ -190,7 +194,7 @@ describe("updateAccountById service", () => {
       mockAccountId1,
       buildAccountUpdateInput(), 
       buildAuthInput({ customerId: mockMissingCustomerId })
-    )).rejects.toThrow("Only account owners can update accounts");
+    )).rejects.toThrow(ErrorMessages.ACCOUNT_NOT_OWNED);
 
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
     expect(mockUpdate).toHaveBeenCalledTimes(0);
@@ -247,7 +251,7 @@ describe("deleteAccountById service", () => {
     await expect(accountService.deleteAccountById(
       mockAccountId1,
       buildAuthInput({ customerId: mockMissingCustomerId })
-    )).rejects.toThrow("Only account owners can close accounts");
+    )).rejects.toThrow(ErrorMessages.ACCOUNT_NOT_OWNED);
 
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
     expect(mockUpdate).toHaveBeenCalledTimes(0);
@@ -271,11 +275,12 @@ describe("deleteAccountById service", () => {
 describe("fetchAccountSummary service", () => {
   it("should return account summary with recent transactions and counts", async () => {
     const mockAccount = buildAccountRecord({ balance: new Decimal("450.00") });
-    const mockTransaction1 = buildTransactionRecord();
+    const mockTransaction1 = buildTransactionRecord({
+      amount: new Decimal(100),
+    });
     const mockTransaction2 = buildTransactionRecord({
-      id: "550e8400-e29b-41d4-a716-446655440031",
-      type: "DEBIT" as any,
-      amount: new Decimal("50.00"),
+      id: mockTransactionId2,
+      type: TransactionType.DEBIT,
       description: "ATM withdrawal",
     });
 
