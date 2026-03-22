@@ -7,24 +7,26 @@ import { AppError } from "../error/error";
 import { TransactionType } from "../generated/enums";
 import { serializeTransfer } from "./transferUtils";
 import {
-  buildManyTransferSuccessEvent,
-  buildSingleTransferSuccessEvent,
-  buildTransferFailureEvent
-} from "../logging/eventFactories";
-import {
   TransferCreateInput,
   TransferOutput,
   TransferQueryInput
 } from "./transfer";
 import {
+  throwIfSelfTransfer,
+  throwIfTransferNotFound,
+  throwIfTransferNotOwned
+} from "./transferAssertions";
+import {
   throwIfAccountNotActive,
   throwIfAccountNotFound,
   throwIfAccountNotOwned,
-  throwIfTransferNotOwned,
-  throwIfInsufficientFunds,
-  throwIfSelfTransfer,
-  throwIfTransferNotFound,
-} from "../utils/serviceAssertions"
+  throwIfInsufficientFunds
+} from "../account/accountAssertions";
+import {
+  buildManyTransferSuccessEvent,
+  buildSingleTransferSuccessEvent,
+  buildTransferFailureEvent
+} from "./transferEventFactories";
 
 
 export async function insertTransfer(

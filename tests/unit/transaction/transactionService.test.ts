@@ -12,10 +12,12 @@ jest.mock("../../../src/db/prismaClient", () => ({
   },
 }));
 
-import { Decimal } from "@prisma/client/runtime/client";
+import * as transactionService from "../../../src/transaction/transactionService";
+import * as accountAssertions from "../../../src/account/accountAssertions";
+import * as transactionAssertions from "../../../src/transaction/transactionAssertions";
 import prismaClient from "../../../src/db/prismaClient";
 import { AccountStatus, TransactionType } from "../../../src/generated/enums";
-import * as transactionService from "../../../src/transaction/transactionService";
+import { Decimal } from "@prisma/client/runtime/client";
 import { buildAccountRecord } from "../../accountMock";
 import { buildAuthInput } from "../../authMock";
 import {
@@ -31,6 +33,10 @@ import {
   buildTransactionQueryInput,
   buildTransactionRecord,
 } from "../../transactionMock";
+import { throwIfAccountNotFound } from "../../../src/account/accountAssertions";
+import { NotFoundError } from "../../../src/error/error";
+import { EventCode } from "../../../src/types/eventCodes";
+import { ErrorMessages } from "../../../src/error/errorMessages";
 
 const mockPrismaTransaction = prismaClient.$transaction as jest.Mock;
 const mockAccountFindUnique = prismaClient.account.findUnique as jest.Mock;
@@ -334,6 +340,29 @@ describe("fetchTransactions service", () => {
       take: 20,
       skip: 0,
     });
+  });
+
+  it("should throw 404 if account is not found", async () => {
+    mockFindUnique.mockResolvedValue(null);
+
+    jest.spyOn(
+      accountAssertions, "throwIfAccountNotFound"
+    ).mockImplementation(() => {
+      throw NotFoundError(
+        EventCode.ACCOUNT_NOT_FOUND,
+        ErrorMessages.ACCOUNT_NOT_FOUND
+      );
+    });
+    
+    await expect(transactionService.fetchTransactions(
+      mockAccountId1,
+      buildTransactionQueryInput(),
+      buildAuthInput()
+    )).rejects.toMatchObject({
+      code: EventCode.ACCOUNT_NOT_FOUND
+    });
+
+    expect(mockFindMany).not.toHaveBeenCalled();
   });
 
   it("should rethrow when prisma throws", async () => {

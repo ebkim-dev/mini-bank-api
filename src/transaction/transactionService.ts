@@ -1,8 +1,3 @@
-import type {
-  TransactionCreateInput,
-  TransactionOutput,
-  TransactionQueryInput,
-} from "./transaction";
 import type { Transaction } from "../generated/client";
 import type { AuthInput } from "../auth/user";
 import prismaClient from "../db/prismaClient";
@@ -11,19 +6,26 @@ import { AppError } from "../error/error";
 import { EventCode } from "../types/eventCodes";
 import { serializeTransaction } from "./transactionUtils";
 import { logger } from "../logging/logger";
+import type {
+  TransactionCreateInput,
+  TransactionOutput,
+  TransactionQueryInput,
+} from "./transaction";
+import {
+  throwIfTransactionNotFound,
+  throwIfTransactionNotOwned
+} from "./transactionAssertions";
+import {
+  throwIfAccountNotActive,
+  throwIfAccountNotFound,
+  throwIfAccountNotOwned,
+  throwIfInsufficientFunds
+} from "../account/accountAssertions";
 import {
   buildManyTransactionSuccessEvent,
   buildTransactionFailureEvent,
   buildTransactionSuccessEvent
-} from "../logging/eventFactories";
-import {
-  throwIfAccountNotActive,
-  throwIfAccountNotFound,
-  throwIfInsufficientFunds,
-  throwIfAccountNotOwned,
-  throwIfTransactionNotOwned,
-  throwIfTransactionNotFound
-} from "../utils/serviceAssertions";
+} from "./transactionEventFactories";
 
 export async function insertTransaction(
   accountId: string,

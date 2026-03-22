@@ -1,23 +1,29 @@
-import type {
-  AccountCreateInput,
-  AccountOutput,
-  AccountUpdateInput,
-  AccountSummaryOutput
-} from './account';
 import type { Account } from '../generated/client';
 import type { AuthInput } from '../auth/user';
 import prismaClient from '../db/prismaClient'
 import { AccountStatus } from "../generated/enums";
 import { AppError } from "../error/error";
 import { EventCode } from "../types/eventCodes";
-import { serializeAccount, serializeAccountSummary } from './accountUtils';
 import { logger } from '../logging/logger';
+import type {
+  AccountCreateInput,
+  AccountOutput,
+  AccountUpdateInput,
+  AccountSummaryOutput
+} from './account';
+import {
+  serializeAccount,
+  serializeAccountSummary
+} from './accountUtils';
+import {
+  throwIfAccountNotFound,
+  throwIfAccountNotOwned
+} from './accountAssertions';
 import { 
-  buildAccountFailEvent,
+  buildAccountFailureEvent,
   buildManyAccountSuccessEvent,
   buildSingleAccountSuccessEvent,
-} from '../logging/eventFactories';
-import { throwIfAccountNotFound, throwIfAccountNotOwned } from '../utils/serviceAssertions';
+} from './accountEventFactories';
 
 
 export async function insertAccount(
@@ -86,7 +92,7 @@ export async function fetchAccountById(
     return serializeAccount(account);
   } catch (err) {
     if (err instanceof AppError) {
-      logger.info(buildAccountFailEvent(
+      logger.info(buildAccountFailureEvent(
         start,
         authInput,
         accountId,
@@ -125,7 +131,7 @@ export async function updateAccountById(
     return serializeAccount(updatedAccount);
   } catch (err) {
     if (err instanceof AppError) {
-      logger.info(buildAccountFailEvent(
+      logger.info(buildAccountFailureEvent(
         start,
         authInput,
         accountId,
@@ -164,7 +170,7 @@ export async function deleteAccountById(
     return serializeAccount(closedAccount);
   } catch (err) {
     if (err instanceof AppError) {
-      logger.info(buildAccountFailEvent(
+      logger.info(buildAccountFailureEvent(
         start,
         authInput,
         accountId,
@@ -218,7 +224,7 @@ export async function fetchAccountSummary(
     )
   } catch (err) {
     if (err instanceof AppError) {
-      logger.info(buildAccountFailEvent(
+      logger.info(buildAccountFailureEvent(
         start,
         authInput,
         accountId,
