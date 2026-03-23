@@ -11,34 +11,47 @@ export interface BaseEvent {
   durationMs: number;
 }
 
-// ==== User ====
+// ==== Auth (Success) ====
 
-export interface AuthSuccessEvent extends BaseEvent {
-  userId: string;
-  username: string;
-  userRole: UserRole;
-}
-
-export interface AuthFailureEvent extends BaseEvent {
-  username: string;
-  errorCode: EventCode;
-}
-
-export interface LogoutSuccessEvent extends BaseEvent {
-  userId: string;
-  userRole: UserRole;
-}
- 
-export interface MeSuccessEvent extends BaseEvent {
-  userId: string;
-  userRole: UserRole;
+export interface AuthBaseSuccessEvent extends BaseEvent {
+  actorId: string;
+  actorRole: UserRole;
   customerId: string;
 }
 
-export interface MeFailureEvent extends BaseEvent {
-  userId: string;
+export interface RegisterSuccessEvent extends AuthBaseSuccessEvent {
+  username: string;
+}
+
+export interface LoginSuccessEvent extends AuthBaseSuccessEvent {
+  username: string;
+}
+
+export interface LogoutSuccessEvent extends AuthBaseSuccessEvent {}
+ 
+export interface MeSuccessEvent extends AuthBaseSuccessEvent {}
+
+// ==== Auth (Failure) ====
+
+export interface AuthBaseFailureEvent extends BaseEvent {
   errorCode: EventCode;
 }
+
+export interface RegisterFailureEvent extends AuthBaseFailureEvent {
+  username: string;
+}
+
+export interface LoginFailureEvent extends AuthBaseFailureEvent {
+  username: string;
+}
+
+export interface MeFailureEvent extends AuthBaseFailureEvent {
+  actorId: string;
+  actorRole: UserRole;
+  customerId: string;
+}
+
+// ==== Account ====
 
 export interface AccountBaseEvent extends BaseEvent {
   actorId: string;
@@ -69,7 +82,8 @@ export interface AccountFailureEvent extends AccountBaseEvent {
   accountStatus?: AccountStatus;
 }
 
-// ==== Transaction (Success) ====
+// ==== Transaction ====
+
 export interface TransactionSuccessEvent extends AccountBaseEvent {
   transactionId?: string;
   accountId: string;
@@ -78,12 +92,12 @@ export interface TransactionSuccessEvent extends AccountBaseEvent {
   count?: number;
 }
 
-// ==== Transaction (Failure) ====
 export interface TransactionFailureEvent extends AccountBaseEvent {
   transactionId?: string;
   accountId?: string;
   errorCode: string;
 }
+
 // ==== Transfer ====
 
 export interface TransferBaseEvent extends BaseEvent {

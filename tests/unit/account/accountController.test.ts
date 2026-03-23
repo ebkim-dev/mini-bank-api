@@ -4,7 +4,7 @@ import { AccountStatus } from "../../../src/generated/enums";
 import { AccountOutput } from "../../../src/account/account";
 import { mockAccountId1, mockCustomerId1, mockMissingAccountId } from "../../commonMock";
 import { buildAuthInput } from "../../authMock";
-import { buildAccountCreateInput, buildAccountOutput } from "../../accountMock";
+import { buildAccountCreateInput, buildAccountOutput, buildAccountSummaryOutput } from "../../accountMock";
 
 const mockAccountOutput1 = buildAccountOutput({ nickname: "alice" });
 const mockAccountOutput2 = buildAccountOutput({ nickname: "bob" });
@@ -214,7 +214,7 @@ describe("deleteAccount controller", () => {
 });
 
 describe("getAccountSummary controller", () => {
-  const mockSummary = {
+  const mockSummary = buildAccountSummaryOutput({
     account_id: mockAccountId1,
     balance: "450",
     currency: "USD",
@@ -222,7 +222,7 @@ describe("getAccountSummary controller", () => {
     total_credits: 1,
     total_debits: 1,
     recent_transactions: [],
-  };
+  });
 
   it("should call fetchAccountSummary and return 200 with summary", async () => {
     const req: any = buildReq({

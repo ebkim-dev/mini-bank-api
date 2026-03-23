@@ -4,9 +4,9 @@ import {
   getTransactionsQuerySchema,
   transactionIdParamsSchema,
 } from "../../../src/transaction/transactionSchemas";
-
 import { TransactionType } from "../../../src/generated/enums";
 import { mockAccountId1, mockTransactionId1 } from "../../commonMock";
+import { Decimal } from "@prisma/client/runtime/client";
 
 describe("accountIdParamsSchema", () => {
   test("accepts valid UUID accountId", () => {
@@ -97,7 +97,7 @@ describe("createTransactionBodySchema", () => {
     });
 
     expect(parsed.type).toBe(TransactionType.CREDIT);
-    expect(parsed.amount).toBe("100.00");
+    expect(parsed.amount.equals(new Decimal("100.00"))).toBe(true);
     expect(parsed.description).toBe("Test deposit");
     expect(parsed.category).toBe("DEPOSIT");
   });
@@ -109,7 +109,7 @@ describe("createTransactionBodySchema", () => {
     });
 
     expect(parsed.type).toBe(TransactionType.DEBIT);
-    expect(parsed.amount).toBe("50.00");
+    expect(parsed.amount.equals(new Decimal("50.00"))).toBe(true);
     expect(parsed.description).toBeUndefined();
     expect(parsed.category).toBeUndefined();
   });
@@ -139,7 +139,7 @@ describe("createTransactionBodySchema", () => {
         type: TransactionType.CREDIT,
         amount: "-50.00",
       })
-    ).toThrow("amount must be a positive number");
+    ).toThrow("amount must be a positive decimal");
   });
 
   test("rejects zero amount", () => {
@@ -148,7 +148,7 @@ describe("createTransactionBodySchema", () => {
         type: TransactionType.CREDIT,
         amount: "0",
       })
-    ).toThrow("amount must be a positive number");
+    ).toThrow("amount must be a positive decimal");
   });
 
   test("rejects non-numeric amount", () => {
@@ -157,7 +157,7 @@ describe("createTransactionBodySchema", () => {
         type: TransactionType.CREDIT,
         amount: "abc",
       })
-    ).toThrow("amount must be a positive number");
+    ).toThrow("[DecimalError] Invalid argument: abc");
   });
 
   test("rejects missing required fields", () => {
@@ -224,8 +224,8 @@ describe("getTransactionsQuerySchema", () => {
     expect(parsed.limit).toBe(10);
     expect(parsed.offset).toBe(5);
     expect(parsed.type).toBe(TransactionType.CREDIT);
-    expect(parsed.from).toBe("2026-03-01T00:00:00Z");
-    expect(parsed.to).toBe("2026-03-31T23:59:59Z");
+    expect(parsed.from!.getTime()).toBe(new Date("2026-03-01T00:00:00Z").getTime());
+    expect(parsed.to!.getTime()).toBe(new Date("2026-03-31T23:59:59Z").getTime());
   });
 
   test("transforms limit and offset from string to number", () => {
