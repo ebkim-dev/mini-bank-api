@@ -2,7 +2,12 @@ import * as transactionService from "../../../src/transaction/transactionService
 import * as transactionController from "../../../src/transaction/transactionController";
 import { TransactionType } from "../../../src/generated/enums";
 import { buildAuthInput } from "../../authMock";
-import { mockAccountId1, mockMissingTransactionId, mockTransactionId1, mockTransactionId2 } from "../../commonMock";
+import {
+  mockAccountId1,
+  mockMissingTransactionId,
+  mockTransactionId1,
+  mockTransactionId2
+} from "../../commonMock";
 import {
   buildTransactionCreateInput,
   buildTransactionOutput,

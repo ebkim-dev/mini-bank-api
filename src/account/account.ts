@@ -27,9 +27,10 @@ export type AccountOutput = {
 
 export type AccountSummaryOutput = {
   account_id: string;
-  balance: string;
+  type: AccountType;
   currency: string;
   status: AccountStatus;
+  balance: string;
   total_credits: number;
   total_debits: number;
   recent_transactions: {

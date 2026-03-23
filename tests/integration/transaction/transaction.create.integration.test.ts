@@ -8,7 +8,12 @@ import {
   buildTransactionOutput,
   buildTransactionRecord,
 } from "../../transactionMock";
-import { mockAccountId1, mockMissingAccountId, mockRedisKey, mockSessionId } from "../../commonMock";
+import {
+  mockAccountId1,
+  mockMissingAccountId,
+  mockRedisKey,
+  mockSessionId
+} from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
   redisClient: { get: jest.fn() }
@@ -35,7 +40,10 @@ const mockRedisGet = redisClient.get as jest.Mock;
 const mockDecrypt = decrypt as jest.Mock;
 
 type TxMock = {
-  account: { findUnique: jest.Mock; update: jest.Mock };
+  account: {
+    findUnique: jest.Mock;
+    update: jest.Mock
+  };
   transaction: { create: jest.Mock };
 };
 

@@ -1,5 +1,5 @@
-import { Account } from "../generated/client";
-import { AccountOutput } from "./account";
+import { Account, Transaction } from "../generated/client";
+import { AccountOutput, AccountSummaryOutput } from "./account";
 
 export function serializeAccount(
   account: Account
@@ -12,5 +12,29 @@ export function serializeAccount(
     nickname: account.nickname ?? "",
     status: account.status,
     balance: account.balance.toString(),
+  }
+}
+
+export function serializeAccountSummary(
+  account: Account,
+  totalCredits: number,
+  totalDebits: number,
+  recentTransactions: Transaction[]
+): AccountSummaryOutput {
+  return {
+    account_id: account.id,
+    type: account.type,
+    currency: account.currency,
+    status: account.status,
+    balance: account.balance.toString(),
+    total_credits: totalCredits,
+    total_debits: totalDebits,
+    recent_transactions: recentTransactions.map((t) => ({
+      id: t.id,
+      type: t.type,
+      amount: t.amount.toString(),
+      description: t.description ?? "",
+      created_at: t.created_at,
+    })),
   }
 }

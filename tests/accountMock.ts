@@ -2,7 +2,7 @@ import { AccountType, AccountStatus } from "../src/generated/enums";
 import { Decimal } from "@prisma/client/runtime/client";
 import { Account } from "../src/generated/client";
 import { mockAccountId1, mockCustomerId1 } from "./commonMock";
-import { AccountCreateInput, AccountOutput, AccountUpdateInput } from "../src/account/account";
+import { AccountCreateInput, AccountOutput, AccountSummaryOutput, AccountUpdateInput } from "../src/account/account";
 
 export interface AccountCreateRequestBody {
   type: AccountType;
@@ -87,6 +87,22 @@ export function buildAccountOutput(
     nickname: "",
     status: AccountStatus.ACTIVE,
     balance: (new Decimal(0)).toString(),
+    ...overrides,
+  };
+}
+
+export function buildAccountSummaryOutput(
+  overrides: Partial<AccountSummaryOutput> = {}
+): AccountSummaryOutput {
+  return {
+    account_id: mockAccountId1,
+    type: AccountType.CHECKING,
+    currency: "USD",
+    status: AccountStatus.ACTIVE,
+    balance: (new Decimal(0)).toString(),
+    total_credits: 0,
+    total_debits: 0,
+    recent_transactions: [],
     ...overrides,
   };
 }

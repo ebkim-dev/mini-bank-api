@@ -17,6 +17,6 @@ export type TransferOutput = {
 export type TransferQueryInput = {
   limit: number;
   offset: number;
-  from?: string;
-  to?: string;
+  from?: Date;
+  to?: Date;
 };
