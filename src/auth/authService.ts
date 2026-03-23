@@ -24,6 +24,7 @@ import {
   buildLogoutSuccessEvent,
   buildMeFailureEvent,
   buildMeSuccessEvent,
+  buildRegisterFailureEvent,
   buildRegisterSuccessEvent
 } from "./authEventFactories";
 import type {
@@ -93,12 +94,9 @@ export async function registerUser(
         else if (driverMessage.includes("email")) field = "email";
       }
 
-      const event: RegisterFailureEvent = {
-        executionStatus: ExecutionStatus.FAILURE,
-        durationMs: getDurationMs(start),
-        username: data.username,
-        errorCode: EventCode.UNKNOWN_CONFLICT
-      };
+      const event = buildRegisterFailureEvent(
+        start, data.username, EventCode.UNKNOWN_CONFLICT
+      );
  
       if (!field || (field !== "username" && field !== "email")) {
         logger.info(event.errorCode, event);
