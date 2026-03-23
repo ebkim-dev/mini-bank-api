@@ -31,9 +31,12 @@ import type {
   MeOutput,
 } from './user';
 import { ErrorMessages } from "../error/errorMessages";
-
-export const REDIS_SESSION_TTL_SEC = 900; // 15min
-
+ 
+ 
+export const REDIS_SESSION_TTL_SEC = 300;        // 15 min — initial TTL on login
+export const EXTENSION_THRESHOLD_SEC = 180;      // extend if TTL drops below 3 min
+export const EXTENSION_AMOUNT_SEC = 300;         // extend by 5 min from now
+ 
 export async function registerUser(
   data: RegisterInput
 ): Promise<RegisterOutput> {
@@ -48,8 +51,8 @@ export async function registerUser(
           phone: data.phone ?? null,
         }
       });
-
-      const createdUser = await tx.user.create({ 
+ 
+      const createdUser = await tx.user.create({
         data: {
           customer_id: createdCustomer.id,
           username: data.username,
@@ -57,19 +60,19 @@ export async function registerUser(
           role: UserRole.STANDARD,
         }
       });
-
+ 
       return createdUser;
     });
-    
+   
     logger.info(
-      EventCode.USER_REGISTERED, 
+      EventCode.USER_REGISTERED,
       buildRegisterSuccessEvent(start, userRecord)
     );
-
+ 
     return { id: userRecord.id };
   } catch (err) {
     if (
-      err instanceof Prisma.PrismaClientKnownRequestError && 
+      err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === "P2002"
     ) {
       const target = err.meta?.target;
@@ -88,7 +91,7 @@ export async function registerUser(
         if (driverMessage.includes("username")) field = "username";
         else if (driverMessage.includes("email")) field = "email";
       }
-
+ 
       const event = buildRegisterFailureEvent(
         start, data.username, EventCode.UNKNOWN_CONFLICT
       );
@@ -110,16 +113,16 @@ export async function registerUser(
     throw err;
   }
 }
-
+ 
 export async function loginUser(
   data: LoginInput
 ): Promise<LoginOutput> {
   const start = process.hrtime.bigint();
-
-  const userRecord = await prismaClient.user.findUnique({ 
-    where: { username: data.username } 
+ 
+  const userRecord = await prismaClient.user.findUnique({
+    where: { username: data.username }
   });
-
+ 
   try {
     throwIfUserNotFound(userRecord);
   } catch (err) {
@@ -131,7 +134,7 @@ export async function loginUser(
       ErrorMessages.INVALID_CREDENTIALS
     );
   }
-
+ 
   try {
     await throwIfInvalidPassword(userRecord, data.password);
   } catch (err) {
@@ -140,29 +143,29 @@ export async function loginUser(
     ));
     throw err;
   }
-  
+ 
   const payload: AuthInput = {
     actorId: userRecord.id,
     role: userRecord.role,
     customerId: userRecord.customer_id,
   };
-  
+ 
   const sessionId = randomUUID();
   await redisClient.set(
     `session:${sessionId}`,
     encrypt(JSON.stringify(payload)),
     { expiration: { type: "EX", value: REDIS_SESSION_TTL_SEC } }
   );
-
+ 
   logger.info(
     EventCode.LOGIN_SUCCESS,
     buildLoginSuccessEvent(start, userRecord)
   );
-
+ 
   return { sessionId };
 }
-
-
+ 
+ 
 export async function logoutUser(
   sessionId: string,
   authInput: AuthInput
@@ -176,18 +179,18 @@ export async function logoutUser(
     buildLogoutSuccessEvent(start, authInput)
   );
 }
-
-
+ 
+ 
 export async function fetchMe(
   authInput: AuthInput
 ): Promise<MeOutput> {
   const start = process.hrtime.bigint();
-
+ 
   const userRecord = await prismaClient.user.findUnique({
     where: { id: authInput.actorId },
     include: { customer: true },
   });
-
+ 
   try {
     throwIfUserNotFound(userRecord);
   } catch (err) {
@@ -198,11 +201,11 @@ export async function fetchMe(
       EventCode.USER_NOT_FOUND, ErrorMessages.USER_NOT_FOUND
     );
   }
-
+ 
   logger.info(
     EventCode.ME_FETCHED,
     buildMeSuccessEvent(start, authInput)
   );
-
+ 
   return serializeMe(userRecord);
 }
