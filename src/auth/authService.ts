@@ -3,7 +3,6 @@ import prismaClient from '../db/prismaClient';
 import { UserRole } from "../generated/enums";
 import { Prisma } from "../generated/client";
 import { EventCode } from '../types/eventCodes';
-import { getDurationMs } from '../utils/calculateDuration';
 import { ConflictError, NotFoundError, UnauthorizedError } from "../error/error";
 import { redisClient } from '../redis/redisClient';
 import { randomUUID } from "crypto";
