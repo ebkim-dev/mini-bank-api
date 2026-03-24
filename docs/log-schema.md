@@ -17,17 +17,39 @@ User/Auth
 
 Accounts 
 * Create 
-  * success: actorId, actorRole, executionStatus, durationMs, accountId, customerId, accountType, currency, accountStatus
-  * failure: actorId, actorRole, executionStatus, durationMs, customerId, accountType, currency, accountStatus?, errorCode
+  * success: executionStatus, durationMs, actorId, actorRole, accountId, customerId, accountType, currency, accountStatus
+  * failure: executionStatus, durationMs, actorId, actorRole, customerId, accountType, currency, accountStatus?, errorCode
 * FetchAllByCustomerId
-  * success: actorId, actorRole, customerId, executionStatus, durationMs, {accountId, customerId, accountType, currency, accountStatus}[]
-  * failure: actorId, actorRole, executionStatus, durationMs, customerId, errorCode
-* FetchByAccountId
-  * success: actorId, actorRole, customerId, executionStatus, durationMs, accountId, customerId, accountType, currency, accountStatus
-  * failure: actorId, actorRole, customerId, executionStatus, durationMs, accountId, errorCode
+  * success: executionStatus, durationMs, actorId, actorRole, customerId, {accountId, customerId, accountType, currency, accountStatus}[]
+  * failure: executionStatus, durationMs, actorId, actorRole, customerId, errorCode
+* Fetch
+  * success: executionStatus, durationMs, actorId, actorRole, customerId, accountId, customerId, accountType, currency, accountStatus
+  * failure: executionStatus, durationMs, actorId, actorRole, customerId, accountId, errorCode
 * Update
-  * success: actorId, actorRole, customerId, executionStatus, durationMs, accountId, customerId, accountType, currency, accountStatus
-  * failure: actorId, actorRole, customerId, executionStatus, durationMs, accountId, nickname?, accountStatus?, errorCode
+  * success: executionStatus, durationMs, actorId, actorRole, customerId, accountId, customerId, accountType, currency, accountStatus
+  * failure: executionStatus, durationMs, actorId, actorRole, customerId, accountId, nickname?, accountStatus?, errorCode
 * Delete
-  * success: actorId, actorRole, customerId, executionStatus, durationMs, accountId, customerId, accountType, currency, accountStatus
-  * failure: actorId, actorRole, customerId, executionStatus, durationMs, accountId, errorCode
+  * success: executionStatus, durationMs, actorId, actorRole, customerId, accountId, customerId, accountType, currency, accountStatus
+  * failure: executionStatus, durationMs, actorId, actorRole, customerId, accountId, errorCode
+
+Transactions
+* Create 
+  * success: executionStatus, durationMs, actorId, actorRole, customerId, transactionId, accountId, transactionType, amount
+  * failure: executionStatus, durationMs, actorId, actorRole, customerId, accountId, errorCode
+* FetchAllByAccountId
+  * success: executionStatus, durationMs, actorId, actorRole, customerId, accountId, count
+  * failure: executionStatus, durationMs, actorId, actorRole, customerId, accountId, errorCode
+* Fetch
+  * success: executionStatus, durationMs, actorId, actorRole, customerId, transactionId, accountId, transactionType, amount
+  * failure: executionStatus, durationMs, actorId, actorRole, customerId, transactionId, errorCode
+
+Transfers
+* Create 
+  * success: executionStatus, durationMs, actorId, actorRole, customerId, transferId, fromAccountId, toAccountId, amount
+  * failure: executionStatus, durationMs, actorId, actorRole, customerId, fromAccountId, toAccountId, amount, errorCode
+* FetchAllByAccountId
+  * success: executionStatus, durationMs, actorId, actorRole, customerId, {transferId, fromAccountId, toAccountId, amount}[]
+  * failure: executionStatus, durationMs, actorId, actorRole, customerId, fromAccountId, errorCode
+* Fetch
+  * success: executionStatus, durationMs, actorId, actorRole, customerId, transferId, fromAccountId, toAccountId, amount
+  * failure: executionStatus, durationMs, actorId, actorRole, customerId, fromAccountId, errorCode
