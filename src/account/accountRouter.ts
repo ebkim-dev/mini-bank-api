@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { validate } from "../middleware/validationMiddleware";
+import { requireAuth } from "../auth/authMiddleware";
 import {
   createAccount,
   getAccountsByCustomerId,
@@ -7,13 +9,11 @@ import {
   deleteAccount,
   getAccountSummary
 } from "./accountController";
-import { validate } from "../middleware/validationMiddleware";
 import {
   createAccountBodySchema,
   updateAccountBodySchema,
   accountIdParamsSchema,
 } from "./accountSchemas";
-import { requireAuth } from "../auth/authMiddleware";
 
 const router = Router();
 
@@ -37,13 +37,6 @@ router.get(
   getAccount
 );
 
-router.get(
-  "/:id/summary",
-  requireAuth(),
-  validate(accountIdParamsSchema, "params"),
-  getAccountSummary
-);
-
 router.put(
   "/:id",
   requireAuth(),
@@ -57,6 +50,13 @@ router.post(
   requireAuth(),
   validate(accountIdParamsSchema, "params"),
   deleteAccount
+);
+
+router.get(
+  "/:id/summary",
+  requireAuth(),
+  validate(accountIdParamsSchema, "params"),
+  getAccountSummary
 );
 
 export default router;

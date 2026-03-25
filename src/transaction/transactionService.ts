@@ -6,6 +6,7 @@ import { AppError } from "../error/error";
 import { EventCode } from "../types/eventCodes";
 import { serializeTransaction } from "./transactionUtils";
 import { logger } from "../logging/logger";
+import { Operation } from "../logging/operations";
 import type {
   TransactionCreateInput,
   TransactionOutput,
@@ -75,7 +76,9 @@ export async function insertTransaction(
 
     logger.info(
       EventCode.TRANSACTION_CREATED,
-      buildTransactionSuccessEvent(start, authInput, result)
+      buildTransactionSuccessEvent(
+        start, authInput, result, Operation.TRANSACTION_CREATE
+      )
     );
 
     return serializeTransaction(result);
@@ -85,6 +88,7 @@ export async function insertTransaction(
         start,
         authInput,
         err.code as EventCode,
+        Operation.TRANSACTION_CREATE,
         undefined,
         accountId
       ));
@@ -140,7 +144,8 @@ export async function fetchTransactions(
         start,
         authInput,
         accountId,
-        transactionRecords.length
+        transactionRecords.length,
+        Operation.TRANSACTION_LIST
       )
     );
 
@@ -151,6 +156,7 @@ export async function fetchTransactions(
         start,
         authInput,
         err.code as EventCode,
+        Operation.TRANSACTION_LIST,
         undefined,
         accountId
       ));
@@ -177,7 +183,9 @@ export async function fetchTransactionById(
 
     logger.info(
       EventCode.TRANSACTION_FETCHED,
-      buildTransactionSuccessEvent(start, authInput, transaction)
+      buildTransactionSuccessEvent(
+        start, authInput, transaction, Operation.TRANSACTION_GET
+      )
     );
 
     return serializeTransaction(transaction);
@@ -187,6 +195,7 @@ export async function fetchTransactionById(
         start,
         authInput,
         err.code as EventCode,
+        Operation.TRANSACTION_GET,
         transactionId
       ));
     }

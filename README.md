@@ -1,5 +1,7 @@
 # MiniBankAPI
 
+## Project Spec
+
 [Project Spec](docs/NodeJS%20Project.pdf) (found in `/docs/NodeJS Project.pdf`)
 
 ## Project Setup
@@ -10,18 +12,7 @@ npm install
 npx prisma generate
 ```
 
-Make sure you have your copy of `.env` file in the project root:
-
-```env
-MYSQL_HOST=<hostname>
-MYSQL_USER=<your_username>
-MYSQL_PASSWORD=<your_password>
-MYSQL_DB=<db_name>
-MYSQL_PORT=3306
-
-PORT=3000
-NODE_ENV=development
-```
+Note: Make sure you have your copy of `.env` file in the project root (see [`/.env.example`](.env.example)).
 
 To start server:
 ```
@@ -45,6 +36,132 @@ To see swagger documentation, first start the server. Then, paste this in your b
 ```
 http://localhost:3000/docs/
 ```
+
+## API Endpoints
+
+### Health
+
+#### GET /health
+
+Returns service health status
+
+---
+
+### Authentication
+
+#### POST /auth/register
+
+Register a new user
+
+#### POST /auth/login
+
+Log in registered user
+
+#### POST /auth/logout
+
+Log out user
+
+#### GET /auth/me
+
+Get user summary
+
+---
+
+### Accounts
+
+#### POST /accounts
+
+Create a new account
+
+#### GET /accounts
+
+List accounts for a customer
+
+#### GET /accounts/:id
+
+Get account by ID
+
+#### PUT /accounts/:id
+
+Update account (allowed fields only)
+
+#### POST /accounts/:id/close
+
+Close account
+
+#### GET /accounts/:id/summary
+
+Get account summary
+
+---
+
+### Transactions
+
+#### POST /accounts/:accountId/transactions
+
+Start a new DEBIT or CREDIT transaction
+
+#### GET /accounts/:accountId/transactions?limit=...&offset=...&type=...&from=...&to=...
+
+List transactions for a given account
+
+#### GET /accounts/:accountId/transactions/:transactionId
+
+Get a single transaction record for a given account
+
+---
+
+### Transfers
+
+#### POST /accounts/:accountId/transfers
+
+Start a new transfer between 2 accounts
+
+#### GET /accounts/:accountId/transfers?limit=...&offset=...&from=...&to=...
+
+List transfers for a given account
+
+#### GET /accounts/:accountId/transfers/:transactionId
+
+Get a single transfer record for a given account
+
+## Authorization
+
+### Auth Domain
+
+| Endpoint                 | ADMIN   | STANDARD | UNAUTHENTICATED |
+| --------                 | ------- | -------- | --------------- |
+| POST /auth/register      | N/A | N/A | ✅ |
+| POST /auth/login         | N/A | N/A | ✅ |
+| POST /auth/logout        | ✅ | ✅ | ❌ |
+| GET /auth/me             | ✅ | ✅ | ❌ |
+
+### Accounts Domain
+
+| Endpoint                  | ADMIN   | STANDARD | UNAUTHENTICATED |
+| --------                  | ------- | -------- | ----------- |
+| POST /accounts            | ✅ | ✅ | ❌ |
+| GET /accounts             | ✅ | ✅ | ❌ |
+| GET /accounts/:id         | ✅ (ANY Account) | ✅ | ❌ |
+| PUT /accounts/:id         | ✅ (ANY Account) | ✅ | ❌ |
+| POST /accounts/:id/close  | ✅ (ANY Account) | ✅ | ❌ |
+| GET /accounts/:id/summary | ✅ (ANY Account) | ✅ | ❌ |
+
+### Transactions Domain
+
+| Endpoint                             | ADMIN   | STANDARD | UNAUTHENTICATED |
+| --------                             | ------- | -------- | --------------- |
+| POST /.../transactions               | ✅ (ANY Account) | ✅ | ❌ |
+| GET /.../transactions                | ✅ (ANY Account) | ✅ | ❌ |
+| GET /.../transactions/:transactionId | ✅ (ANY Account) | ✅ | ❌ |
+
+### Transfers Domain
+
+| Endpoint                       | ADMIN   | STANDARD | UNAUTHENTICATED |
+| --------                       | ------- | -------- | --------------- |
+| POST /.../transfers            | ✅ (ANY Account) | ✅ | ❌ |
+| GET /.../transfers             | ✅ (ANY Account) | ✅ | ❌ |
+| GET /.../transfers/:transferId | ✅ (ANY Account) | ✅ | ❌ |
 
 ## Overview Diagrams
 
@@ -74,145 +191,7 @@ http://localhost:3000/docs/
 1. Controller sends status `200` and JSON response
 1. Express sends response to client
 
-## Authorization
-
-### Accounts Domain
-
-| Endpoint                 | ADMIN   | STANDARD |
-| --------                 | ------- | -------- |
-| POST /accounts           | ✅ | ✅ |
-| GET /accounts            | ✅ | ✅ |
-| GET /accounts/:id        | ✅ (ALL Accounts) | Owned accounts only |
-| PUT /accounts/:id        | ✅ (ALL Accounts) | Owned accounts only |
-| POST /accounts/:id/close | ✅ (ALL Accounts) | Owned accounts only |
-
-
----
-
-# Logging
-
-## Request Logging Includes:
-
-- traceId (generated per request)
-- HTTP method
-- path
-- status code
-- duration (ms)
-
-Implemented via:
-
-- `traceIdMiddleware`
-- `requestLoggerMiddleware`
-
----
-
-## Error Logging Includes:
-
-- traceId
-- error code
-- HTTP status
-- request path
-- request method
-
-Handled inside `errorHandler.ts`.
-
----
-
-## Security Logging Rules
-
-The following are NEVER logged:
-
-- passwords
-- tokens
-- authorization headers
-- raw request bodies
-
-Only safe metadata is logged.
-
----
-
-# Centralized Error Handling
-
-All errors follow a consistent response structure:
-
-```json
-{
-  "traceId": "uuid",
-  "code": "ERROR_CODE",
-  "message": "Human readable message",
-  "details": {}
-}
-```
-
-## How It Works
-
-1. Controllers throw or forward `AppError`
-2. `notFoundHandler` converts unknown routes to 404
-3. `errorHandler` normalizes all errors
-4. Response is returned in standard format
-
-Available error helpers:
-
-- BadRequestError
-- NotFoundError
-- ConflictError
-- UnauthorizedError
-- InternalServerError
-
----
-
-# Validation (Zod)
-
-Zod schemas validate:
-
-- Route params
-- Query parameters
-- Request body
-
-Validation failures return:
-
-- `400 VALIDATION_ERROR`
-- Includes `details.issues[]`
-
-PUT `/accounts/:id` enforces strict allowlist validation.
-
----
-
-# API Endpoints (Epic 1)
-
-## Health
-
-### GET /health
-
-Returns service health status.
-
----
-
-## Accounts
-
-### POST /accounts
-
-Create a new account.
-
-### GET /accounts?customerId={id}
-
-List accounts for a customer.
-
-### GET /accounts/:id
-
-Get account by ID.
-
-### PUT /accounts/:id
-
-Update account (allowed fields only).
-
-### POST /accounts/:id/close
-
-Close account.
-
----
-
-# Postman Collection (Epic 1)
+## Postman Collection
 
 Postman files are located in:
 
@@ -220,14 +199,12 @@ Postman files are located in:
 postman/
 ```
 
-## Files
+### Files
 
 - `epic1.json`
 - `local_env.json`
 
----
-
-## How to Import
+### How to Import
 
 1. Open Postman
 2. Click **Import**
@@ -235,5 +212,3 @@ postman/
    - Collection file
    - Environment file
 4. Select environment: **MiniBankAPI - Local**
-
----

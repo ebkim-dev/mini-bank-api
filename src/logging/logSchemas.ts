@@ -1,5 +1,11 @@
-import type { AccountStatus, AccountType, TransactionType, UserRole } from "../generated/enums";
 import { EventCode } from "../types/eventCodes";
+import { Operation } from "./operations";
+import type {
+  AccountStatus,
+  AccountType,
+  TransactionType,
+  UserRole
+} from "../generated/enums";
 
 export enum ExecutionStatus {
   SUCCESS = "SUCCESS",
@@ -9,6 +15,7 @@ export enum ExecutionStatus {
 export interface BaseEvent {
   executionStatus: ExecutionStatus;
   durationMs: number;
+  operation: Operation;
 }
 
 // ==== Auth (Success) ====
@@ -124,7 +131,7 @@ export interface ManyTransferSuccessEvent extends TransferBaseEvent {
 
 export interface TransferFailureEvent extends TransferBaseEvent {
   errorCode: EventCode;
-  fromAccountId: string;
+  fromAccountId?: string;
   toAccountId?: string;
   amount?: string;
 }
