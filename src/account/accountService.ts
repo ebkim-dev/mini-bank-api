@@ -5,6 +5,7 @@ import { AccountStatus } from "../generated/enums";
 import { AppError } from "../error/error";
 import { EventCode } from "../types/eventCodes";
 import { logger } from '../logging/logger';
+import { Operation } from '../logging/operations';
 import type {
   AccountCreateInput,
   AccountOutput,
@@ -45,7 +46,9 @@ export async function insertAccount(
 
   logger.info(
     EventCode.ACCOUNT_CREATED, 
-    buildSingleAccountSuccessEvent(start, authInput, accountRecord)
+    buildSingleAccountSuccessEvent(
+      start, authInput, accountRecord, Operation.ACCOUNT_CREATE
+    )
   );
 
   return serializeAccount(accountRecord);
@@ -63,7 +66,9 @@ export async function fetchAccountsByCustomerId(
 
   logger.info(
     EventCode.ACCOUNT_FETCHED, 
-    buildManyAccountSuccessEvent(start, authInput, accountRecords)
+    buildManyAccountSuccessEvent(
+      start, authInput, accountRecords, Operation.ACCOUNT_LIST
+    )
   );
 
   return accountRecords.map((accountRecord) => serializeAccount(accountRecord));
@@ -86,7 +91,9 @@ export async function fetchAccountById(
 
     logger.info(
       EventCode.ACCOUNT_FETCHED, 
-      buildSingleAccountSuccessEvent(start, authInput, account)
+      buildSingleAccountSuccessEvent(
+        start, authInput, account, Operation.ACCOUNT_GET
+      )
     );
 
     return serializeAccount(account);
@@ -97,6 +104,7 @@ export async function fetchAccountById(
         authInput,
         accountId,
         err.code as EventCode,
+        Operation.ACCOUNT_GET
       ));
     }
     throw err;
@@ -125,7 +133,9 @@ export async function updateAccountById(
       
     logger.info(
       EventCode.ACCOUNT_UPDATED, 
-      buildSingleAccountSuccessEvent(start, authInput, updatedAccount)
+      buildSingleAccountSuccessEvent(
+        start, authInput, updatedAccount, Operation.ACCOUNT_UPDATE
+      )
     );
 
     return serializeAccount(updatedAccount);
@@ -136,6 +146,7 @@ export async function updateAccountById(
         authInput,
         accountId,
         err.code as EventCode,
+        Operation.ACCOUNT_UPDATE,
         data
       ));
     }
@@ -164,7 +175,9 @@ export async function deleteAccountById(
 
     logger.info(
       EventCode.ACCOUNT_CLOSED, 
-      buildSingleAccountSuccessEvent(start, authInput, closedAccount)
+      buildSingleAccountSuccessEvent(
+        start, authInput, closedAccount, Operation.ACCOUNT_CLOSE
+      )
     );
 
     return serializeAccount(closedAccount);
@@ -175,6 +188,7 @@ export async function deleteAccountById(
         authInput,
         accountId,
         err.code as EventCode,
+        Operation.ACCOUNT_CLOSE
       ));
     }
     throw err;
@@ -216,7 +230,8 @@ export async function fetchAccountSummary(
     logger.info(EventCode.ACCOUNT_FETCHED, buildSingleAccountSuccessEvent(
       start,
       authInput,
-      account
+      account,
+      Operation.ACCOUNT_SUMMARY
     ));
 
     return serializeAccountSummary(
@@ -229,6 +244,7 @@ export async function fetchAccountSummary(
         authInput,
         accountId,
         err.code as EventCode,
+        Operation.ACCOUNT_SUMMARY
       ));
     }
     throw err;

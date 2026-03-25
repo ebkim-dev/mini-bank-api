@@ -6,6 +6,7 @@ import { Transfer } from "../generated/client";
 import { AppError } from "../error/error";
 import { TransactionType } from "../generated/enums";
 import { serializeTransfer } from "./transferUtils";
+import { Operation } from "../logging/operations";
 import {
   TransferCreateInput,
   TransferOutput,
@@ -101,7 +102,9 @@ export async function insertTransfer(
 
     logger.info(
       EventCode.TRANSFER_CREATED,
-      buildSingleTransferSuccessEvent(start, authInput, transferResult)
+      buildSingleTransferSuccessEvent(
+        start, authInput, transferResult, Operation.TRANSFER_CREATE
+      )
     );
 
     return serializeTransfer(transferResult);
@@ -111,6 +114,7 @@ export async function insertTransfer(
         start,
         authInput,
         err.code as EventCode,
+        Operation.TRANSFER_CREATE,
         fromAccountId,
         data.toAccountId,
         data.amount
@@ -163,7 +167,7 @@ export async function fetchTransfers(
     logger.info(
       EventCode.TRANSFER_FETCHED,
       buildManyTransferSuccessEvent(
-        start, authInput, transferRecords
+        start, authInput, transferRecords, Operation.TRANSFER_LIST
       )
     );
 
@@ -174,7 +178,8 @@ export async function fetchTransfers(
         start,
         authInput,
         err.code as EventCode,
-        accountId
+        Operation.TRANSFER_LIST,
+        accountId,
       ));
     }
     throw err;
@@ -203,7 +208,7 @@ export async function fetchTransferById(
     logger.info(
       EventCode.TRANSFER_FETCHED,
       buildSingleTransferSuccessEvent(
-        start, authInput, transfer
+        start, authInput, transfer, Operation.TRANSFER_GET
       )
     );
 
@@ -214,7 +219,7 @@ export async function fetchTransferById(
         start,
         authInput,
         err.code as EventCode,
-        transferId
+        Operation.TRANSFER_GET,
       ));
     }
     throw err;
