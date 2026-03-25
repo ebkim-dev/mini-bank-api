@@ -37,8 +37,6 @@ To see swagger documentation, first start the server. Then, paste this in your b
 http://localhost:3000/docs/
 ```
 
----
-
 ## API Endpoints
 
 ### Health
@@ -127,7 +125,43 @@ List transfers for a given account
 
 Get a single transfer record for a given account
 
----
+## Authorization
+
+### Auth Domain
+
+| Endpoint                 | ADMIN   | STANDARD | UNAUTHENTICATED |
+| --------                 | ------- | -------- | --------------- |
+| POST /auth/register      | N/A | N/A | ✅ |
+| POST /auth/login         | N/A | N/A | ✅ |
+| POST /auth/logout        | ✅ | ✅ | ❌ |
+| GET /auth/me             | ✅ | ✅ | ❌ |
+
+### Accounts Domain
+
+| Endpoint                  | ADMIN   | STANDARD | UNAUTHENTICATED |
+| --------                  | ------- | -------- | ----------- |
+| POST /accounts            | ✅ | ✅ | ❌ |
+| GET /accounts             | ✅ | ✅ | ❌ |
+| GET /accounts/:id         | ✅ (ANY Account) | ✅ | ❌ |
+| PUT /accounts/:id         | ✅ (ANY Account) | ✅ | ❌ |
+| POST /accounts/:id/close  | ✅ (ANY Account) | ✅ | ❌ |
+| GET /accounts/:id/summary | ✅ (ANY Account) | ✅ | ❌ |
+
+### Transactions Domain
+
+| Endpoint                             | ADMIN   | STANDARD | UNAUTHENTICATED |
+| --------                             | ------- | -------- | --------------- |
+| POST /.../transactions               | ✅ (ANY Account) | ✅ | ❌ |
+| GET /.../transactions                | ✅ (ANY Account) | ✅ | ❌ |
+| GET /.../transactions/:transactionId | ✅ (ANY Account) | ✅ | ❌ |
+
+### Transfers Domain
+
+| Endpoint                       | ADMIN   | STANDARD | UNAUTHENTICATED |
+| --------                       | ------- | -------- | --------------- |
+| POST /.../transfers            | ✅ (ANY Account) | ✅ | ❌ |
+| GET /.../transfers             | ✅ (ANY Account) | ✅ | ❌ |
+| GET /.../transfers/:transferId | ✅ (ANY Account) | ✅ | ❌ |
 
 ## Overview Diagrams
 
@@ -157,20 +191,6 @@ Get a single transfer record for a given account
 1. Controller sends status `200` and JSON response
 1. Express sends response to client
 
-## Authorization
-
-### Accounts Domain
-
-| Endpoint                 | ADMIN   | STANDARD |
-| --------                 | ------- | -------- |
-| POST /accounts           | ✅ | ✅ |
-| GET /accounts            | ✅ | ✅ |
-| GET /accounts/:id        | ✅ (ALL Accounts) | Owned accounts only |
-| PUT /accounts/:id        | ✅ (ALL Accounts) | Owned accounts only |
-| POST /accounts/:id/close | ✅ (ALL Accounts) | Owned accounts only |
-
----
-
 ## Postman Collection
 
 Postman files are located in:
@@ -192,52 +212,3 @@ postman/
    - Collection file
    - Environment file
 4. Select environment: **MiniBankAPI - Local**
-
----
-
-## Validation
-
-Zod schemas validate:
-
-- Route params
-- Query parameters
-- Request body
-
-Validation failures return:
-
-- `400 VALIDATION_ERROR`
-- Includes `details.issues[]`
-
-PUT `/accounts/:id` enforces strict allowlist validation.
-
----
-
-## Centralized Error Handling
-
-All errors follow a consistent response structure:
-
-```json
-{
-  "traceId": "uuid",
-  "code": "ERROR_CODE",
-  "message": "Human readable message",
-  "details": {}
-}
-```
-
-### How It Works
-
-1. Controllers throw or forward `AppError`
-2. `notFoundHandler` converts unknown routes to 404
-3. `errorHandler` normalizes all errors
-4. Response is returned in standard format
-
-Available error helpers:
-
-- BadRequestError
-- NotFoundError
-- ConflictError
-- UnauthorizedError
-- InternalServerError
-
----
