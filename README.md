@@ -1,5 +1,7 @@
 # MiniBankAPI
 
+## Project Spec
+
 [Project Spec](docs/NodeJS%20Project.pdf) (found in `/docs/NodeJS Project.pdf`)
 
 ## Project Setup
@@ -10,18 +12,7 @@ npm install
 npx prisma generate
 ```
 
-Make sure you have your copy of `.env` file in the project root:
-
-```env
-MYSQL_HOST=<hostname>
-MYSQL_USER=<your_username>
-MYSQL_PASSWORD=<your_password>
-MYSQL_DB=<db_name>
-MYSQL_PORT=3306
-
-PORT=3000
-NODE_ENV=development
-```
+Note: Make sure you have your copy of `.env` file in the project root (see [`/.env.example`](.env.example)).
 
 To start server:
 ```
@@ -45,6 +36,98 @@ To see swagger documentation, first start the server. Then, paste this in your b
 ```
 http://localhost:3000/docs/
 ```
+
+---
+
+## API Endpoints
+
+### Health
+
+#### GET /health
+
+Returns service health status
+
+---
+
+### Authentication
+
+#### POST /auth/register
+
+Register a new user
+
+#### POST /auth/login
+
+Log in registered user
+
+#### POST /auth/logout
+
+Log out user
+
+#### GET /auth/me
+
+Get user summary
+
+---
+
+### Accounts
+
+#### POST /accounts
+
+Create a new account
+
+#### GET /accounts
+
+List accounts for a customer
+
+#### GET /accounts/:id
+
+Get account by ID
+
+#### PUT /accounts/:id
+
+Update account (allowed fields only)
+
+#### POST /accounts/:id/close
+
+Close account
+
+#### GET /accounts/:id/summary
+
+Get account summary
+
+---
+
+### Transactions
+
+#### POST /accounts/:accountId/transactions
+
+Start a new DEBIT or CREDIT transaction
+
+#### GET /accounts/:accountId/transactions?limit=...&offset=...&type=...&from=...&to=...
+
+List transactions for a given account
+
+#### GET /accounts/:accountId/transactions/:transactionId
+
+Get a single transaction record for a given account
+
+---
+
+### Transfers
+
+#### POST /accounts/:accountId/transfers
+
+Start a new transfer between 2 accounts
+
+#### GET /accounts/:accountId/transfers?limit=...&offset=...&from=...&to=...
+
+List transfers for a given account
+
+#### GET /accounts/:accountId/transfers/:transactionId
+
+Get a single transfer record for a given account
+
+---
 
 ## Overview Diagrams
 
@@ -86,82 +169,33 @@ http://localhost:3000/docs/
 | PUT /accounts/:id        | ✅ (ALL Accounts) | Owned accounts only |
 | POST /accounts/:id/close | ✅ (ALL Accounts) | Owned accounts only |
 
-
 ---
 
-# Logging
+## Postman Collection
 
-## Request Logging Includes:
+Postman files are located in:
 
-- traceId (generated per request)
-- HTTP method
-- path
-- status code
-- duration (ms)
-
-Implemented via:
-
-- `traceIdMiddleware`
-- `requestLoggerMiddleware`
-
----
-
-## Error Logging Includes:
-
-- traceId
-- error code
-- HTTP status
-- request path
-- request method
-
-Handled inside `errorHandler.ts`.
-
----
-
-## Security Logging Rules
-
-The following are NEVER logged:
-
-- passwords
-- tokens
-- authorization headers
-- raw request bodies
-
-Only safe metadata is logged.
-
----
-
-# Centralized Error Handling
-
-All errors follow a consistent response structure:
-
-```json
-{
-  "traceId": "uuid",
-  "code": "ERROR_CODE",
-  "message": "Human readable message",
-  "details": {}
-}
+```
+postman/
 ```
 
-## How It Works
+### Files
 
-1. Controllers throw or forward `AppError`
-2. `notFoundHandler` converts unknown routes to 404
-3. `errorHandler` normalizes all errors
-4. Response is returned in standard format
+- `epic1.json`
+- `local_env.json`
 
-Available error helpers:
+### How to Import
 
-- BadRequestError
-- NotFoundError
-- ConflictError
-- UnauthorizedError
-- InternalServerError
+1. Open Postman
+2. Click **Import**
+3. Import both:
+   - Collection file
+   - Environment file
+4. Select environment: **MiniBankAPI - Local**
 
 ---
 
-# Validation (Zod)
+## Validation
 
 Zod schemas validate:
 
@@ -178,62 +212,32 @@ PUT `/accounts/:id` enforces strict allowlist validation.
 
 ---
 
-# API Endpoints (Epic 1)
+## Centralized Error Handling
 
-## Health
+All errors follow a consistent response structure:
 
-### GET /health
-
-Returns service health status.
-
----
-
-## Accounts
-
-### POST /accounts
-
-Create a new account.
-
-### GET /accounts?customerId={id}
-
-List accounts for a customer.
-
-### GET /accounts/:id
-
-Get account by ID.
-
-### PUT /accounts/:id
-
-Update account (allowed fields only).
-
-### POST /accounts/:id/close
-
-Close account.
-
----
-
-# Postman Collection (Epic 1)
-
-Postman files are located in:
-
-```
-postman/
+```json
+{
+  "traceId": "uuid",
+  "code": "ERROR_CODE",
+  "message": "Human readable message",
+  "details": {}
+}
 ```
 
-## Files
+### How It Works
 
-- `epic1.json`
-- `local_env.json`
+1. Controllers throw or forward `AppError`
+2. `notFoundHandler` converts unknown routes to 404
+3. `errorHandler` normalizes all errors
+4. Response is returned in standard format
 
----
+Available error helpers:
 
-## How to Import
-
-1. Open Postman
-2. Click **Import**
-3. Import both:
-   - Collection file
-   - Environment file
-4. Select environment: **MiniBankAPI - Local**
+- BadRequestError
+- NotFoundError
+- ConflictError
+- UnauthorizedError
+- InternalServerError
 
 ---
