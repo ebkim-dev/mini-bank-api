@@ -3,7 +3,6 @@ import prismaClient from '../db/prismaClient';
 import { UserRole } from "../generated/enums";
 import { Prisma } from "../generated/client";
 import { EventCode } from '../types/eventCodes';
-import { getDurationMs } from '../utils/calculateDuration';
 import { redisClient } from '../redis/redisClient';
 import { randomUUID } from "crypto";
 import { encrypt } from "../utils/encryption";
@@ -20,10 +19,6 @@ import {
   throwIfInvalidPassword,
   throwIfUserNotFound
 } from "./authAssertions";
-import {
-  ExecutionStatus,
-  RegisterFailureEvent
-} from '../logging/logSchemas';
 import {
   buildLoginFailureEvent,
   buildLoginSuccessEvent,
