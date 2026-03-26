@@ -8,7 +8,6 @@ import {
   mockAccountId1,
   mockMissingAccountId,
   mockMissingCustomerId,
-  mockRedisKey,
   mockSessionId
 } from "../../commonMock";
 
@@ -18,7 +17,14 @@ jest.mock("../../../src/utils/encryption", () => ({
 import { decrypt } from "../../../src/utils/encryption";
 
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: { get: jest.fn() }
+  redisClient: {
+    multi: jest.fn(() => ({
+      get: jest.fn().mockReturnThis(),
+      ttl: jest.fn().mockReturnThis(),
+      exec: jest.fn(),
+    })),
+    expire: jest.fn(),
+  }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -35,12 +41,15 @@ const app = createApp();
 
 const mockFindUnique = prismaClient.account.findUnique as jest.Mock;
 const mockUpdate = prismaClient.account.update as jest.Mock;
-const mockRedisGet = redisClient.get as jest.Mock;
 const mockDecrypt = decrypt as jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
   mockUpdate.mockResolvedValue(buildAccountRecord());
-  mockRedisGet.mockResolvedValue(mockEncryptedRedisPayload);
+  (redisClient.multi as jest.Mock).mockReturnValue({
+    get: jest.fn().mockReturnThis(),
+    ttl: jest.fn().mockReturnThis(),
+    exec: jest.fn().mockResolvedValue([mockEncryptedRedisPayload, 999]),
+  });
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
@@ -69,7 +78,7 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(res.body).toMatchObject(toUpdate);
       
-    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+    expect(redisClient.multi).toHaveBeenCalledTimes(1);
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 
@@ -84,7 +93,7 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(res.body).toMatchObject(toUpdate);
       
-    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+    expect(redisClient.multi).toHaveBeenCalledTimes(1);
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 
@@ -99,7 +108,7 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(res.body).toMatchObject(toUpdate);
       
-    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+    expect(redisClient.multi).toHaveBeenCalledTimes(1);
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 
@@ -109,7 +118,7 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
       
-    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+    expect(redisClient.multi).toHaveBeenCalledTimes(1);
   });
 
   test("accountId has invalid format => 400", async () => {
@@ -118,7 +127,7 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
       
-    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+    expect(redisClient.multi).toHaveBeenCalledTimes(1);
   });
 
   test("Large input string is given (longer than maxLength) => 400", async () => {
@@ -128,7 +137,7 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
       
-    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+    expect(redisClient.multi).toHaveBeenCalledTimes(1);
   });
 
   test("Account not found for accountId => 404", async () => {
@@ -145,7 +154,7 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.status).toBe(404);
     expect(res.headers).toHaveProperty("x-trace-id");
       
-    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+    expect(redisClient.multi).toHaveBeenCalledTimes(1);
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
     expect(mockUpdate).toHaveBeenCalledTimes(0);
   });
@@ -172,7 +181,7 @@ describe("PUT /accounts/:accountId", () => {
     expect(res.status).toBe(403);
     expect(res.headers).toHaveProperty("x-trace-id");
       
-    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+    expect(redisClient.multi).toHaveBeenCalledTimes(1);
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
     expect(mockUpdate).toHaveBeenCalledTimes(0);
   });
