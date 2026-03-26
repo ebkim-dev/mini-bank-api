@@ -11,12 +11,18 @@ import {
 import {
   mockAccountId1,
   mockMissingAccountId,
-  mockRedisKey,
   mockSessionId
 } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: { get: jest.fn() }
+  redisClient: {
+    multi: jest.fn(() => ({
+      get: jest.fn().mockReturnThis(),
+      ttl: jest.fn().mockReturnThis(),
+      exec: jest.fn(),
+    })),
+    expire: jest.fn(),
+  }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -36,7 +42,6 @@ import { decrypt } from "../../../src/utils/encryption";
 const app = createApp();
 
 const mockPrismaTransaction = prismaClient.$transaction as jest.Mock;
-const mockRedisGet = redisClient.get as jest.Mock;
 const mockDecrypt = decrypt as jest.Mock;
 
 type TxMock = {
@@ -51,7 +56,11 @@ let txMock: TxMock;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockRedisGet.mockResolvedValue(mockEncryptedRedisPayload);
+  (redisClient.multi as jest.Mock).mockReturnValue({
+    get: jest.fn().mockReturnThis(),
+    ttl: jest.fn().mockReturnThis(),
+    exec: jest.fn().mockResolvedValue([mockEncryptedRedisPayload, 999]),
+  });
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 
   txMock = {
@@ -105,7 +114,7 @@ describe("POST /accounts/:accountId/transactions", () => {
       ...buildTransactionOutput(),
       created_at: buildTransactionOutput().created_at.toISOString(),
     });
-    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
+    expect(redisClient.multi).toHaveBeenCalledTimes(1);
     expect(mockPrismaTransaction).toHaveBeenCalledTimes(1);
   });
 
