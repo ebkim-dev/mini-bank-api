@@ -3,6 +3,7 @@ import prismaClient from '../db/prismaClient';
 import { UserRole } from "../generated/enums";
 import { Prisma } from "../generated/client";
 import { EventCode } from '../types/eventCodes';
+import { getDurationMs } from '../utils/calculateDuration';
 import { ConflictError, NotFoundError, UnauthorizedError } from "../error/error";
 import { redisClient } from '../redis/redisClient';
 import { randomUUID } from "crypto";
@@ -13,6 +14,10 @@ import {
   throwIfInvalidPassword,
   throwIfUserNotFound
 } from "./authAssertions";
+import {
+  ExecutionStatus,
+  RegisterFailureEvent
+} from '../logging/logSchemas';
 import {
   buildLoginFailureEvent,
   buildLoginSuccessEvent,
@@ -33,10 +38,10 @@ import type {
 import { ErrorMessages } from "../error/errorMessages";
  
  
-export const REDIS_SESSION_TTL_SEC = 300;        // 15 min — initial TTL on login
-export const EXTENSION_THRESHOLD_SEC = 180;      // extend if TTL drops below 3 min
-export const EXTENSION_AMOUNT_SEC = 300;         // extend by 5 min from now
- 
+export const REDIS_SESSION_TTL_SEC = 900;        
+export const EXTENSION_THRESHOLD_SEC = 180;     
+export const EXTENSION_AMOUNT_SEC = 300;
+
 export async function registerUser(
   data: RegisterInput
 ): Promise<RegisterOutput> {

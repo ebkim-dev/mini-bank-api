@@ -21,8 +21,12 @@ async function extendSessionIfExpiring(
   ttl: number
 ): Promise<void> {
  
-  if (ttl < 0) return;
-  if (ttl > EXTENSION_THRESHOLD_SEC) return;
+  if (ttl < 0){
+    return;
+  };
+  if (ttl > EXTENSION_THRESHOLD_SEC){
+    return;
+  };
  
   try {
     await redisClient.expire(`session:${sessionId}`, EXTENSION_AMOUNT_SEC);
@@ -57,13 +61,25 @@ export function requireAuth(): RequestHandler {
     if (!parsed.success) return next(authFailure());
  
     try {
-      const [raw, ttl] = await redisClient
-        .multi()
-        .get(`session:${sessionId}`)
-        .ttl(`session:${sessionId}`)
-        .exec() as unknown as [string | null, number];
- 
-      if (!raw) return next(authFailure());
+      const results = await redisClient
+      .multi()
+      .get(`session:${sessionId}`)
+      .ttl(`session:${sessionId}`)
+      .exec();
+
+      if (!results) {
+        logger.error(EventCode.INTERNAL_SERVER_ERROR, {
+          message: "Redis transaction failed",
+          sessionId,
+        });
+        return next(authFailure());
+      }
+
+      const [raw, ttl] = results as unknown as [string | null, number];
+  
+      if (!raw){
+        return next(authFailure());
+      } 
  
       const session: AuthInput = JSON.parse(decrypt(raw));
       req.user = session;
