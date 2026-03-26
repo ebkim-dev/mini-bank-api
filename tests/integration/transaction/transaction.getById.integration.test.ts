@@ -8,19 +8,13 @@ import {
 import {
   mockAccountId1,
   mockMissingTransactionId,
+  mockRedisKey,
   mockSessionId,
   mockTransactionId1
 } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: {
-    multi: jest.fn(() => ({
-      get: jest.fn().mockReturnThis(),
-      ttl: jest.fn().mockReturnThis(),
-      exec: jest.fn(),
-    })),
-    expire: jest.fn(),
-  }
+  redisClient: { get: jest.fn() }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -41,15 +35,12 @@ import { buildAccountRecord } from "../../accountMock";
 const app = createApp();
 
 const mockFindUnique = prismaClient.transaction.findUnique as jest.Mock;
+const mockRedisGet = redisClient.get as jest.Mock;
 const mockDecrypt = decrypt as jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  (redisClient.multi as jest.Mock).mockReturnValue({
-    get: jest.fn().mockReturnThis(),
-    ttl: jest.fn().mockReturnThis(),
-    exec: jest.fn().mockResolvedValue([mockEncryptedRedisPayload, 999]),
-  });
+  mockRedisGet.mockResolvedValue(mockEncryptedRedisPayload);
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
@@ -77,7 +68,7 @@ describe("GET /accounts/:accountId/transactions/:transactionId", () => {
       ...buildTransactionOutput(),
       created_at: buildTransactionOutput().created_at.toISOString(),
     });
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
   });
 
@@ -86,7 +77,7 @@ describe("GET /accounts/:accountId/transactions/:transactionId", () => {
 
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockFindUnique).not.toHaveBeenCalled();
   });
 
@@ -106,7 +97,7 @@ describe("GET /accounts/:accountId/transactions/:transactionId", () => {
     expect(res.status).toBe(404);
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(res.body.code).toBe("TRANSACTION_NOT_FOUND");
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
   });
 
   it("should return 401 given missing session", async () => {

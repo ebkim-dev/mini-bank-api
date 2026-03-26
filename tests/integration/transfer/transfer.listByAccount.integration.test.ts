@@ -2,23 +2,18 @@ import request from "supertest";
 import { createApp } from "../../../src/app";
 import { logger } from "../../../src/logging/logger";
 import { buildAuthInput, mockEncryptedRedisPayload } from "../../authMock";
-import { buildTransferRecord } from "../../transferMock";
+import { buildTransferOutput, buildTransferRecord } from "../../transferMock";
 import {
   mockAccountId1,
   mockMissingCustomerId,
   mockSessionId,
+  mockTransferId1,
+  mockMissingTransferId,
   mockAccountId2,
 } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: {
-    multi: jest.fn(() => ({
-      get: jest.fn().mockReturnThis(),
-      ttl: jest.fn().mockReturnThis(),
-      exec: jest.fn(),
-    })),
-    expire: jest.fn(),
-  }
+  redisClient: { get: jest.fn() }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -48,17 +43,14 @@ const mockedTransferList = [
   })
 ];
 
+const mockRedisGet = redisClient.get as jest.Mock;
 const mockDecrypt = decrypt as jest.Mock;
 const mockFindUnique = prismaClient.account.findUnique as jest.Mock;
 const mockFindMany = prismaClient.transfer.findMany as jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
 
-  (redisClient.multi as jest.Mock).mockReturnValue({
-    get: jest.fn().mockReturnThis(),
-    ttl: jest.fn().mockReturnThis(),
-    exec: jest.fn().mockResolvedValue([mockEncryptedRedisPayload, 999]),
-  });
+  mockRedisGet.mockResolvedValue(mockEncryptedRedisPayload);
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
   mockFindUnique.mockResolvedValue(buildAccountRecord());
   mockFindMany.mockResolvedValue(mockedTransferList);

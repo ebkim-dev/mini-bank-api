@@ -7,18 +7,12 @@ import {
 } from "../../accountMock";
 import { 
   mockAccountId2,
+  mockRedisKey,
   mockSessionId
 } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: {
-    multi: jest.fn(() => ({
-      get: jest.fn().mockReturnThis(),
-      ttl: jest.fn().mockReturnThis(),
-      exec: jest.fn(),
-    })),
-    expire: jest.fn(),
-  }
+  redisClient: { get: jest.fn() }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -36,14 +30,11 @@ import { decrypt } from "../../../src/utils/encryption";
 const app = createApp();
 
 const mockFindMany = prismaClient.account.findMany as jest.Mock;
+const mockRedisGet = redisClient.get as jest.Mock;
 const mockDecrypt = decrypt as jest.Mock;
 beforeEach(async () => {
   jest.clearAllMocks();
-  (redisClient.multi as jest.Mock).mockReturnValue({
-    get: jest.fn().mockReturnThis(),
-    ttl: jest.fn().mockReturnThis(),
-    exec: jest.fn().mockResolvedValue([mockEncryptedRedisPayload, 999]),
-  });
+  mockRedisGet.mockResolvedValue(mockEncryptedRedisPayload);
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
@@ -72,7 +63,7 @@ describe("GET /accounts", () => {
       buildAccountCreateOutput({ id: mockAccountId2 }),
     ]);
 
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockFindMany).toHaveBeenCalledTimes(1);
   });
 
@@ -85,7 +76,7 @@ describe("GET /accounts", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(res.body).toEqual([]);
 
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockFindMany).toHaveBeenCalledTimes(1);
   });
 

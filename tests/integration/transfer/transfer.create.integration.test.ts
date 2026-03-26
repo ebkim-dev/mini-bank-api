@@ -14,19 +14,13 @@ import {
   mockAccountId2,
   mockCustomerId2,
   mockMissingCustomerId,
+  mockRedisKey,
   mockSessionId,
   mockTransactionId2
 } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: {
-    multi: jest.fn(() => ({
-      get: jest.fn().mockReturnThis(),
-      ttl: jest.fn().mockReturnThis(),
-      exec: jest.fn(),
-    })),
-    expire: jest.fn(),
-  }
+  redisClient: { get: jest.fn() }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -57,15 +51,12 @@ const mockTx = {
 };
 
 const mockTransaction = prismaClient.$transaction as jest.Mock;
+const mockRedisGet = redisClient.get as jest.Mock;
 const mockDecrypt = decrypt as jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
 
-  (redisClient.multi as jest.Mock).mockReturnValue({
-    get: jest.fn().mockReturnThis(),
-    ttl: jest.fn().mockReturnThis(),
-    exec: jest.fn().mockResolvedValue([mockEncryptedRedisPayload, 999]),
-  });
+  mockRedisGet.mockResolvedValue(mockEncryptedRedisPayload);
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 
   mockTransaction.mockImplementation(cb => cb(mockTx));
@@ -130,7 +121,7 @@ describe("POST /accounts/:accountId/transfers", () => {
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject(buildTransferOutput(memoOverride));
 
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockTx.transfer.create).toHaveBeenCalledTimes(1);
 
     expect(mockTx.transaction.create).toHaveBeenCalledTimes(2);
@@ -156,7 +147,7 @@ describe("POST /accounts/:accountId/transfers", () => {
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject(buildTransferOutput());
 
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockTx.transfer.create).toHaveBeenCalledTimes(1);
 
     expect(mockTx.transaction.create).toHaveBeenCalledTimes(2);
@@ -191,7 +182,7 @@ describe("POST /accounts/:accountId/transfers", () => {
     );
 
     expect(res.status).toBe(400);
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockTx.transfer.create).not.toHaveBeenCalled();
   });
 
@@ -202,7 +193,7 @@ describe("POST /accounts/:accountId/transfers", () => {
     const res = await postTransferRequest(buildTransferCreateRequestBody());
 
     expect(res.status).toBe(404);
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockTx.transfer.create).not.toHaveBeenCalled();
   });
 
@@ -214,7 +205,7 @@ describe("POST /accounts/:accountId/transfers", () => {
     const res = await postTransferRequest(buildTransferCreateRequestBody());
 
     expect(res.status).toBe(403);
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockTx.transfer.create).not.toHaveBeenCalled();
   });
 
@@ -229,7 +220,7 @@ describe("POST /accounts/:accountId/transfers", () => {
     const res = await postTransferRequest(buildTransferCreateRequestBody());
 
     expect(res.status).toBe(409);
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockTx.transfer.create).not.toHaveBeenCalled();
   });
 
@@ -242,7 +233,7 @@ describe("POST /accounts/:accountId/transfers", () => {
     const res = await postTransferRequest(buildTransferCreateRequestBody());
 
     expect(res.status).toBe(409);
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockTx.transfer.create).not.toHaveBeenCalled();
   });
 
@@ -257,7 +248,7 @@ describe("POST /accounts/:accountId/transfers", () => {
     const res = await postTransferRequest(buildTransferCreateRequestBody());
 
     expect(res.status).toBe(404);
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockTx.transfer.create).not.toHaveBeenCalled();
   });
 
@@ -275,7 +266,7 @@ describe("POST /accounts/:accountId/transfers", () => {
     const res = await postTransferRequest(buildTransferCreateRequestBody());
 
     expect(res.status).toBe(409);
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockTx.transfer.create).not.toHaveBeenCalled();
   });
 
