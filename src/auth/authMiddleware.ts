@@ -62,10 +62,10 @@ export function requireAuth(): RequestHandler {
 
     try {
       const results = await redisClient
-        .multi()
-        .get(`session:${sessionId}`)
-        .ttl(`session:${sessionId}`)
-        .exec();
+      .multi()
+      .get(`session:${sessionId}`)
+      .ttl(`session:${sessionId}`)
+      .exec();
 
       if (!results) {
         logger.error(EventCode.INTERNAL_SERVER_ERROR, {
@@ -76,11 +76,11 @@ export function requireAuth(): RequestHandler {
       }
 
       const [raw, ttl] = results as unknown as [string | null, number];
-
+  
       if (!raw){
         return next(authFailure());
-      };
-
+      } 
+ 
       const session: AuthInput = JSON.parse(decrypt(raw));
       req.user = session;
       req.sessionId = sessionId;
