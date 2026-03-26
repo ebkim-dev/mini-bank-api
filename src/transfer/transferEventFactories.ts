@@ -2,6 +2,8 @@ import { AuthInput } from "../auth/user";
 import { Transfer } from "../generated/client";
 import { EventCode } from "../types/eventCodes";
 import { Decimal } from "@prisma/client/runtime/client";
+import { buildBaseEvent } from "../logging/baseEventFactories";
+import { Operation } from "../logging/operations";
 import { 
   ExecutionStatus,
   ManyTransferSuccessEvent,
@@ -9,16 +11,18 @@ import {
   TransferBaseEvent,
   TransferFailureEvent
 } from "../logging/logSchemas";
-import { buildBaseEvent } from "../logging/baseEventFactories";
 
 
 export function buildTransferBaseEvent(
   start: bigint,
   actorData: AuthInput,
   executionStatus: ExecutionStatus,
+  operation: Operation,
 ): TransferBaseEvent {
   return {
-    ...buildBaseEvent(start, executionStatus),
+    ...buildBaseEvent(
+      start, executionStatus, operation
+    ),
     actorId: actorData.actorId,
     actorRole: actorData.role,
     customerId: actorData.customerId,
@@ -28,11 +32,12 @@ export function buildTransferBaseEvent(
 export function buildSingleTransferSuccessEvent(
   start: bigint,
   actorData: AuthInput,
-  transferRecord: Transfer
+  transferRecord: Transfer,
+  operation: Operation,
 ): SingleTransferSuccessEvent {
   return {
     ...buildTransferBaseEvent(
-      start, actorData, ExecutionStatus.SUCCESS
+      start, actorData, ExecutionStatus.SUCCESS, operation
     ),
     transferId: transferRecord.id,
     fromAccountId: transferRecord.from_account_id,
@@ -44,11 +49,12 @@ export function buildSingleTransferSuccessEvent(
 export function buildManyTransferSuccessEvent(
   start: bigint,
   actorData: AuthInput,
-  transferRecords: Transfer[]
+  transferRecords: Transfer[],
+  operation: Operation,
 ): ManyTransferSuccessEvent {
   return {
     ...buildTransferBaseEvent(
-      start, actorData, ExecutionStatus.SUCCESS
+      start, actorData, ExecutionStatus.SUCCESS, operation
     ),
     transfers: transferRecords.map((transferRecord) => ({
       transferId: transferRecord.id,
@@ -63,16 +69,17 @@ export function buildTransferFailureEvent(
   start: bigint,
   actorData: AuthInput,
   errorCode: EventCode,
-  fromAccountId: string,
+  operation: Operation,
+  fromAccountId?: string,
   toAccountId?: string,
   amount?: Decimal,
 ): TransferFailureEvent {
   return {
     ...buildTransferBaseEvent(
-      start, actorData, ExecutionStatus.FAILURE
+      start, actorData, ExecutionStatus.FAILURE, operation
     ),
     errorCode,
-    fromAccountId,
+    ...(fromAccountId !== undefined && { fromAccountId }),
     ...(toAccountId !== undefined && { toAccountId }),
     ...(amount !== undefined && { amount: amount.toString() }),
   }

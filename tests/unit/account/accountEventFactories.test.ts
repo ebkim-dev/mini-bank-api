@@ -2,6 +2,8 @@ import { AccountStatus, UserRole } from "../../../src/generated/client";
 import { ExecutionStatus } from "../../../src/logging/logSchemas";
 import { buildAccountRecord } from "../../accountMock";
 import { buildAuthInput } from "../../authMock";
+import { EventCode } from "../../../src/types/eventCodes";
+import { Operation } from "../../../src/logging/operations";
 import {
   buildAccountBaseEvent,
   buildAccountFailureEvent,
@@ -11,17 +13,14 @@ import {
 import {
   mockAccountId1,
   mockAccountId2,
-  mockCustomerId1,
-  mockUserId
 } from "../../commonMock";
-import { EventCode } from "../../../src/types/eventCodes";
 
 describe("buildAccountBaseEvent", () => {
   it("should return a SUCCESS AccountBaseEvent given SUCCESS executionStatus", () => {
     const start = process.hrtime.bigint();
     const actorData = buildAuthInput();
     const event = buildAccountBaseEvent(
-      start, buildAuthInput(), ExecutionStatus.SUCCESS
+      start, buildAuthInput(), ExecutionStatus.SUCCESS, Operation.ACCOUNT_CREATE
     );
 
     expect(event.executionStatus).toBe(ExecutionStatus.SUCCESS);
@@ -34,7 +33,7 @@ describe("buildAccountBaseEvent", () => {
     const start = process.hrtime.bigint();
     const actorData = buildAuthInput();
     const event = buildAccountBaseEvent(
-      start, buildAuthInput(), ExecutionStatus.FAILURE
+      start, buildAuthInput(), ExecutionStatus.FAILURE, Operation.ACCOUNT_CREATE
     );
 
     expect(event.executionStatus).toBe(ExecutionStatus.FAILURE);
@@ -49,7 +48,7 @@ describe("buildSingleAccountSuccessEvent", () => {
     const start = process.hrtime.bigint();
     const accountRecord = buildAccountRecord();
     const event = buildSingleAccountSuccessEvent(
-      start, buildAuthInput(), accountRecord
+      start, buildAuthInput(), accountRecord, Operation.ACCOUNT_GET
     );
 
     expect(event.executionStatus).toBe(ExecutionStatus.SUCCESS);
@@ -69,7 +68,7 @@ describe("buildManyAccountSuccessEvent", () => {
     });
     const accountRecords = [accountRecord1, accountRecord2];
     const event = buildManyAccountSuccessEvent(
-      start, buildAuthInput(), accountRecords
+      start, buildAuthInput(), accountRecords, Operation.ACCOUNT_LIST
     );
 
     expect(event.executionStatus).toBe(ExecutionStatus.SUCCESS);
@@ -86,7 +85,8 @@ describe("buildAccountFailureEvent", () => {
       start,
       buildAuthInput(),
       mockAccountId1,
-      EventCode.ACCOUNT_NOT_FOUND
+      EventCode.ACCOUNT_NOT_FOUND,
+      Operation.ACCOUNT_CREATE
     );
 
     expect(event.executionStatus).toBe(ExecutionStatus.FAILURE);
@@ -103,6 +103,7 @@ describe("buildAccountFailureEvent", () => {
       buildAuthInput(),
       mockAccountId1,
       EventCode.ACCOUNT_NOT_FOUND,
+      Operation.ACCOUNT_UPDATE,
       { nickname: "alice", status: AccountStatus.ACTIVE }
     );
 

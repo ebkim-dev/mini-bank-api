@@ -25,13 +25,14 @@ import {
 } from "../../../src/transfer/transferEventFactories";
 import { buildTransferRecord } from "../../transferMock";
 import { Decimal } from "@prisma/client/runtime/client";
+import { Operation } from "../../../src/logging/operations";
 
 describe("buildTransferBaseEvent", () => {
   it("should return a SUCCESS TransferBaseEvent given SUCCESS executionStatus", () => {
     const start = process.hrtime.bigint();
     const actorData = buildAuthInput();
     const event = buildTransferBaseEvent(
-      start, actorData, ExecutionStatus.SUCCESS
+      start, actorData, ExecutionStatus.SUCCESS, Operation.TRANSFER_CREATE
     );
 
     expect(event.executionStatus).toBe(ExecutionStatus.SUCCESS);
@@ -44,7 +45,7 @@ describe("buildTransferBaseEvent", () => {
     const start = process.hrtime.bigint();
     const actorData = buildAuthInput();
     const event = buildTransferBaseEvent(
-      start, actorData, ExecutionStatus.FAILURE
+      start, actorData, ExecutionStatus.FAILURE, Operation.TRANSFER_CREATE
     );
 
     expect(event.executionStatus).toBe(ExecutionStatus.FAILURE);
@@ -59,7 +60,7 @@ describe("buildSingleTransferSuccessEvent", () => {
     const start = process.hrtime.bigint();
     const transferRecord = buildTransferRecord();
     const event = buildSingleTransferSuccessEvent(
-      start, buildAuthInput(), transferRecord
+      start, buildAuthInput(), transferRecord, Operation.TRANSFER_GET
     );
 
     expect(event.executionStatus).toBe(ExecutionStatus.SUCCESS);
@@ -79,7 +80,7 @@ describe("buildManyTransferSuccessEvent", () => {
     });
     const transferRecords = [transferRecord1, transferRecord2];
     const event = buildManyTransferSuccessEvent(
-      start, buildAuthInput(), transferRecords
+      start, buildAuthInput(), transferRecords, Operation.TRANSFER_LIST
     );
 
     expect(event.executionStatus).toBe(ExecutionStatus.SUCCESS);
@@ -96,6 +97,7 @@ describe("buildTransferFailureEvent", () => {
       start,
       buildAuthInput(),
       EventCode.TRANSFER_NOT_FOUND,
+      Operation.TRANSFER_CREATE,
       mockAccountId1,
     );
 
@@ -112,6 +114,7 @@ describe("buildTransferFailureEvent", () => {
       start,
       buildAuthInput(),
       EventCode.TRANSFER_NOT_FOUND,
+      Operation.TRANSFER_CREATE,
       mockAccountId1,
       mockAccountId2,
       new Decimal("42.00")

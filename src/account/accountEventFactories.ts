@@ -3,6 +3,7 @@ import { AuthInput } from "../auth/user";
 import { Account } from "../generated/client";
 import { EventCode } from "../types/eventCodes";
 import { buildBaseEvent } from "../logging/baseEventFactories";
+import { Operation } from "../logging/operations";
 import { 
   AccountBaseEvent,
   AccountFailureEvent,
@@ -16,9 +17,10 @@ export function buildAccountBaseEvent(
   start: bigint,
   actorData: AuthInput,
   executionStatus: ExecutionStatus,
+  operation: Operation,
 ): AccountBaseEvent {
   return {
-    ...buildBaseEvent(start, executionStatus),
+    ...buildBaseEvent(start, executionStatus, operation),
     actorId: actorData.actorId,
     actorRole: actorData.role,
     customerId: actorData.customerId,
@@ -28,11 +30,12 @@ export function buildAccountBaseEvent(
 export function buildSingleAccountSuccessEvent(
   start: bigint,
   actorData: AuthInput,
-  accountRecord: Account
+  accountRecord: Account,
+  operation: Operation,
 ): SingleAccountSuccessEvent {
   return {
     ...buildAccountBaseEvent(
-      start, actorData, ExecutionStatus.SUCCESS
+      start, actorData, ExecutionStatus.SUCCESS, operation
     ),
     accountId: accountRecord.id,
     accountType: accountRecord.type,
@@ -44,11 +47,12 @@ export function buildSingleAccountSuccessEvent(
 export function buildManyAccountSuccessEvent(
   start: bigint,
   actorData: AuthInput,
-  accountRecords: Account[]
+  accountRecords: Account[],
+  operation: Operation,
 ): ManyAccountSuccessEvent {
   return {
     ...buildAccountBaseEvent(
-      start, actorData, ExecutionStatus.SUCCESS
+      start, actorData, ExecutionStatus.SUCCESS, operation
     ),
     accounts: accountRecords.map((accountRecord) => ({
       accountId: accountRecord.id,
@@ -65,11 +69,12 @@ export function buildAccountFailureEvent(
   actorData: AuthInput,
   accountId: string,
   errorCode: EventCode,
-  data?: AccountUpdateInput
+  operation: Operation,
+  data?: AccountUpdateInput,
 ): AccountFailureEvent {
   return {
     ...buildAccountBaseEvent(
-      start, actorData, ExecutionStatus.FAILURE
+      start, actorData, ExecutionStatus.FAILURE, operation
     ),
     accountId,
     errorCode,
