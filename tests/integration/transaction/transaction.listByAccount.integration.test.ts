@@ -12,19 +12,13 @@ import {
   mockAccountId1,
   mockMissingAccountId,
   mockMissingCustomerId,
+  mockRedisKey,
   mockSessionId,
   mockTransactionId2,
 } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: {
-    multi: jest.fn(() => ({
-      get: jest.fn().mockReturnThis(),
-      ttl: jest.fn().mockReturnThis(),
-      exec: jest.fn(),
-    })),
-    expire: jest.fn(),
-  }
+  redisClient: { get: jest.fn() }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -50,15 +44,12 @@ const app = createApp();
 
 const mockFindUnique = prismaClient.account.findUnique as jest.Mock;
 const mockFindMany = prismaClient.transaction.findMany as jest.Mock;
+const mockRedisGet = redisClient.get as jest.Mock;
 const mockDecrypt = decrypt as jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  (redisClient.multi as jest.Mock).mockReturnValue({
-    get: jest.fn().mockReturnThis(),
-    ttl: jest.fn().mockReturnThis(),
-    exec: jest.fn().mockResolvedValue([mockEncryptedRedisPayload, 999]),
-  });
+  mockRedisGet.mockResolvedValue(mockEncryptedRedisPayload);
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
   mockFindUnique.mockResolvedValue(buildAccountRecord());
 });
@@ -101,7 +92,7 @@ describe("GET /accounts/:id/transactions", () => {
       { ...expected2, created_at: expected2.created_at.toISOString() },
     ]);
 
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
     expect(mockFindMany).toHaveBeenCalledTimes(1);
   });
@@ -115,7 +106,7 @@ describe("GET /accounts/:id/transactions", () => {
     expect(res.headers).toHaveProperty("x-trace-id");
     expect(res.body).toEqual([]);
 
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
     expect(mockFindMany).toHaveBeenCalledTimes(1);
   });
@@ -186,7 +177,7 @@ describe("GET /accounts/:id/transactions", () => {
     expect(res.status).toBe(404);
     expect(res.headers).toHaveProperty("x-trace-id");
 
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
     expect(mockFindMany).not.toHaveBeenCalled();
   });
@@ -210,7 +201,7 @@ describe("GET /accounts/:id/transactions", () => {
     expect(res.status).toBe(403);
     expect(res.headers).toHaveProperty("x-trace-id");
 
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
     expect(mockFindMany).not.toHaveBeenCalled();
   });

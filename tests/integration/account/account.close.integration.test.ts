@@ -11,18 +11,12 @@ import {
   mockAccountId1,
   mockMissingAccountId,
   mockMissingCustomerId,
+  mockRedisKey,
   mockSessionId
 } from "../../commonMock";
 
 jest.mock("../../../src/redis/redisClient", () => ({
-  redisClient: {
-    multi: jest.fn(() => ({
-      get: jest.fn().mockReturnThis(),
-      ttl: jest.fn().mockReturnThis(),
-      exec: jest.fn(),
-    })),
-    expire: jest.fn(),
-  }
+  redisClient: { get: jest.fn() }
 }));
 import { redisClient } from "../../../src/redis/redisClient";
 
@@ -44,14 +38,11 @@ const app = createApp();
 
 const mockFindUnique = prismaClient.account.findUnique as jest.Mock;
 const mockUpdate = prismaClient.account.update as jest.Mock;
+const mockRedisGet = redisClient.get as jest.Mock;
 const mockDecrypt = decrypt as jest.Mock;
 beforeEach(async () => {
   jest.clearAllMocks();
-  (redisClient.multi as jest.Mock).mockReturnValue({
-    get: jest.fn().mockReturnThis(),
-    ttl: jest.fn().mockReturnThis(),
-    exec: jest.fn().mockResolvedValue([mockEncryptedRedisPayload, 999]),
-  });
+  mockRedisGet.mockResolvedValue(mockEncryptedRedisPayload);
   mockDecrypt.mockReturnValue(JSON.stringify(buildAuthInput()));
 });
 
@@ -80,7 +71,7 @@ describe("POST /accounts/:accountId/close", () => {
       status: AccountStatus.CLOSED 
     }));
       
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 
@@ -106,7 +97,7 @@ describe("POST /accounts/:accountId/close", () => {
     expect(res2.status).toBe(200);
     expect(res2.headers).toHaveProperty("x-trace-id");
       
-    expect(redisClient.multi).toHaveBeenCalledTimes(2);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockUpdate).toHaveBeenCalledTimes(2);
   });
 
@@ -116,7 +107,7 @@ describe("POST /accounts/:accountId/close", () => {
     expect(res.status).toBe(400);
     expect(res.headers).toHaveProperty("x-trace-id");
       
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -132,7 +123,7 @@ describe("POST /accounts/:accountId/close", () => {
     expect(res.status).toBe(404);
     expect(res.headers).toHaveProperty("x-trace-id");
       
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
     expect(mockUpdate).toHaveBeenCalledTimes(0);
   });
@@ -148,7 +139,7 @@ describe("POST /accounts/:accountId/close", () => {
     expect(res.status).toBe(403);
     expect(res.headers).toHaveProperty("x-trace-id");
       
-    expect(redisClient.multi).toHaveBeenCalledTimes(1);
+    expect(redisClient.get).toHaveBeenCalledWith(mockRedisKey);
     expect(mockFindUnique).toHaveBeenCalledTimes(1);
     expect(mockUpdate).toHaveBeenCalledTimes(0);
   });
