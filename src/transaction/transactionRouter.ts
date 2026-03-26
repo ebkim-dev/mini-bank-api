@@ -1,17 +1,17 @@
 import { Router } from "express";
+import { validate } from "../middleware/validationMiddleware";
+import { requireAuth } from "../auth/authMiddleware";
 import {
   createTransaction,
   getTransactions,
   getTransactionById,
 } from "./transactionController";
-import { validate } from "../middleware/validationMiddleware";
 import {
   accountIdParamsSchema,
   createTransactionBodySchema,
   getTransactionsQuerySchema,
   transactionIdParamsSchema,
 } from "./transactionSchemas";
-import { requireAuth } from "../auth/authMiddleware";
 
 const router = Router({ mergeParams: true });
 

@@ -3,12 +3,18 @@ import prismaClient from '../db/prismaClient';
 import { UserRole } from "../generated/enums";
 import { Prisma } from "../generated/client";
 import { EventCode } from '../types/eventCodes';
-import { ConflictError, NotFoundError, UnauthorizedError } from "../error/error";
 import { redisClient } from '../redis/redisClient';
 import { randomUUID } from "crypto";
 import { encrypt } from "../utils/encryption";
 import { logger } from '../logging/logger';
 import { serializeMe } from "./authUtils";
+import { ErrorMessages } from "../error/errorMessages";
+import { Operation } from "../logging/operations";
+import {
+  ConflictError,
+  NotFoundError,
+  UnauthorizedError
+} from "../error/error";
 import {
   throwIfInvalidPassword,
   throwIfUserNotFound
@@ -93,7 +99,10 @@ export async function registerUser(
       }
  
       const event = buildRegisterFailureEvent(
-        start, data.username, EventCode.UNKNOWN_CONFLICT
+        start,
+        data.username,
+        EventCode.UNKNOWN_CONFLICT,
+        Operation.AUTH_REGISTER,
       );
  
       if (!field || (field !== "username" && field !== "email")) {
@@ -127,7 +136,7 @@ export async function loginUser(
     throwIfUserNotFound(userRecord);
   } catch (err) {
     logger.info(buildLoginFailureEvent(
-      start, data.username, EventCode.USER_NOT_FOUND,
+      start, data.username, EventCode.USER_NOT_FOUND, Operation.AUTH_LOGIN
     ));
     throw UnauthorizedError(
       EventCode.INVALID_CREDENTIALS,
@@ -139,7 +148,7 @@ export async function loginUser(
     await throwIfInvalidPassword(userRecord, data.password);
   } catch (err) {
     logger.info(buildLoginFailureEvent(
-      start, data.username, EventCode.INVALID_CREDENTIALS,
+      start, data.username, EventCode.INVALID_CREDENTIALS, Operation.AUTH_LOGIN
     ));
     throw err;
   }
@@ -159,7 +168,7 @@ export async function loginUser(
  
   logger.info(
     EventCode.LOGIN_SUCCESS,
-    buildLoginSuccessEvent(start, userRecord)
+    buildLoginSuccessEvent(start, userRecord, Operation.AUTH_LOGIN)
   );
  
   return { sessionId };
@@ -176,7 +185,7 @@ export async function logoutUser(
  
   logger.info(
     EventCode.LOGOUT_SUCCESS,
-    buildLogoutSuccessEvent(start, authInput)
+    buildLogoutSuccessEvent(start, authInput, Operation.AUTH_LOGOUT)
   );
 }
  
@@ -195,7 +204,7 @@ export async function fetchMe(
     throwIfUserNotFound(userRecord);
   } catch (err) {
     logger.info(buildMeFailureEvent(
-      start, authInput, EventCode.USER_NOT_FOUND
+      start, authInput, EventCode.USER_NOT_FOUND, Operation.AUTH_ME
     ));
     throw NotFoundError(
       EventCode.USER_NOT_FOUND, ErrorMessages.USER_NOT_FOUND
@@ -204,7 +213,7 @@ export async function fetchMe(
  
   logger.info(
     EventCode.ME_FETCHED,
-    buildMeSuccessEvent(start, authInput)
+    buildMeSuccessEvent(start, authInput, Operation.AUTH_ME)
   );
  
   return serializeMe(userRecord);

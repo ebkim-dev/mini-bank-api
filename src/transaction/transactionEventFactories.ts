@@ -1,20 +1,24 @@
 import { AuthInput } from "../auth/user";
 import { Transaction } from "../generated/client";
+import { buildBaseEvent } from "../logging/baseEventFactories";
+import { Operation } from "../logging/operations";
 import { 
   ExecutionStatus,
   TransactionFailureEvent,
   TransactionSuccessEvent,
 } from "../logging/logSchemas";
-import { buildBaseEvent } from "../logging/baseEventFactories";
 
 
 export function buildTransactionSuccessEvent(
   start: bigint,
   actorData: AuthInput,
-  transactionRecord: Transaction
+  transactionRecord: Transaction,
+  operation: Operation,
 ): TransactionSuccessEvent {
   return {
-    ...buildBaseEvent(start, ExecutionStatus.SUCCESS),
+    ...buildBaseEvent(
+      start, ExecutionStatus.SUCCESS, operation
+    ),
     actorId: actorData.actorId,
     actorRole: actorData.role,
     customerId: actorData.customerId,
@@ -29,10 +33,13 @@ export function buildManyTransactionSuccessEvent(
   start: bigint,
   actorData: AuthInput,
   accountId: string,
-  count: number
+  count: number,
+  operation: Operation,
 ): TransactionSuccessEvent {
   return {
-    ...buildBaseEvent(start, ExecutionStatus.SUCCESS),
+    ...buildBaseEvent(
+      start, ExecutionStatus.SUCCESS, operation
+    ),
     actorId: actorData.actorId,
     customerId: actorData.customerId,
     actorRole: actorData.role,
@@ -45,11 +52,14 @@ export function buildTransactionFailureEvent(
   start: bigint,
   actorData: AuthInput,
   errorCode: string,
+  operation: Operation,
   transactionId?: string,
   accountId?: string
 ): TransactionFailureEvent {
   return {
-    ...buildBaseEvent(start, ExecutionStatus.FAILURE),
+    ...buildBaseEvent(
+      start, ExecutionStatus.FAILURE, operation
+    ),
     actorId: actorData.actorId,
     customerId: actorData.customerId,
     actorRole: actorData.role,

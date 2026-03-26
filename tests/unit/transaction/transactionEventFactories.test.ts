@@ -2,6 +2,7 @@ import { ExecutionStatus } from "../../../src/logging/logSchemas";
 import { buildAuthInput } from "../../authMock";
 import { EventCode } from "../../../src/types/eventCodes";
 import { buildTransactionRecord } from "../../transactionMock";
+import { Operation } from "../../../src/logging/operations";
 import {
   mockAccountId1,
   mockTransactionId1,
@@ -18,7 +19,7 @@ describe("buildTransactionSuccessEvent", () => {
     const actorData = buildAuthInput();
     const transactionRecord = buildTransactionRecord();
     const event = buildTransactionSuccessEvent(
-      start, actorData, transactionRecord
+      start, actorData, transactionRecord, Operation.TRANSACTION_CREATE
     );
 
     expect(event.executionStatus).toBe(ExecutionStatus.SUCCESS);
@@ -37,7 +38,7 @@ describe("buildManyTransactionSuccessEvent", () => {
     const start = process.hrtime.bigint();
     const actorData = buildAuthInput();
     const event = buildManyTransactionSuccessEvent(
-      start, actorData, mockAccountId1, 2
+      start, actorData, mockAccountId1, 2, Operation.TRANSACTION_LIST
     );
 
     expect(event.executionStatus).toBe(ExecutionStatus.SUCCESS);
@@ -57,6 +58,7 @@ describe("buildTransactionFailureEvent", () => {
       start,
       actorData,
       EventCode.TRANSACTION_NOT_FOUND,
+      Operation.TRANSACTION_CREATE,
     );
 
     expect(event.executionStatus).toBe(ExecutionStatus.FAILURE);
@@ -75,6 +77,7 @@ describe("buildTransactionFailureEvent", () => {
       start,
       actorData,
       EventCode.TRANSACTION_NOT_FOUND,
+      Operation.TRANSACTION_CREATE,
       mockTransactionId1,
       mockAccountId1
     );
