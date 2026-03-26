@@ -36,10 +36,6 @@ import type {
   AuthInput,
   MeOutput,
 } from './user';
-<<<<<<< HEAD
-
-=======
->>>>>>> ffa7e64 (small change in authService)
  
  
 export const REDIS_SESSION_TTL_SEC = 900;        
